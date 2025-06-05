@@ -80,21 +80,6 @@ spotless {
         // 줄 끝 공백 제거
         trimTrailingWhitespace()
     }
-    
-    // XML, YAML, Markdown 등 다른 파일 형식에 대한 포맷팅 규칙 추가
-    format 'xml', {
-        target '**/*.xml'
-        indentWithSpaces(2)
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-    
-    format 'yml', {
-        target '**/*.yml', '**/*.yaml'
-        indentWithSpaces(2)
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
 }
 
 // 자동 포맷팅을 위한 태스크 추가
@@ -104,9 +89,14 @@ tasks.register('formatAll') {
     description = '모든 소스 코드 자동 포맷팅'
 }
 
+def springProfile = project.findProperty("spring.profiles.active") ?: ""
+def isCiOrTest = springProfile in ["ci", "test"]
+
 // 빌드 전에 자동으로 포맷팅 적용
-tasks.named('compileJava') {
-    dependsOn 'spotlessApply'
+if (!isCiOrTest) {
+    tasks.named('compileJava') {
+        dependsOn 'spotlessApply'
+    }
 }
 
 // 커밋 전 검사를 위한 태스크
@@ -114,4 +104,4 @@ tasks.register('preCommitCheck') {
     dependsOn 'spotlessCheck'
     group = 'verification'
     description = '커밋 전 코드 스타일 검사'
-} 
+}
