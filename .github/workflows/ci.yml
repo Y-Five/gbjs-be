@@ -57,9 +57,10 @@ jobs:
           submodules: true
           token: ${{ secrets.GIT_ACTION_TOKEN }}
 
-      - name: Update submodule
+      - name: Check submodule status
         run: |
-          git submodule update --remote
+          git submodule status
+          git submodule foreach 'echo ==== $name ==== && git log -1 && ls -al'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
