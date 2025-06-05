@@ -1,7 +1,3 @@
 [submodule "src/main/resources"]
 	path = src/main/resources
 	url = https://github.com/Y-Five/kbjs-be-config.git
-
-[submodule "src/test/resources"]
-	path = src/test/resources
-	url = https://github.com/Y-Five/kbjs-be-config.git

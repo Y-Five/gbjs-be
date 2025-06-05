@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,19 +16,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
+
 import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
 import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
 import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.kbjs.global.config.jwt.TokenRepository;
 import com.yfive.kbjs.global.error.exception.InvalidTokenException;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
   @Mock private JwtTokenProvider jwtTokenProvider;
-
-  @Mock private TokenRepository tokenRepository;
 
   @InjectMocks private AuthServiceImpl authService;
 
