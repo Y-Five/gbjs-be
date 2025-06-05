@@ -35,7 +35,7 @@ import com.yfive.kbjs.global.config.TestJwtPropertiesConfig;
 import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.kbjs.global.error.exception.InvalidTokenException;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(AuthControllerImpl.class)
 @Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
 @ActiveProfiles("test")
 class AuthControllerTest {

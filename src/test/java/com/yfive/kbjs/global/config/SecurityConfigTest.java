@@ -17,14 +17,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.yfive.kbjs.domain.auth.controller.AuthController;
+import com.yfive.kbjs.domain.auth.controller.AuthControllerImpl;
 import com.yfive.kbjs.domain.auth.controller.MockController;
 import com.yfive.kbjs.domain.auth.service.AuthService;
 import com.yfive.kbjs.domain.user.controller.ProtectedController;
 import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.kbjs.global.config.jwt.TokenRepository;
 
-@WebMvcTest(controllers = {AuthController.class, ProtectedController.class, MockController.class})
+@WebMvcTest(
+    controllers = {AuthControllerImpl.class, ProtectedController.class, MockController.class})
 @Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
