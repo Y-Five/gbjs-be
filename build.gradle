@@ -90,10 +90,9 @@ tasks.register('formatAll') {
 }
 
 def springProfile = project.findProperty("spring.profiles.active") ?: ""
-def isCiOrTest = springProfile in ["ci", "test"]
 
 // 빌드 전에 자동으로 포맷팅 적용
-if (!isCiOrTest) {
+if (springProfile != "test") {
     tasks.named('compileJava') {
         dependsOn 'spotlessApply'
     }
