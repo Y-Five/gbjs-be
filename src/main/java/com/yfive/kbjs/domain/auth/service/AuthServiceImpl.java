@@ -43,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
   /** {@inheritDoc} */
   @Override
   public TokenResponse login(LoginRequest loginRequest) {
-    // 실제 애플리케이션에서는 사용자 인증 로직 구현 필요
+    // 실제 개발에서는 사용자 인증 로직 구현 필요
     log.info("로그인 시도: {}", loginRequest.username());
 
     // 테스트용 인증 객체 생성
