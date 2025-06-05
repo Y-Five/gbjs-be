@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
       throw new InvalidTokenException("저장된 Refresh Token과 일치하지 않습니다.");
     }
 
-    // 테스트용 인증 객체 생성 (실제로는 사용자 정보를 DB에서 조회해야 함)
+    // 테스트용 인증 객체 생성 (실제 개발에서는 사용자 정보를 DB에서 조회해야 함)
     SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
     User principal = new User(username, "", Collections.singleton(authority));
     Authentication authentication =
