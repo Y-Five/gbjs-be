@@ -57,6 +57,11 @@ jobs:
           submodules: true
           token: ${{ secrets.GIT_ACTION_TOKEN }}
 
+      - name: Init and update submodules
+        run: |
+          git submodule init
+          git submodule update --recursive --remote
+
       - name: Check submodule status
         run: |
           git submodule status
