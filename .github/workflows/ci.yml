@@ -80,7 +80,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build -x test
 
-      - name: Run tests with CI profile
+      - name: Run tests
         run: ./gradlew test
 
       - name: Publish Test Report
