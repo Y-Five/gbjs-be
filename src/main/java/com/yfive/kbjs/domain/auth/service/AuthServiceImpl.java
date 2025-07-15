@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.service;
+package com.yfive.gbjs.domain.auth.service;
 
 import java.util.Collections;
 
@@ -11,12 +11,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
-import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.kbjs.global.config.jwt.TokenRepository;
-import com.yfive.kbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.config.jwt.TokenRepository;
+import com.yfive.gbjs.global.error.exception.InvalidTokenException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

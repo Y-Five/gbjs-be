@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config;
+package com.yfive.gbjs.global.config;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,8 +20,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.yfive.kbjs.global.config.jwt.JwtFilter;
-import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.config.jwt.JwtFilter;
+import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 

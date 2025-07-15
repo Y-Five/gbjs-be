@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.controller;
+package com.yfive.gbjs.domain.auth.controller;
 
 import jakarta.validation.Valid;
 
@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.kbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

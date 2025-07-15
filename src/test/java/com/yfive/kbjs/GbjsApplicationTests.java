@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs;
+package com.yfive.gbjs;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,14 +10,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.yfive.kbjs.global.config.MockRedisConfig;
-import com.yfive.kbjs.global.config.TestJwtPropertiesConfig;
+import com.yfive.gbjs.global.config.MockRedisConfig;
+import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 @Import({TestJwtPropertiesConfig.class, MockRedisConfig.class})
-class KbjsApplicationTests {
+class GbjsApplicationTests {
 
   @Test
   void contextLoads() {}

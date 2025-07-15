@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.controller;
+package com.yfive.gbjs.domain.auth.controller;
 
 import jakarta.validation.Valid;
 
@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.kbjs.domain.auth.service.AuthService;
-import com.yfive.kbjs.global.common.response.ApiResponse;
-import com.yfive.kbjs.global.config.jwt.JwtFilter;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.service.AuthService;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.config.jwt.JwtFilter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

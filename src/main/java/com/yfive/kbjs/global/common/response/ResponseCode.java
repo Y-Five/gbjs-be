@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.common.response;
+package com.yfive.gbjs.global.common.response;
 
 import org.springframework.http.HttpStatus;
 

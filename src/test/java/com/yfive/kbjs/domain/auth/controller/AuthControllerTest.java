@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.controller;
+package com.yfive.gbjs.domain.auth.controller;
 
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -25,15 +25,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.kbjs.domain.auth.service.AuthService;
-import com.yfive.kbjs.global.config.MockRedisConfig;
-import com.yfive.kbjs.global.config.SecurityConfig;
-import com.yfive.kbjs.global.config.TestJwtPropertiesConfig;
-import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.kbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.service.AuthService;
+import com.yfive.gbjs.global.config.MockRedisConfig;
+import com.yfive.gbjs.global.config.SecurityConfig;
+import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
+import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.error.exception.InvalidTokenException;
 
 @WebMvcTest(AuthControllerImpl.class)
 @Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})

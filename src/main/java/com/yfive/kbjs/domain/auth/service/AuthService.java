@@ -1,11 +1,11 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.service;
+package com.yfive.gbjs.domain.auth.service;
 
-import com.yfive.kbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.kbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 
 /**
  * 인증 서비스 인터페이스

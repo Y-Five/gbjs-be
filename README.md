@@ -1,4 +1,4 @@
-# KBJS 프로젝트
+# GBJS 프로젝트
 
 # 🎯 Branch Convention & Git Convention
 

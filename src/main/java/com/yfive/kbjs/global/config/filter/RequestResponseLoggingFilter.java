@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config.filter;
+package com.yfive.gbjs.global.config.filter;
 
 import java.io.IOException;
 import java.util.UUID;

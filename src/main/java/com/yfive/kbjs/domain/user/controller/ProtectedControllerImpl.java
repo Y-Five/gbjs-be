@@ -1,15 +1,15 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.user.controller;
+package com.yfive.gbjs.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.kbjs.domain.user.dto.response.ProtectedResourceResponse;
-import com.yfive.kbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.domain.user.dto.response.ProtectedResourceResponse;
+import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

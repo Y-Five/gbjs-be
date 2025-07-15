@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config.jwt;
+package com.yfive.gbjs.global.config.jwt;
 
 import java.util.concurrent.TimeUnit;
 

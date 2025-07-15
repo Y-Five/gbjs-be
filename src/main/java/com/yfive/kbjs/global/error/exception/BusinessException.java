@@ -1,9 +1,9 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.error.exception;
+package com.yfive.gbjs.global.error.exception;
 
-import com.yfive.kbjs.global.common.response.ResponseCode;
+import com.yfive.gbjs.global.common.response.ResponseCode;
 
 import lombok.Getter;
 

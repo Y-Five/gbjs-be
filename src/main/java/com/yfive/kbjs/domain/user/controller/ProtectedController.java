@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.user.controller;
+package com.yfive.gbjs.domain.user.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.yfive.kbjs.domain.user.dto.response.ProtectedResourceResponse;
-import com.yfive.kbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.domain.user.dto.response.ProtectedResourceResponse;
+import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

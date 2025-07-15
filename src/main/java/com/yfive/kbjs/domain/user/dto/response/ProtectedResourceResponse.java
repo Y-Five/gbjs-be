@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.user.dto.response;
+package com.yfive.gbjs.domain.user.dto.response;
 
 import java.util.Collection;
 

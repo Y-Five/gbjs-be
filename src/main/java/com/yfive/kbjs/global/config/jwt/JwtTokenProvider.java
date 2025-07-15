@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config.jwt;
+package com.yfive.gbjs.global.config.jwt;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,7 +20,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

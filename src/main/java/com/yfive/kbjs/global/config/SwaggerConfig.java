@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config;
+package com.yfive.gbjs.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,8 +33,8 @@ public class SwaggerConfig {
         .addServersItem(new Server().url("/").description("Default Server URL"))
         .info(
             new Info()
-                .title("KBJS API")
-                .description("KBJS 프로젝트 API 문서")
+                .title("GBJS API")
+                .description("GBJS 프로젝트 API 문서")
                 .version("v1.0.0")
                 .contact(new Contact().name("YFIVE").email("contact@yfive.com")))
         .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))

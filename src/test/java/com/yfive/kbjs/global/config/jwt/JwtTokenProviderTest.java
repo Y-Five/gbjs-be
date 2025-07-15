@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config.jwt;
+package com.yfive.gbjs.global.config.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -19,7 +19,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
-import com.yfive.kbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 
 /**
  * JWT 토큰 제공자 테스트 클래스

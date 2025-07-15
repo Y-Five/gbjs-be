@@ -1,13 +1,13 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config;
+package com.yfive.gbjs.global.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
-import com.yfive.kbjs.global.config.jwt.JwtProperties;
+import com.yfive.gbjs.global.config.jwt.JwtProperties;
 
 /**
  * 테스트 환경에서 사용할 JwtProperties 설정

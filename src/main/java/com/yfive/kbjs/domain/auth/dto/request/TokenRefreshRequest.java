@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.domain.auth.dto.request;
+package com.yfive.gbjs.domain.auth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

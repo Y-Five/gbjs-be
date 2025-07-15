@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.config;
+package com.yfive.gbjs.global.config;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,10 +17,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.yfive.kbjs.domain.auth.controller.AuthControllerImpl;
-import com.yfive.kbjs.domain.auth.controller.MockController;
-import com.yfive.kbjs.domain.auth.service.AuthService;
-import com.yfive.kbjs.domain.user.controller.ProtectedController;
+import com.yfive.gbjs.domain.auth.controller.AuthControllerImpl;
+import com.yfive.gbjs.domain.auth.controller.MockController;
+import com.yfive.gbjs.domain.auth.service.AuthService;
+import com.yfive.gbjs.domain.user.controller.ProtectedController;
 import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.kbjs.global.config.jwt.TokenRepository;
 

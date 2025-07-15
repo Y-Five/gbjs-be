@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.kbjs.global.error;
+package com.yfive.gbjs.global.error;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import com.yfive.kbjs.global.common.response.ApiResponse;
-import com.yfive.kbjs.global.common.response.ResponseCode;
-import com.yfive.kbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.common.response.ResponseCode;
+import com.yfive.gbjs.global.error.exception.InvalidTokenException;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
