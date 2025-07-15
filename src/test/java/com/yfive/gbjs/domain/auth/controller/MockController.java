@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.kbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.common.response.ApiResponse;
 
 /** 테스트용 목 컨트롤러 */
 @RestController

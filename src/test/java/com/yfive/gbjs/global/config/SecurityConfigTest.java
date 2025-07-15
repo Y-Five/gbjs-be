@@ -21,8 +21,8 @@ import com.yfive.gbjs.domain.auth.controller.AuthControllerImpl;
 import com.yfive.gbjs.domain.auth.controller.MockController;
 import com.yfive.gbjs.domain.auth.service.AuthService;
 import com.yfive.gbjs.domain.user.controller.ProtectedController;
-import com.yfive.kbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.kbjs.global.config.jwt.TokenRepository;
+import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.config.jwt.TokenRepository;
 
 @WebMvcTest(
     controllers = {AuthControllerImpl.class, ProtectedController.class, MockController.class})
