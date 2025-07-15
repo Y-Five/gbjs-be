@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/kbjs
+            cd /home/ubuntu/actions-runner/_work/kbjs-be/kbjs-be
             docker compose down
             docker compose pull
             docker compose up -d --build
