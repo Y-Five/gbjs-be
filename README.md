@@ -1,7 +1,5 @@
 # GBJS 프로젝트
 
-# 🎯 Branch Convention & Git Convention
-
 ## 🎯 Git Convention
 
 - 🎉 **Start:** Start New Project [:tada:]
@@ -23,4 +21,31 @@
 
 - `main`: 배포 가능한 브랜치, 항상 배포 가능한 상태를 유지
 - `feature/{description}`: 새로운 기능을 개발하는 브랜치
-  - 예: `feature/social-login`
+    - 예: `feature/social-login`
+
+### Flow
+
+1. `develop` 브랜치에서 새로운 브랜치를 생성.
+2. 작업을 완료하고 커밋 메시지에 맞게 커밋.
+3. Pull Request를 생성 / 팀원들의 리뷰.
+4. 리뷰가 완료되면 `develop` 브랜치로 병합.
+5. 병합 후, 테스트 완료시 `main` 브랜치로 배포.
+
+
+## 🐋 로컬에서 Docker 로 빌드하기 🐋
+
+1. Docker Desktop 실행
+2. Build 하기 전 spotless 적용 ```./gradlew spotlessApply```
+3. 정해진 컨벤션을 지키고 있는지 검사 (spotelesscheck) ```./gradlew spotlessCheck```
+4. spring boot build ```./gradlew build```
+5. Docker Desktop 실행중 인지 확인 ```docker info```
+6. Docker로 빌드하기 ```docker build -t "본인 dockerhub repo 이름"/helfoome . ```
+7. Docker Hub login(IDE terminal에서 실행) ```docker login```
+8. Docker Image Tag ```docker tag "본인 dockerhub repo 이름"/helfoome "본인 dockerhub repo 이름"/helfoome:latest```
+9. Docker Image Push ```docker push "본인 dockerhub repo 이름"/helfoome:latest```
+
+### 🐋 Docker 실행중인 컨테이너 중지하기 🐋
+1. 실행 중인 컨테이너 목록 확인 ```docker ps```
+2. 컨테이너 중지 실행 중인 컨테이너의 CONTAINER ID를 찾아서 중지. ```docker stop <CONTAINER ID>```
+3. 컨테이너의 삭제가 필요할 경우 ```docker rm <CONTAINER ID>```
+4. 이미지 삭제가 필요할 경우 ```docker rmi <IMAGE ID or IMAGE NAME>```
