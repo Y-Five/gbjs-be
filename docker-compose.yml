@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   app:
     build: .
@@ -7,29 +5,29 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/kbjs_dev
-      - SPRING_DATASOURCE_USERNAME=kbjs
-      - SPRING_DATASOURCE_PASSWORD=kbjs1234
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/gbjs_dev
+      - SPRING_DATASOURCE_USERNAME=gbjs
+      - SPRING_DATASOURCE_PASSWORD=gbjs1234
       - SPRING_REDIS_HOST=redis
     depends_on:
       - mysql
       - redis
     networks:
-      - kbjs-network
+      - gbjs-network
 
   mysql:
     image: mysql:8.0
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_DATABASE=kbjs_dev
-      - MYSQL_USER=kbjs
-      - MYSQL_PASSWORD=kbjs1234
+      - MYSQL_DATABASE=gbjs_dev
+      - MYSQL_USER=gbjs
+      - MYSQL_PASSWORD=gbjs1234
       - MYSQL_ROOT_PASSWORD=root1234
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
-      - kbjs-network
+      - gbjs-network
 
   redis:
     image: redis:7.0
@@ -38,10 +36,10 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - kbjs-network
+      - gbjs-network
 
 networks:
-  kbjs-network:
+  gbjs-network:
     driver: bridge
 
 volumes:
