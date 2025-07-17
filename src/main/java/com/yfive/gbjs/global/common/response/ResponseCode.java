@@ -3,10 +3,9 @@
  */
 package com.yfive.gbjs.global.common.response;
 
-import org.springframework.http.HttpStatus;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
