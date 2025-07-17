@@ -1,25 +1,31 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.weather.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
-import com.yfive.gbjs.domain.weather.exception.WeatherErrorStatus;
-import com.yfive.gbjs.global.error.exception.CustomException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
+import com.yfive.gbjs.domain.weather.exception.WeatherErrorStatus;
+import com.yfive.gbjs.global.error.exception.CustomException;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -54,21 +60,20 @@ public class WeatherService {
     }
 
     // 요청 URL 조합
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
-        .queryParam("serviceKey", serviceKey)
-        .queryParam("pageNo", 1)
-        .queryParam("numOfRows", 100)
-        .queryParam("dataType", "JSON")
-        .queryParam("base_date", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
-        .queryParam("base_time", baseTime)
-        .queryParam("nx", gridCoord.getNx())
-        .queryParam("ny", gridCoord.getNy());
+    UriComponentsBuilder uriBuilder =
+        UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
+            .queryParam("serviceKey", serviceKey)
+            .queryParam("pageNo", 1)
+            .queryParam("numOfRows", 100)
+            .queryParam("dataType", "JSON")
+            .queryParam("base_date", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .queryParam("base_time", baseTime)
+            .queryParam("nx", gridCoord.getNx())
+            .queryParam("ny", gridCoord.getNy());
 
     try {
-      String response = restClient.get()
-          .uri(uriBuilder.build(true).toUri())
-          .retrieve()
-          .body(String.class);
+      String response =
+          restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
       if (response == null || response.isBlank()) {
         log.warn("날씨 API 응답이 비어있습니다.");
@@ -83,8 +88,12 @@ public class WeatherService {
         throw new CustomException(WeatherErrorStatus.ITEM_NOT_FOUND);
       }
 
-      log.info("날씨 정보 조회 성공: baseDate={}, baseTime={}, nx={}, ny={}",
-          baseDate, baseTime, gridCoord.getNx(), gridCoord.getNy());
+      log.info(
+          "날씨 정보 조회 성공: baseDate={}, baseTime={}, nx={}, ny={}",
+          baseDate,
+          baseTime,
+          gridCoord.getNx(),
+          gridCoord.getNy());
 
       return parseWeather(items);
 
@@ -94,24 +103,28 @@ public class WeatherService {
       log.error("날씨 JSON 파싱 오류: {}", e.getMessage(), e);
       throw new CustomException(WeatherErrorStatus.PARSING_ERROR);
     } catch (Exception e) {
-      log.error("날씨 정보 조회 실패: baseDate={}, baseTime={}, nx={}, ny={}, error={}",
-          baseDate, baseTime, gridCoord.getNx(), gridCoord.getNy(), e.getMessage(), e);
+      log.error(
+          "날씨 정보 조회 실패: baseDate={}, baseTime={}, nx={}, ny={}, error={}",
+          baseDate,
+          baseTime,
+          gridCoord.getNx(),
+          gridCoord.getNy(),
+          e.getMessage(),
+          e);
       throw new CustomException(WeatherErrorStatus.API_REQUEST_FAILED);
     }
   }
 
-  /**
-   * 위도, 경도를 기상청 격자 좌표로 변환
-   */
+  /** 위도, 경도를 기상청 격자 좌표로 변환 */
   private GridCoord convertToGrid(double longitude, double latitude) {
     double RE = 6371.00877; // Earth radius (km)
-    double GRID = 5.0;      // Grid spacing (km)
-    double SLAT1 = 30.0;    // Projection latitude 1 (degree)
-    double SLAT2 = 60.0;    // Projection latitude 2 (degree)
-    double OLON = 126.0;    // Reference longitude (degree)
-    double OLAT = 38.0;     // Reference latitude (degree)
-    double XO = 43;         // Reference point X coordinate
-    double YO = 136;        // Reference point Y coordinate
+    double GRID = 5.0; // Grid spacing (km)
+    double SLAT1 = 30.0; // Projection latitude 1 (degree)
+    double SLAT2 = 60.0; // Projection latitude 2 (degree)
+    double OLON = 126.0; // Reference longitude (degree)
+    double OLAT = 38.0; // Reference latitude (degree)
+    double XO = 43; // Reference point X coordinate
+    double YO = 136; // Reference point Y coordinate
 
     double DEGRAD = Math.PI / 180.0;
 
@@ -148,15 +161,13 @@ public class WeatherService {
     return new GridCoord(x, y);
   }
 
-  /**
-   * 기상청 발표 기준시간 계산, 발표 시각은 각 시각 +10분 이후부터 조회 가능
-   */
+  /** 기상청 발표 기준시간 계산, 발표 시각은 각 시각 +10분 이후부터 조회 가능 */
   private String getBaseTime() {
     LocalTime now = LocalTime.now(ZONE_ID);
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HHmm");
 
-    List<String> baseTimes = List.of("2300", "2000", "1700", "1400", "1100", "0800", "0500",
-        "0200");
+    List<String> baseTimes =
+        List.of("2300", "2000", "1700", "1400", "1100", "0800", "0500", "0200");
 
     for (String base : baseTimes) {
       LocalTime baseTime = LocalTime.parse(base, formatter).plusMinutes(10);
@@ -168,9 +179,7 @@ public class WeatherService {
     return "2300";
   }
 
-  /**
-   * JSON 응답을 WeatherResponse로 파싱
-   */
+  /** JSON 응답을 WeatherResponse로 파싱 */
   private WeatherResponse parseWeather(JsonNode items) {
     String temperature = null;
     String skyStatus = null;

@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.global.config;
 
 import org.springframework.context.annotation.Bean;

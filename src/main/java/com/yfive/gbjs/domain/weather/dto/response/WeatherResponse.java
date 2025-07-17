@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.weather.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;

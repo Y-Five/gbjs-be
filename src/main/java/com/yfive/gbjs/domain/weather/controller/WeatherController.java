@@ -1,17 +1,22 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.weather.controller;
 
-import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
-import com.yfive.gbjs.domain.weather.service.WeatherService;
-import com.yfive.gbjs.global.common.response.ApiResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
+import com.yfive.gbjs.domain.weather.service.WeatherService;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,8 +30,7 @@ public class WeatherController {
   @GetMapping
   public ResponseEntity<ApiResponse<WeatherResponse>> getWeather(
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude
-  ) {
+      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude) {
     WeatherResponse response = weatherService.getWeather(longitude, latitude);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
