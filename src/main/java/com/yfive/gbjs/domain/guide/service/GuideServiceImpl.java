@@ -3,6 +3,9 @@
  */
 package com.yfive.gbjs.domain.guide.service;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +40,7 @@ public class GuideServiceImpl implements GuideService {
 
   @Override
   public GuideListResponse getThemeBasedList(Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeBasedList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
@@ -46,8 +49,8 @@ public class GuideServiceImpl implements GuideService {
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting theme based list: {}", url);
 
@@ -77,7 +80,7 @@ public class GuideServiceImpl implements GuideService {
   @Override
   public GuideListResponse getThemeLocationBasedList(
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeLocationBasedList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
@@ -89,8 +92,8 @@ public class GuideServiceImpl implements GuideService {
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting theme location based list: {}", url);
 
@@ -120,18 +123,18 @@ public class GuideServiceImpl implements GuideService {
 
   @Override
   public GuideListResponse getThemeSearchList(String keyword, Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeSearchList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
-            .queryParam("keyword", keyword)
+            .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
             .queryParam("pageNo", pageNo)
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting theme search list: {}", url);
 
@@ -162,7 +165,7 @@ public class GuideServiceImpl implements GuideService {
   @Override
   public AudioStoryListResponse getAudioStoryBasedList(
       String themeId, Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyBasedList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
@@ -172,8 +175,8 @@ public class GuideServiceImpl implements GuideService {
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting audio story based list: {}", url);
 
@@ -204,7 +207,7 @@ public class GuideServiceImpl implements GuideService {
   @Override
   public AudioStoryListResponse getAudioStoryLocationBasedList(
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyLocationBasedList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
@@ -216,8 +219,8 @@ public class GuideServiceImpl implements GuideService {
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting audio story location based list: {}", url);
 
@@ -248,18 +251,18 @@ public class GuideServiceImpl implements GuideService {
   @Override
   public AudioStoryListResponse getAudioStorySearchList(
       String keyword, Integer pageNo, Integer numOfRows) {
-    String url =
+    URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storySearchList")
             .queryParam("serviceKey", audioApiKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
-            .queryParam("keyword", keyword)
+            .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
             .queryParam("pageNo", pageNo)
             .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
             .queryParam("_type", "json")
-            .build()
-            .toUriString();
+            .build(true)
+            .toUri();
 
     log.info("Requesting audio story search list: {}", url);
 
