@@ -3,26 +3,23 @@
  */
 package com.yfive.gbjs.domain.guide.service;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.dto.response.AudioStoryListResponse;
 import com.yfive.gbjs.domain.guide.dto.response.GuideListResponse;
 import com.yfive.gbjs.domain.guide.exception.GuideErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Service
@@ -35,14 +32,14 @@ public class GuideServiceImpl implements GuideService {
   @Value("${audio.api.host}")
   private String audioApiHost;
 
-  @Value("${audio.api.key}")
-  private String audioApiKey;
+  @Value("${openapi.secret.key}")
+  private String serviceKey;
 
   @Override
   public GuideListResponse getThemeBasedList(Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeBasedList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("pageNo", pageNo)
@@ -82,7 +79,7 @@ public class GuideServiceImpl implements GuideService {
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeLocationBasedList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("mapX", longitude)
@@ -125,7 +122,7 @@ public class GuideServiceImpl implements GuideService {
   public GuideListResponse getThemeSearchList(String keyword, Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeSearchList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
@@ -167,7 +164,7 @@ public class GuideServiceImpl implements GuideService {
       String themeId, Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyBasedList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("tid", themeId)
@@ -209,7 +206,7 @@ public class GuideServiceImpl implements GuideService {
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyLocationBasedList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("mapX", longitude)
@@ -253,7 +250,7 @@ public class GuideServiceImpl implements GuideService {
       String keyword, Integer pageNo, Integer numOfRows) {
     URI url =
         UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storySearchList")
-            .queryParam("serviceKey", audioApiKey)
+            .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
             .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
