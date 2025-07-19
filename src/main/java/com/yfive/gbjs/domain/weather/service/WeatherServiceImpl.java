@@ -24,6 +24,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
+  /**
+   * 서울 지역 기준의 표준 시간대를 나타냅니다.
+   */
   private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Value("${openapi.secret.key}")
@@ -35,6 +38,13 @@ public class WeatherServiceImpl implements WeatherService {
   private final ObjectMapper objectMapper;
   private final RestClient restClient;
 
+  /**
+   * 위도와 경도를 기반으로 기상청 API를 호출하여 날씨 정보를 조회합니다.
+   *
+   * @param longitude 경도
+   * @param latitude  위도
+   * @return 조회된 날씨 정보를 담은 WeatherResponse 객체
+   */
   @Override
   public WeatherResponse getWeather(Double longitude, Double latitude) {
     // 경도/위도를 기상청 격자 좌표로 변환
@@ -108,7 +118,11 @@ public class WeatherServiceImpl implements WeatherService {
   }
 
   /**
-   * 위도, 경도를 기상청 격자 좌표로 변환
+   * 위도와 경도를 기상청 격자 좌표로 변환합니다.
+   *
+   * @param longitude 경도
+   * @param latitude  위도
+   * @return 변환된 격자 좌표 (GridCoord)
    */
   @Override
   public GridCoord convertToGrid(double longitude, double latitude) {
@@ -157,7 +171,9 @@ public class WeatherServiceImpl implements WeatherService {
   }
 
   /**
-   * 기상청 발표 기준시간 계산, 발표 시각은 각 시각 +10분 이후부터 조회 가능
+   * 현재 시각 기준으로 가장 최근 발표 기준 시각을 반환합니다.
+   *
+   * @return 발표 기준 시각 (HHmm 형식)
    */
   @Override
   public String getBaseTime() {
@@ -178,7 +194,10 @@ public class WeatherServiceImpl implements WeatherService {
   }
 
   /**
-   * JSON 응답을 WeatherResponse로 파싱
+   * 기상청 API에서 받은 JSON 데이터를 파싱하여 WeatherResponse 객체로 변환합니다.
+   *
+   * @param items 기상청 응답의 item 배열 노드
+   * @return 파싱된 날씨 정보 객체
    */
   @Override
   public WeatherResponse parseWeather(JsonNode items) {
@@ -219,6 +238,12 @@ public class WeatherServiceImpl implements WeatherService {
         .build();
   }
 
+  /**
+   * 하늘 상태 코드를 사람이 이해할 수 있는 문자열로 변환합니다.
+   *
+   * @param code SKY 코드 값
+   * @return 하늘 상태 (예: 맑음, 흐림 등)
+   */
   @Override
   public String mapSkyStatus(String code) {
     return switch (code) {
@@ -229,6 +254,12 @@ public class WeatherServiceImpl implements WeatherService {
     };
   }
 
+  /**
+   * 강수 형태 코드를 사람이 이해할 수 있는 문자열로 변환합니다.
+   *
+   * @param code PTY 코드 값
+   * @return 강수 형태 (예: 비, 눈, 없음 등)
+   */
   @Override
   public String mapPrecipitationType(String code) {
     return switch (code) {
