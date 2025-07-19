@@ -69,7 +69,7 @@ public class SecurityConfig {
                         "/webjars/**")
                     .permitAll()
                     // 공개 API
-                    .requestMatchers("/api/auth/**")
+                    .requestMatchers("/api/auth/**", "/api/guides/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
