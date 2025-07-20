@@ -8,6 +8,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -38,258 +40,139 @@ public class GuideServiceImpl implements GuideService {
   @Value("${openapi.secret.key}")
   private String serviceKey;
 
-  @Override
-  public GuideListResponse getThemeBasedList(Integer pageNo, Integer numOfRows) {
-    URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeBasedList")
+  private URI buildUri(String path, Map<String, Object> queryParams) {
+    UriComponentsBuilder builder =
+        UriComponentsBuilder.fromHttpUrl(audioApiHost + path)
             .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "GBJS")
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
             .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
+            .queryParam("_type", "json");
 
-    log.info("Requesting theme based list: {}", url);
+    queryParams.forEach(builder::queryParam);
 
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-
-      return parseThemeResponse(response);
-
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error(
-          "관광지 기본 정보 목록 조회 실패: pageNo={}, numOfRows={}, error={}",
-          pageNo,
-          numOfRows,
-          e.getMessage(),
-          e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
+    return builder.build(true).toUri();
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public GuideListResponse getThemeBasedList(Integer pageNo, Integer numOfRows) {
+    URI url =
+        buildUri(
+            "/themeBasedList",
+            Map.of(
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "theme based list", this::parseThemeResponse);
+  }
+
+  /** {@inheritDoc} */
   @Override
   public GuideListResponse getThemeLocationBasedList(
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
     URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeLocationBasedList")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "ETC")
-            .queryParam("MobileApp", "GBJS")
-            .queryParam("mapX", longitude)
-            .queryParam("mapY", latitude)
-            .queryParam("radius", radius)
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
-            .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
-
-    log.info("Requesting theme location based list: {}", url);
-
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-
-      return parseThemeResponse(response);
-
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error(
-          "관광지 위치기반 목록 조회 실패: longitude={}, latitude={}, radius={}, error={}",
-          longitude,
-          latitude,
-          radius,
-          e.getMessage(),
-          e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
+        buildUri(
+            "/themeLocationBasedList",
+            Map.of(
+                "mapX", longitude,
+                "mapY", latitude,
+                "radius", radius,
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "theme location based list", this::parseThemeResponse);
   }
 
+  /** {@inheritDoc} */
   @Override
   public GuideListResponse getThemeSearchList(String keyword, Integer pageNo, Integer numOfRows) {
     URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/themeSearchList")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "ETC")
-            .queryParam("MobileApp", "GBJS")
-            .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
-            .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
-
-    log.info("Requesting theme search list: {}", url);
-
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-
-      return parseThemeResponse(response);
-
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error(
-          "관광지 키워드 검색 실패: keyword={}, pageNo={}, numOfRows={}, error={}",
-          keyword,
-          pageNo,
-          numOfRows,
-          e.getMessage(),
-          e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
+        buildUri(
+            "/themeSearchList",
+            Map.of(
+                "keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8),
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "theme search list", this::parseThemeResponse);
   }
 
+  /** {@inheritDoc} */
   @Override
   public AudioStoryListResponse getAudioStoryBasedList(
       String themeId, Integer pageNo, Integer numOfRows) {
     URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyBasedList")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "ETC")
-            .queryParam("MobileApp", "GBJS")
-            .queryParam("tid", themeId)
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
-            .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
-
-    log.info("Requesting audio story based list: {}", url);
-
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-
-      return parseAudioStoryResponse(response);
-
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error(
-          "오디오 스토리 기본 정보 목록 조회 실패: themeId={}, pageNo={}, numOfRows={}, error={}",
-          themeId,
-          pageNo,
-          numOfRows,
-          e.getMessage(),
-          e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
+        buildUri(
+            "/storyBasedList",
+            Map.of(
+                "tid", themeId,
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "audio story based list", this::parseAudioStoryResponse);
   }
 
+  /** {@inheritDoc} */
   @Override
   public AudioStoryListResponse getAudioStoryLocationBasedList(
       Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows) {
     URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storyLocationBasedList")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "ETC")
-            .queryParam("MobileApp", "GBJS")
-            .queryParam("mapX", longitude)
-            .queryParam("mapY", latitude)
-            .queryParam("radius", radius)
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
-            .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
-
-    log.info("Requesting audio story location based list: {}", url);
-
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-
-      return parseAudioStoryResponse(response);
-
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error(
-          "오디오 스토리 위치기반 목록 조회 실패: longitude={}, latitude={}, radius={}, error={}",
-          longitude,
-          latitude,
-          radius,
-          e.getMessage(),
-          e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
+        buildUri(
+            "/storyLocationBasedList",
+            Map.of(
+                "mapX", longitude,
+                "mapY", latitude,
+                "radius", radius,
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "audio story location based list", this::parseAudioStoryResponse);
   }
 
+  /** {@inheritDoc} */
   @Override
   public AudioStoryListResponse getAudioStorySearchList(
       String keyword, Integer pageNo, Integer numOfRows) {
     URI url =
-        UriComponentsBuilder.fromHttpUrl(audioApiHost + "/storySearchList")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "ETC")
-            .queryParam("MobileApp", "GBJS")
-            .queryParam("keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
-            .queryParam("pageNo", pageNo)
-            .queryParam("numOfRows", numOfRows)
-            .queryParam("langCode", "ko")
-            .queryParam("_type", "json")
-            .build(true)
-            .toUri();
+        buildUri(
+            "/storySearchList",
+            Map.of(
+                "keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8),
+                "pageNo", pageNo,
+                "numOfRows", numOfRows));
+    return executeApiCall(url, "audio story search list", this::parseAudioStoryResponse);
+  }
 
-    log.info("Requesting audio story search list: {}", url);
+  /**
+   * 공통 API 호출 로직을 처리합니다.
+   *
+   * @param url 호출할 API URL
+   * @param operation 작업 설명 (로깅용)
+   * @param responseParser 응답 파싱 함수
+   * @param <T> 반환 타입
+   * @return 파싱된 응답 객체
+   */
+  private <T> T executeApiCall(URI url, String operation, Function<String, T> responseParser) {
+    log.info("Requesting {}: {}", operation, url);
 
     try {
       String response = restClient.get().uri(url).retrieve().body(String.class);
-
       if (response == null || response.isBlank()) {
         log.warn("가이드 API 응답이 비어있습니다.");
         throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
       }
-
-      return parseAudioStoryResponse(response);
-
+      return responseParser.apply(response);
     } catch (CustomException e) {
       throw e;
     } catch (Exception e) {
-      log.error(
-          "오디오 스토리 키워드 검색 실패: keyword={}, pageNo={}, numOfRows={}, error={}",
-          keyword,
-          pageNo,
-          numOfRows,
-          e.getMessage(),
-          e);
+      log.error("{} 실패: {}", operation, e.getMessage(), e);
       throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
     }
   }
 
+  /**
+   * 관광지 테마 API 응답을 파싱하여 GuideListResponse 객체로 변환합니다.
+   *
+   * @param response API 응답 JSON 문자열
+   * @return 파싱된 관광지 목록 응답 객체
+   * @throws CustomException 응답 파싱 중 오류 발생 시
+   */
   private GuideListResponse parseThemeResponse(String response) {
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -329,7 +212,6 @@ public class GuideServiceImpl implements GuideService {
           .numOfRows(numOfRows)
           .items(guideItems)
           .build();
-
     } catch (CustomException e) {
       throw e;
     } catch (Exception e) {
@@ -338,6 +220,13 @@ public class GuideServiceImpl implements GuideService {
     }
   }
 
+  /**
+   * 오디오 스토리 API 응답을 파싱하여 AudioStoryListResponse 객체로 변환합니다.
+   *
+   * @param response API 응답 JSON 문자열
+   * @return 파싱된 오디오 스토리 목록 응답 객체
+   * @throws CustomException 응답 파싱 중 오류 발생 시
+   */
   private AudioStoryListResponse parseAudioStoryResponse(String response) {
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -380,7 +269,6 @@ public class GuideServiceImpl implements GuideService {
           .numOfRows(numOfRows)
           .items(audioStoryItems)
           .build();
-
     } catch (CustomException e) {
       throw e;
     } catch (Exception e) {
@@ -389,20 +277,27 @@ public class GuideServiceImpl implements GuideService {
     }
   }
 
+  /**
+   * 주소1과 주소2를 결합하여 완전한 주소 문자열을 생성합니다.
+   *
+   * @param addr1 기본 주소
+   * @param addr2 상세 주소
+   * @return 결합된 주소 문자열
+   */
   private String buildAddress(String addr1, String addr2) {
-    if (addr1 == null || addr1.isBlank()) {
-      return addr2;
-    }
-    if (addr2 == null || addr2.isBlank()) {
-      return addr1;
-    }
+    if (addr1 == null || addr1.isBlank()) return addr2;
+    if (addr2 == null || addr2.isBlank()) return addr1;
     return addr1 + " " + addr2;
   }
 
+  /**
+   * 재생 시간 문자열을 Integer로 파싱합니다.
+   *
+   * @param playTime 재생 시간 문자열
+   * @return 파싱된 재생 시간 (초 단위), 파싱 실패 시 null
+   */
   private Integer parsePlayTime(String playTime) {
-    if (playTime == null || playTime.trim().isEmpty()) {
-      return null;
-    }
+    if (playTime == null || playTime.trim().isEmpty()) return null;
     try {
       return Integer.parseInt(playTime.trim());
     } catch (NumberFormatException e) {
