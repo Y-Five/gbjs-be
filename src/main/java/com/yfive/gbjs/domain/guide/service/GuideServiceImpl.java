@@ -188,12 +188,12 @@ public class GuideServiceImpl implements GuideService {
       Integer numOfRows = body.path("numOfRows").asInt(0);
 
       JsonNode items = body.path("items").path("item");
-      List<GuideListResponse.GuideItem> guideItems = new ArrayList<>();
+      List<GuideListResponse.GuideSpot> guideSpots = new ArrayList<>();
 
       if (items.isArray()) {
         for (JsonNode item : items) {
-          GuideListResponse.GuideItem guideItem =
-              GuideListResponse.GuideItem.builder()
+          GuideListResponse.GuideSpot guideSpot =
+              GuideListResponse.GuideSpot.builder()
                   .themeId(item.path("tid").asText())
                   .title(item.path("title").asText())
                   .address(buildAddress(item.path("addr1").asText(), item.path("addr2").asText()))
@@ -202,7 +202,7 @@ public class GuideServiceImpl implements GuideService {
                   .longitude(item.path("mapX").asDouble())
                   .imageUrl(item.path("imageUrl").asText())
                   .build();
-          guideItems.add(guideItem);
+          guideSpots.add(guideSpot);
         }
       }
 
@@ -210,7 +210,7 @@ public class GuideServiceImpl implements GuideService {
           .totalCount(totalCount)
           .pageNo(pageNo)
           .numOfRows(numOfRows)
-          .items(guideItems)
+          .spotList(guideSpots)
           .build();
     } catch (CustomException e) {
       throw e;
@@ -242,14 +242,14 @@ public class GuideServiceImpl implements GuideService {
       Integer numOfRows = body.path("numOfRows").asInt(0);
 
       JsonNode items = body.path("items").path("item");
-      List<AudioStoryListResponse.AudioStoryItem> audioStoryItems = new ArrayList<>();
+      List<AudioStoryListResponse.AudioStorySpot> audioStorySpots = new ArrayList<>();
 
       if (items.isArray()) {
         for (JsonNode item : items) {
-          AudioStoryListResponse.AudioStoryItem audioStoryItem =
-              AudioStoryListResponse.AudioStoryItem.builder()
+          AudioStoryListResponse.AudioStorySpot audioStorySpot =
+              AudioStoryListResponse.AudioStorySpot.builder()
                   .audioStoryId(item.path("stid").asText())
-                  .themeId(item.path("tid").asText())
+                  .spotId(item.path("tid").asText())
                   .title(item.path("title").asText())
                   .content(item.path("script").asText())
                   .category(item.path("audioTitle").asText())
@@ -259,7 +259,7 @@ public class GuideServiceImpl implements GuideService {
                   .latitude(null)
                   .longitude(null)
                   .build();
-          audioStoryItems.add(audioStoryItem);
+          audioStorySpots.add(audioStorySpot);
         }
       }
 
@@ -267,7 +267,7 @@ public class GuideServiceImpl implements GuideService {
           .totalCount(totalCount)
           .pageNo(pageNo)
           .numOfRows(numOfRows)
-          .items(audioStoryItems)
+          .audioSpotList(audioStorySpots)
           .build();
     } catch (CustomException e) {
       throw e;
