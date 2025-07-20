@@ -5,7 +5,6 @@ package com.yfive.gbjs.domain.guide.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,7 +13,6 @@ import com.yfive.gbjs.domain.guide.dto.response.GuideListResponse;
 import com.yfive.gbjs.domain.guide.service.GuideService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,8 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/guides")
-@Tag(name = "가이드", description = "오디오가이드 API (공공데이터 오디 OpenAPI)")
 public class GuideControllerImpl implements GuideController {
 
   /** 가이드 서비스 */

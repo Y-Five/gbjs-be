@@ -34,7 +34,7 @@ public interface GuideController {
   public ResponseEntity<ApiResponse<GuideListResponse>> getThemeLocationBasedList(
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
-      @Parameter(description = "검색 반경(m)", example = "1000") @RequestParam(defaultValue = "1000")
+      @Parameter(description = "검색 반경(m)", example = "10000") @RequestParam(defaultValue = "10000")
           Integer radius,
       @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1")
           Integer pageNo,
@@ -64,7 +64,7 @@ public interface GuideController {
   public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStoryLocationBasedList(
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
-      @Parameter(description = "검색 반경(m)", example = "10000") @RequestParam(defaultValue = "1000")
+      @Parameter(description = "검색 반경(m)", example = "10000") @RequestParam(defaultValue = "10000")
           Integer radius,
       @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1")
           Integer pageNo,
