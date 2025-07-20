@@ -24,18 +24,18 @@ public class AudioStoryListResponse {
   private Integer numOfRows;
 
   @Schema(description = "오디오 스토리 목록")
-  private List<AudioStoryItem> items;
+  private List<AudioStorySpot> audioSpotList;
 
   @Getter
   @Builder
   @Schema(title = "AudioStoryItem", description = "오디오 스토리 항목")
-  public static class AudioStoryItem {
+  public static class AudioStorySpot {
 
     @Schema(description = "오디오 스토리 ID", example = "ST00001")
     private String audioStoryId;
 
     @Schema(description = "관광지 ID", example = "TH00001")
-    private String themeId;
+    private String spotId;
 
     @Schema(description = "오디오 스토리 제목", example = "경복궁의 역사")
     private String title;

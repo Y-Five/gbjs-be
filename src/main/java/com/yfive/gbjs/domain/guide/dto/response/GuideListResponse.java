@@ -24,12 +24,12 @@ public class GuideListResponse {
   private Integer numOfRows;
 
   @Schema(description = "관광지 목록")
-  private List<GuideItem> items;
+  private List<GuideSpot> spotList;
 
   @Getter
   @Builder
   @Schema(title = "GuideItem", description = "관광지 항목")
-  public static class GuideItem {
+  public static class GuideSpot {
 
     @Schema(description = "관광지 ID", example = "TH00001")
     private String themeId;
