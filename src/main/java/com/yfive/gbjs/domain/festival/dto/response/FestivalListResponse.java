@@ -1,7 +1,11 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.festival.dto.response;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 

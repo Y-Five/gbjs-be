@@ -1,4 +1,19 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.festival.service;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,18 +21,9 @@ import com.yfive.gbjs.domain.festival.dto.response.FestivalListResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.exception.FestivalErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +40,8 @@ public class FestivalServiceImpl implements FestivalService {
   private final RestClient restClient;
 
   @Override
-  public FestivalListResponse getFestivalsByRegion(String region, Integer startIndex,
-      Integer pageSize) {
+  public FestivalListResponse getFestivalsByRegion(
+      String region, Integer startIndex, Integer pageSize) {
     List<FestivalResponse> festivalResponses = fetchFestivalListByRegion(region);
 
     int toIndex = Math.min(startIndex + pageSize, festivalResponses.size());
@@ -60,14 +66,12 @@ public class FestivalServiceImpl implements FestivalService {
             .queryParam("MobileApp", "gbjs")
             .queryParam("_type", "JSON")
             .queryParam("eventStartDate", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
-            .queryParam("eventEndDate",
-                baseDate.plusMonths(6).format(DateTimeFormatter.BASIC_ISO_DATE))
+            .queryParam(
+                "eventEndDate", baseDate.plusMonths(6).format(DateTimeFormatter.BASIC_ISO_DATE))
             .queryParam("sigunguCode", getSiGunGuCode(region));
 
-    String response = restClient.get()
-        .uri(uriBuilder.build(true).toUri())
-        .retrieve()
-        .body(String.class);
+    String response =
+        restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
     if (response.trim().startsWith("<")) {
       log.error("XML 응답 수신: 서비스 키 오류 또는 요청 파라미터 문제\n{}", response);

@@ -1,9 +1,14 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.festival.dto.response;
+
+import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,7 +18,9 @@ import lombok.Getter;
 public class FestivalResponse {
 
   @JsonProperty("firstimage2")
-  @Schema(description = "포스터 URL", example = "http://tong.visitkorea.or.kr/cms/resource/69/3459169_image2_1.JPG")
+  @Schema(
+      description = "포스터 URL",
+      example = "http://tong.visitkorea.or.kr/cms/resource/69/3459169_image2_1.JPG")
   private String posterUrl;
 
   @JsonProperty("addr1")

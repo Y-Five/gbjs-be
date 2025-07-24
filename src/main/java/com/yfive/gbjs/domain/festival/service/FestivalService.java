@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.festival.service;
 
 import com.yfive.gbjs.domain.festival.dto.response.FestivalListResponse;
