@@ -44,6 +44,14 @@ public class FestivalServiceImpl implements FestivalService {
       String region, Integer startIndex, Integer pageSize) {
     List<FestivalResponse> festivalResponses = fetchFestivalListByRegion(region);
 
+    if (startIndex >= festivalResponses.size()) {
+      return FestivalListResponse.builder()
+          .totalCount(festivalResponses.size())
+          .festivalList(List.of())
+          .nextIndex(startIndex)
+          .build();
+    }
+
     int toIndex = Math.min(startIndex + pageSize, festivalResponses.size());
     List<FestivalResponse> pagedList = festivalResponses.subList(startIndex, toIndex);
 
@@ -73,9 +81,13 @@ public class FestivalServiceImpl implements FestivalService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    if (response.trim().startsWith("<")) {
-      log.error("XML 응답 수신: 서비스 키 오류 또는 요청 파라미터 문제\n{}", response);
-      return List.of();
+    if (response == null || response.isBlank()) {
+      log.error("빈 응답 수신");
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+    }
+
+    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
     }
 
     try {
