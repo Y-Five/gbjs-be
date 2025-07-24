@@ -8,27 +8,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.yfive.gbjs.domain.auth.controller.AuthControllerImpl;
-import com.yfive.gbjs.domain.auth.controller.MockController;
 import com.yfive.gbjs.domain.auth.service.AuthService;
-import com.yfive.gbjs.domain.user.controller.ProtectedController;
 import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.gbjs.global.config.jwt.TokenRepository;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 
-@WebMvcTest(
-    controllers = {AuthControllerImpl.class, ProtectedController.class, MockController.class})
-@Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
 
   @Autowired private MockMvc mockMvc;
@@ -39,10 +34,14 @@ class SecurityConfigTest {
 
   @MockitoBean private TokenRepository tokenRepository;
 
+  @MockitoBean private CustomOAuth2UserService customOAuth2UserService;
+
+  @MockitoBean private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
   @Test
   @DisplayName("인증되지 않은 사용자는 보호된 엔드포인트에 접근할 수 없다")
   void unauthenticatedUserCannotAccessProtectedEndpoints() throws Exception {
-    mockMvc.perform(get("/api/protected")).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/protected")).andExpect(status().isFound()); // 403 -> 302로 변경
   }
 
   @Test

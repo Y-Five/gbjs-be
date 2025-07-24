@@ -34,6 +34,8 @@ import com.yfive.gbjs.global.config.SecurityConfig;
 import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
 import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.gbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 
 @WebMvcTest(AuthControllerImpl.class)
 @Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
@@ -47,6 +49,10 @@ class AuthControllerTest {
   @MockitoBean private AuthService authService;
 
   @MockitoBean private JwtTokenProvider jwtTokenProvider;
+
+  @MockitoBean private CustomOAuth2UserService customOAuth2UserService;
+
+  @MockitoBean private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
   @Test
   @DisplayName("로그인 API 테스트")
