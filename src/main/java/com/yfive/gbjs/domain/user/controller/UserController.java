@@ -35,9 +35,11 @@ public interface UserController {
       description = "현재 로그인한 사용자의 위치 정보 제공 동의 여부를 반전시킵니다. (true → false, false → true)")
   ResponseEntity<ApiResponse<Boolean>> updateLocationConsent();
 
+import org.springframework.web.bind.annotation.RequestParam;
+
   @PutMapping("/nickname")
   @Operation(summary = "닉네임 수정", description = "현재 로그인한 사용자의 닉네임을 수정합니다.")
-  ResponseEntity<ApiResponse<String>> updateNickname(String newNickname);
+  ResponseEntity<ApiResponse<String>> updateNickname(@RequestParam String newNickname);
 
   @DeleteMapping
   @Operation(summary = "회원 탈퇴", description = "현재 로그인한 사용자의 계정을 삭제합니다. (Hard Delete)")
