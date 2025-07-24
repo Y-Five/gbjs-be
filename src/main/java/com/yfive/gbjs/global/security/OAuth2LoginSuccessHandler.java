@@ -63,7 +63,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response,
         tokenResponse.getAccessToken(),
         "ACCESS_TOKEN",
-        jwtProvider.getExpirationTime(tokenResponse.getRefreshToken()));
+        jwtProvider.getExpirationTime(tokenResponse.getAccessToken()));
 
     log.info("카카오 로그인 성공: {}", user.getUsername());
 

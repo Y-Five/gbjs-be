@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
-import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
   private final UserRepository userRepository;
-  private final JwtTokenProvider jwtTokenProvider;
 
   @Override
   public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
@@ -49,8 +47,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     log.info("사용자 로그인 성공: {}", user.getUsername());
 
+    String nameAttributeKey = oauth2User.getName();
+
     return new DefaultOAuth2User(
-        Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")), attributes, "id");
+        Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
+        attributes,
+        nameAttributeKey);
   }
 
   private String extractEmail(String provider, Map<String, Object> attributes) {
@@ -66,20 +68,19 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
   }
 
   private String extractNickname(String provider, Map<String, Object> attributes) {
+    String nickname = null;
     if ("kakao".equals(provider)) {
       Map<String, Object> account = (Map<String, Object>) attributes.get("kakao_account");
       Map<String, Object> profile =
           account != null ? (Map<String, Object>) account.get("profile") : null;
       if (profile != null && profile.get("nickname") != null) {
-        return (String) profile.get("nickname");
-      } else {
-        String randomNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
-        log.info("닉네임 정보 없음 - 랜덤 닉네임 생성: {}", randomNickname);
-        return randomNickname;
+        nickname = (String) profile.get("nickname");
       }
     }
-    String randomNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
-    log.info("닉네임 정보 없음 - 랜덤 닉네임 생성: {}", randomNickname);
-    return randomNickname;
+    if (nickname == null) {
+      nickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
+      log.info("닉네임 정보 없음 - 랜덤 닉네임 생성: {}", nickname);
+    }
+    return nickname;
   }
 }

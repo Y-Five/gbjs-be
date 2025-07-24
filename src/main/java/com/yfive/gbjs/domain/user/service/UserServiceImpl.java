@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.user.service;
 
+import java.util.Map;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -87,10 +89,13 @@ public class UserServiceImpl implements UserService {
     }
 
     Object principal = authentication.getPrincipal();
-    String username;
+    String username = "";
 
     if (principal instanceof OAuth2User oauthUser) {
-      username = oauthUser.getAttribute("email");
+      Map<String, Object> kakaoAccount = oauthUser.getAttribute("kakao_account");
+      if (kakaoAccount != null && kakaoAccount.containsKey("email")) {
+        username = (String) kakaoAccount.get("email");
+      }
     } else if (principal instanceof String str) {
       username = str;
     } else if (principal instanceof UserDetails userDetails) {

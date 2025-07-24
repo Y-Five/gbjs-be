@@ -332,6 +332,17 @@ public class JwtTokenProvider {
     return storedToken != null && storedToken.equals(refreshToken);
   }
 
+  /**
+   * JWT 토큰을 HTTP 응답의 쿠키에 추가합니다.
+   *
+   * <p>이 메서드는 주어진 JWT 토큰을 HttpOnly 및 Secure 속성이 설정된 쿠키로 만들어 응답에 추가합니다. 이 쿠키는 클라이언트에서 JavaScript로
+   * 접근할 수 없으며, HTTPS 환경에서만 전송됩니다.
+   *
+   * @param response 응답 객체 (HttpServletResponse)
+   * @param token 쿠키에 저장할 JWT 토큰 값
+   * @param name 쿠키 이름 (예: "accessToken", "refreshToken")
+   * @param maxAge 쿠키의 유효 시간 (밀리초 단위)
+   */
   public void addJwtToCookie(HttpServletResponse response, String token, String name, long maxAge) {
     Cookie cookie = new Cookie(name, token);
     cookie.setHttpOnly(true);
