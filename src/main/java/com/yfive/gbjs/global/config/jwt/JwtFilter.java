@@ -39,6 +39,7 @@ public class JwtFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
     String jwt = resolveToken(request);
+    log.debug("jwt: {}", jwt);
 
     if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
       // Access Token인지 확인
