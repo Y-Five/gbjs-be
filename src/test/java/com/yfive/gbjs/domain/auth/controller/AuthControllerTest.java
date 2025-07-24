@@ -13,6 +13,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.service.AuthService;
+import com.yfive.gbjs.global.config.MockRedisConfig;
+import com.yfive.gbjs.global.config.SecurityConfig;
+import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
+import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,29 +36,28 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
-import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.gbjs.domain.auth.service.AuthService;
-import com.yfive.gbjs.global.config.MockRedisConfig;
-import com.yfive.gbjs.global.config.SecurityConfig;
-import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
-import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.gbjs.global.error.exception.InvalidTokenException;
-
 @WebMvcTest(AuthControllerImpl.class)
 @Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
 @ActiveProfiles("test")
 class AuthControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+  @Autowired
+  private MockMvc mockMvc;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  private ObjectMapper objectMapper;
 
-  @MockitoBean private AuthService authService;
+  @MockitoBean
+  private AuthService authService;
 
-  @MockitoBean private JwtTokenProvider jwtTokenProvider;
+  @MockitoBean
+  private JwtTokenProvider jwtTokenProvider;
+
+  @MockitoBean
+  private CustomOAuth2UserService customOAuth2UserService;
+
+  @MockitoBean
+  private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
   @Test
   @DisplayName("로그인 API 테스트")
