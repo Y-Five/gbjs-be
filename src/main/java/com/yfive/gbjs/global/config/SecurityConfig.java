@@ -22,12 +22,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
   private final JwtTokenProvider tokenProvider;
+  private final CustomOAuth2UserService oauth2UserService;
+  private final OAuth2LoginSuccessHandler customSuccessHandler;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -75,7 +79,15 @@ public class SecurityConfig {
                     // 기타 모든 요청은 인증 필요
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+        .oauth2Login(
+            oauth2 ->
+                oauth2
+                    .userInfoEndpoint(
+                        userInfo -> userInfo.userService(oauth2UserService) // 사용자 정보 처리
+                        )
+                    .successHandler(customSuccessHandler) // 로그인 성공 처리
+            );
 
     return http.build();
   }

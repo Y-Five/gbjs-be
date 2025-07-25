@@ -28,20 +28,20 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    
+
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.data:spring-data-redis'
-    
+
     // JWT
     implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
     runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
     runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
-    
+
     // Springdoc OpenAPI
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-api:${springdocVersion}"
-    
+
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly "com.mysql:mysql-connector-j:${mysqlVersion}"
@@ -50,6 +50,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.mockito:mockito-core'
+
+    // OAuth2
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 tasks.named('test') {
@@ -61,22 +64,22 @@ spotless {
     java {
         // 구글 자바 코드 스타일 적용
         googleJavaFormat()
-        
+
         // 라이선스 헤더 추가
         licenseHeader '/* \n * Copyright (c) 2025 YFIVE\n */'
-        
+
         // 특정 import 순서 지정
         importOrder('java', 'javax', 'jakarta', 'org', 'com', '')
-        
+
         // 사용하지 않는 import 제거
         removeUnusedImports()
-        
+
         // 줄바꿈 통일
         endWithNewline()
-        
+
         // 들여쓰기에 탭 대신 스페이스 사용
         indentWithSpaces(4)
-        
+
         // 줄 끝 공백 제거
         trimTrailingWhitespace()
     }
