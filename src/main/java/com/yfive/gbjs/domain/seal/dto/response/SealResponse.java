@@ -1,48 +1,55 @@
-/*
- * Copyright (c) 2025 YFIVE
- */
 package com.yfive.gbjs.domain.seal.dto.response;
 
-import com.yfive.gbjs.domain.seal.entity.Category;
-import com.yfive.gbjs.domain.seal.entity.Location;
-import com.yfive.gbjs.domain.seal.entity.Seal;
 import java.util.List;
+
+import com.yfive.gbjs.domain.seal.entity.Location;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 띠부씰 응답 DTO
- * 띠부씰 정보를 클라이언트에 전달하기 위한 데이터 전송 객체
- */
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class SealResponse {
 
-  private Long id;
-  private String name;
-  private Location location;
-  private String content;
-  private Category category;
-  private List<String> hashtagList;
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "Seal : 띠부씰 DTO")
+  public static class SealDTO {
+    @Schema(description = "띠부씰 ID", example = "1")
+    private Long id;
 
-  /**
-   * Seal 엔티티를 SealResponse DTO로 변환
-   *
-   * @param seal 띠부씰 엔티티
-   * @return 띠부씰 응답 DTO
-   */
-  public static SealResponse of(Seal seal) {
-    return SealResponse.builder()
-        .id(seal.getId())
-        .name(seal.getName())
-        .location(seal.getLocation())
-        .content(seal.getContent())
-        .category(seal.getCategory())
-        .hashtagList(seal.getHashtagList())
-        .build();
+    @Schema(description = "띠부씰 번호", example = "1")
+    private Integer number;
+
+    @Schema(description = "명소 이름", example = "하회마을")
+    private String spotName;
+
+    @Schema(description = "지역 이름", example = "안동")
+    private String locationName;
+
+    @Schema(description = "지역 코드", example = "ANDONG")
+    private Location location;
+
+    @Schema(description = "설명", example = "안동 하회별신굿탈놀이를 대표하는 전통 탈")
+    private String content;
+
+    @Schema(description = "이미지 URL", example = "https://example.com/seal.jpg")
+    private String imageUrl;
+  }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "SealList : 띠부씰 목록 DTO")
+  public static class SealListDTO {
+    @Schema(description = "띠부씰 목록")
+    private List<SealDTO> seals;
+
+    @Schema(description = "전체 띠부씰 수", example = "10")
+    private int totalCount;
   }
 }

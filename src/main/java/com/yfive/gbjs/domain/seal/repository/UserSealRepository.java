@@ -1,22 +1,17 @@
-/*
- * Copyright (c) 2025 YFIVE
- */
 package com.yfive.gbjs.domain.seal.repository;
 
-import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
-import com.yfive.gbjs.domain.seal.entity.UserSealId;
 import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-/**
- * 사용자 띠부씰 수집 정보 리포지토리
- * 사용자와 띠부씰 간의 매핑 정보를 관리
- */
+import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
+
+/** 사용자 띠부씰 수집 정보 리포지토리 사용자와 띠부씰 간의 매핑 정보를 관리 */
 @Repository
-public interface UserSealRepository extends JpaRepository<UserSeal, UserSealId> {
+public interface UserSealRepository extends JpaRepository<UserSeal, UserSeal.UserSealId> {
 
   /**
    * 특정 사용자가 수집한 모든 띠부씰 조회
@@ -34,6 +29,7 @@ public interface UserSealRepository extends JpaRepository<UserSeal, UserSealId> 
    * @param sealId 띠부씰 ID
    * @return 수집 여부
    */
-  @Query("SELECT COUNT(us) > 0 FROM UserSeal us WHERE us.user.id = :userId AND us.seal.id = :sealId")
+  @Query(
+      "SELECT COUNT(us) > 0 FROM UserSeal us WHERE us.user.id = :userId AND us.seal.id = :sealId")
   boolean existsByUserIdAndSealId(@Param("userId") Long userId, @Param("sealId") Long sealId);
 }

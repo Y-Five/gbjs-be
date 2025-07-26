@@ -3,7 +3,6 @@ package com.yfive.gbjs.domain.seal.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public enum Location {
-
   @Schema(description = "경산시")
   GYEONGSAN,
   @Schema(description = "경주시")

@@ -1,16 +1,10 @@
-/*
- * Copyright (c) 2025 YFIVE
- */
 package com.yfive.gbjs.domain.seal.service;
 
-import com.yfive.gbjs.domain.seal.dto.response.SealListResponse;
-import com.yfive.gbjs.domain.seal.dto.response.SealProductListResponse;
-import com.yfive.gbjs.domain.seal.dto.response.UserSealListResponse;
+import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
+import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
+import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 
-/**
- * 띠부씰 서비스 인터페이스
- * 띠부씰 관련 비즈니스 로직을 정의
- */
+/** 띠부씰 서비스 인터페이스 띠부씰 관련 비즈니스 로직을 정의 */
 public interface SealService {
 
   /**
@@ -18,7 +12,7 @@ public interface SealService {
    *
    * @return 전체 띠부씰 목록
    */
-  SealListResponse getAllSeals();
+  SealResponse.SealListDTO getAllSeals();
 
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
@@ -26,12 +20,12 @@ public interface SealService {
    * @param userId 사용자 ID
    * @return 사용자의 띠부씰 수집 현황 (수집한 것/수집하지 않은 것 포함)
    */
-  UserSealListResponse getUserSeals(Long userId);
+  UserSealResponse.UserSealListDTO getUserSeals(Long userId);
 
   /**
    * 띠부씰 상품 목록 조회
    *
    * @return 띠부씰 상품 목록
    */
-  SealProductListResponse getSealProducts();
+  SealProductResponse.SealProductListDTO getSealProducts();
 }
