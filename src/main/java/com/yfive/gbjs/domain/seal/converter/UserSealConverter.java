@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.seal.converter;
 
 import java.time.LocalDateTime;

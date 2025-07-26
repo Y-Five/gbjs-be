@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.seal.controller;
 
 import org.springframework.http.ResponseEntity;

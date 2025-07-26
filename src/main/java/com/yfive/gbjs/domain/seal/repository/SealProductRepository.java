@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.seal.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
