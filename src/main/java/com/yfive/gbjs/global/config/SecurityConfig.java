@@ -73,7 +73,15 @@ public class SecurityConfig {
                         "/webjars/**")
                     .permitAll()
                     // 공개 API
-                    .requestMatchers("/api/auth/**", "/api/guides/**", "api/weathers", "api/users")
+                    .requestMatchers(
+                        "/api/auth/**",
+                        "/api/guides/**",
+                        "/api/weathers/**",
+                        "/api/festivals/**",
+                        "/api/seals/**",
+                        "/api/spots/**",
+                        "/api/courses/**",
+                        "/api/users/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
