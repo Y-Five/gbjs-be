@@ -29,7 +29,7 @@ public class SealProduct extends BaseTimeEntity {
   private String description;
 
   @Column(name = "price", nullable = false)
-  private String price;
+  private Integer price;
 
   @Column(name = "image_url")
   private String imageUrl;

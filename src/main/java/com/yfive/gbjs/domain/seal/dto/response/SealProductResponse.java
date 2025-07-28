@@ -28,8 +28,8 @@ public class SealProductResponse {
     @Schema(description = "상품 설명", example = "경북 지역 띠부씰 5종 세트")
     private String description;
 
-    @Schema(description = "가격", example = "스탬프3개")
-    private String price;
+    @Schema(description = "가격", example = "3")
+    private Integer price;
 
     @Schema(description = "이미지 URL", example = "https://example.com/seal-product.jpg")
     private String imageUrl;

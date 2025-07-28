@@ -76,12 +76,12 @@ public class SecurityConfig {
                     .requestMatchers(
                         "/api/auth/**",
                         "/api/guides/**",
-                        "api/weathers",
-                        "api/festivals",
-                        "api/seals",
-                        "api/spots",
-                        "api/courses",
-                        "api/users")
+                        "/api/weathers/**",
+                        "/api/festivals/**",
+                        "/api/seals/**",
+                        "/api/spots/**",
+                        "/api/courses/**",
+                        "/api/users/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
