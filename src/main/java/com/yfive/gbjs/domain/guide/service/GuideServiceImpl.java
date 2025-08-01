@@ -192,17 +192,22 @@ public class GuideServiceImpl implements GuideService {
 
       if (items.isArray()) {
         for (JsonNode item : items) {
-          GuideListResponse.GuideSpot guideSpot =
-              GuideListResponse.GuideSpot.builder()
-                  .themeId(item.path("tid").asText())
-                  .title(item.path("title").asText())
-                  .address(buildAddress(item.path("addr1").asText(), item.path("addr2").asText()))
-                  .description(item.path("themaCategory").asText())
-                  .latitude(item.path("mapY").asDouble())
-                  .longitude(item.path("mapX").asDouble())
-                  .imageUrl(item.path("imageUrl").asText())
-                  .build();
-          guideSpots.add(guideSpot);
+          String addr1 = item.path("addr1").asText();
+          
+          // 경상북도 데이터만 추가
+          if (addr1 != null && addr1.startsWith("경상북도")) {
+            GuideListResponse.GuideSpot guideSpot =
+                GuideListResponse.GuideSpot.builder()
+                    .themeId(item.path("tid").asText())
+                    .title(item.path("title").asText())
+                    .address(buildAddress(addr1, item.path("addr2").asText()))
+                    .description(item.path("themaCategory").asText())
+                    .latitude(item.path("mapY").asDouble())
+                    .longitude(item.path("mapX").asDouble())
+                    .imageUrl(item.path("imageUrl").asText())
+                    .build();
+            guideSpots.add(guideSpot);
+          }
         }
       }
 
@@ -246,20 +251,25 @@ public class GuideServiceImpl implements GuideService {
 
       if (items.isArray()) {
         for (JsonNode item : items) {
-          AudioStoryListResponse.AudioStorySpot audioStorySpot =
-              AudioStoryListResponse.AudioStorySpot.builder()
-                  .audioStoryId(item.path("stid").asText())
-                  .spotId(item.path("tid").asText())
-                  .title(item.path("title").asText())
-                  .content(item.path("script").asText())
-                  .category(item.path("audioTitle").asText())
-                  .audioUrl(item.path("audioUrl").asText())
-                  .playTime(parsePlayTime(item.path("playTime").asText()))
-                  .language(item.path("langCode").asText())
-                  .latitude(null)
-                  .longitude(null)
-                  .build();
-          audioStorySpots.add(audioStorySpot);
+          String spotId = item.path("tid").asText();
+          
+          // 관광지가 경상북도에 위치하는지 확인
+          if (isGyeongsangbukdoTheme(spotId)) {
+            AudioStoryListResponse.AudioStorySpot audioStorySpot =
+                AudioStoryListResponse.AudioStorySpot.builder()
+                    .audioStoryId(item.path("stid").asText())
+                    .spotId(spotId)
+                    .title(item.path("title").asText())
+                    .content(item.path("script").asText())
+                    .category(item.path("audioTitle").asText())
+                    .audioUrl(item.path("audioUrl").asText())
+                    .playTime(parsePlayTime(item.path("playTime").asText()))
+                    .language(item.path("langCode").asText())
+                    .latitude(null)
+                    .longitude(null)
+                    .build();
+            audioStorySpots.add(audioStorySpot);
+          }
         }
       }
 
@@ -303,6 +313,39 @@ public class GuideServiceImpl implements GuideService {
     } catch (NumberFormatException e) {
       log.warn("재생 시간 파싱 실패: {}", playTime);
       return null;
+    }
+  }
+
+  /**
+   * 관광지 ID로 단건 관광지 정보를 조회합니다.
+   *
+   * @param themeId 관광지 ID
+   * @return 관광지가 경상북도에 위치하면 true, 아니면 false
+   */
+  private boolean isGyeongsangbukdoTheme(String themeId) {
+    try {
+      URI url = buildUri("/themeBasedList", Map.of("tid", themeId, "numOfRows", 1));
+      
+      String response = restClient.get().uri(url).retrieve().body(String.class);
+      if (response == null || response.isBlank()) {
+        return false;
+      }
+
+      JsonNode root = objectMapper.readTree(response);
+      JsonNode items = root.path("response").path("body").path("items").path("item");
+      
+      if (items.isArray() && items.size() > 0) {
+        String addr1 = items.get(0).path("addr1").asText();
+        return addr1 != null && addr1.startsWith("경상북도");
+      } else if (!items.isMissingNode()) {
+        String addr1 = items.path("addr1").asText();
+        return addr1 != null && addr1.startsWith("경상북도");
+      }
+      
+      return false;
+    } catch (Exception e) {
+      log.warn("관광지 정보 조회 실패 - themeId: {}", themeId);
+      return false;
     }
   }
 }
