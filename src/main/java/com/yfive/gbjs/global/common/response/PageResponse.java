@@ -1,6 +1,10 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.global.common.response;
 
 import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

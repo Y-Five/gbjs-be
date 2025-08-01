@@ -1,9 +1,14 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.spot.exception;
 
+import org.springframework.http.HttpStatus;
+
 import com.yfive.gbjs.global.error.exception.model.BaseErrorCode;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor

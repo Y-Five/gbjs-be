@@ -1,4 +1,20 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.spot.service;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,19 +22,9 @@ import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +41,8 @@ public class SpotServiceImpl implements SpotService {
   private final RestClient restClient;
 
   @Override
-  public SpotPageResponse getSpotsByKeyword(String keyword, Pageable pageable,
-      String sortBy, Double longitude, Double latitude) {
+  public SpotPageResponse getSpotsByKeyword(
+      String keyword, Pageable pageable, String sortBy, Double longitude, Double latitude) {
 
     List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, longitude, latitude);
 
@@ -45,8 +51,7 @@ public class SpotServiceImpl implements SpotService {
 
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
 
-    PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable,
-        spotResponses.size());
+    PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
     return SpotPageResponse.builder()
         .content(page.getContent())
@@ -59,8 +64,8 @@ public class SpotServiceImpl implements SpotService {
         .build();
   }
 
-  private List<SpotResponse> fetchSpotListByKeyword(String keyword, Double latitude,
-      Double longitude) {
+  private List<SpotResponse> fetchSpotListByKeyword(
+      String keyword, Double latitude, Double longitude) {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
@@ -94,10 +99,13 @@ public class SpotServiceImpl implements SpotService {
         SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
         spotResponses.add(spotResponse);
 
-        if (longitude != null && latitude != null && item.get("mapy") != null
+        if (longitude != null
+            && latitude != null
+            && item.get("mapy") != null
             && item.get("mapx") != null) {
-          double distance = calculateDistance(latitude, longitude, item.get("mapy").asDouble(),
-              item.get("mapx").asDouble());
+          double distance =
+              calculateDistance(
+                  latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
           spotResponse.setDistance(distance);
         } else {
           spotResponse.setDistance(null);
@@ -150,18 +158,27 @@ public class SpotServiceImpl implements SpotService {
 
       SpotResponse spotResponse = objectMapper.treeToValue(itemNode, SpotResponse.class);
 
-      if (longitude != null && latitude != null && itemNode.get("mapy") != null
+      if (longitude != null
+          && latitude != null
+          && itemNode.get("mapy") != null
           && itemNode.get("mapx") != null) {
-        double distance = calculateDistance(latitude, longitude, itemNode.get("mapy").asDouble(),
-            itemNode.get("mapx").asDouble());
+        double distance =
+            calculateDistance(
+                latitude,
+                longitude,
+                itemNode.get("mapy").asDouble(),
+                itemNode.get("mapx").asDouble());
         spotResponse.setDistance(distance);
       } else {
         spotResponse.setDistance(null);
       }
       spotResponse.setAudio(false);
       spotResponse.setType(
-          fetchSpotType(itemNode.get("contenttypeid").asText(), itemNode.get("cat1").asText(),
-              itemNode.get("cat2").asText(), itemNode.get("cat3").asText()));
+          fetchSpotType(
+              itemNode.get("contenttypeid").asText(),
+              itemNode.get("cat1").asText(),
+              itemNode.get("cat2").asText(),
+              itemNode.get("cat3").asText()));
 
       return spotResponse;
     } catch (Exception e) {
@@ -215,9 +232,12 @@ public class SpotServiceImpl implements SpotService {
     final int R = 6371; // 지구 반지름 (km)
     double latDist = Math.toRadians(lat2 - lat1);
     double lonDist = Math.toRadians(lon2 - lon1);
-    double a = Math.sin(latDist / 2) * Math.sin(latDist / 2)
-        + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-        * Math.sin(lonDist / 2) * Math.sin(lonDist / 2);
+    double a =
+        Math.sin(latDist / 2) * Math.sin(latDist / 2)
+            + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDist / 2)
+                * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }

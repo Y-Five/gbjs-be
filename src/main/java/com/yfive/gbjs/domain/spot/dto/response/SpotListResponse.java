@@ -1,6 +1,10 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.domain.spot.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +16,9 @@ import lombok.Setter;
 public class SpotListResponse {
 
   @JsonProperty("firstimage")
-  @Schema(description = "관광지 사진 URL", example = "http://tong.visitkorea.or.kr/cms/resource/01/2656601_image2_1.jpg")
+  @Schema(
+      description = "관광지 사진 URL",
+      example = "http://tong.visitkorea.or.kr/cms/resource/01/2656601_image2_1.jpg")
   private String imageUrl;
 
   @Schema(description = "관광지명", example = "첨성대")
@@ -38,4 +44,3 @@ public class SpotListResponse {
   @Schema(description = "음성 가이드 여부", example = "true")
   private Boolean audio;
 }
-
