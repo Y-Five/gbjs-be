@@ -3,27 +3,24 @@
  */
 package com.yfive.gbjs.domain.festival.service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalListResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.exception.FestivalErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ public class FestivalServiceImpl implements FestivalService {
   @Value("${openapi.secret.key}")
   private String serviceKey;
 
-  @Value("${festival.api.url}")
+  @Value("${tourist.api.url}")
   private String festivalApiUrl;
 
   private final ObjectMapper objectMapper;
