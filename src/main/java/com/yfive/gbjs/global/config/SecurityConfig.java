@@ -74,7 +74,14 @@ public class SecurityConfig {
                     .permitAll()
                     // 공개 API
                     .requestMatchers(
-                        "/api/auth/**", "/api/guides/**", "api/weathers", "api/users", "api/spots")
+                        "/api/auth/**",
+                        "/api/guides/**",
+                        "/api/weathers/**",
+                        "/api/festivals/**",
+                        "/api/seals/**",
+                        "/api/spots/**",
+                        "/api/courses/**",
+                        "/api/users/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
