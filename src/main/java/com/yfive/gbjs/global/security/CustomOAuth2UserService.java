@@ -47,7 +47,11 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     log.info("사용자 로그인 성공: {}", user.getUsername());
 
-    String nameAttributeKey = oauth2User.getName();
+    String nameAttributeKey = "id"; // Kakao의 경우 attributes에 반드시 존재하는 키
+    Object nameAttr = attributes.get(nameAttributeKey);
+    if (nameAttr == null) {
+      throw new OAuth2AuthenticationException("Missing required attribute: " + nameAttributeKey);
+    }
 
     return new DefaultOAuth2User(
         Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
