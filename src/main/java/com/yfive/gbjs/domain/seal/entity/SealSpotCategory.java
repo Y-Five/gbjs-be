@@ -5,7 +5,7 @@ package com.yfive.gbjs.domain.seal.entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public enum Category {
+public enum SealSpotCategory {
   @Schema(description = "자연환경")
   NATURE,
   @Schema(description = "야경 명소")
