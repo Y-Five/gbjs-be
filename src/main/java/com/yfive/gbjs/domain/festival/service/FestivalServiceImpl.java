@@ -33,7 +33,7 @@ public class FestivalServiceImpl implements FestivalService {
   @Value("${openapi.secret.key}")
   private String serviceKey;
 
-  @Value("${festival.api.url}")
+  @Value("${tourist.api.url}")
   private String festivalApiUrl;
 
   private final ObjectMapper objectMapper;
