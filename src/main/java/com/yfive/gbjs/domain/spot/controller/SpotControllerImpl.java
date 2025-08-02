@@ -3,16 +3,18 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
-import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
-import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
-import com.yfive.gbjs.domain.spot.service.SpotService;
-import com.yfive.gbjs.global.common.response.ApiResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
+import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.service.SpotService;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
