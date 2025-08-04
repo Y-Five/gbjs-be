@@ -1,29 +1,37 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.gbjs.global.common.response;
+package com.yfive.gbjs.domain.spot.dto.response;
 
 import java.util.List;
 
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Getter;
 
-public class PageResponse<T> {
+@Getter
+@Builder
+@Schema(title = "SpotPageResponse DTO", description = "관광지 리스트 페이지 응답 반환")
+public class SpotPageResponse {
 
-  private List<T> content;
-  private Pagination pagination;
+  @Schema(description = "데이터 리스트")
+  private List<SpotResponse> content;
 
-  @Getter
-  @AllArgsConstructor
-  public static class Pagination {
+  @Schema(description = "전체 데이터의 개수", example = "200")
+  private Long totalElements;
 
-    private int page;
-    private int size;
-    private long totalElements;
-    private int totalPages;
-    private boolean isFirst;
-    private boolean isLast;
-    private boolean hasNext;
-    private boolean hasPrevious;
-  }
+  @Schema(description = "전체 페이지 개수", example = "50")
+  private Integer totalPages;
+
+  @Schema(description = "페이지 번호", example = "0")
+  private Integer pageNum;
+
+  @Schema(description = "페이지 크기", example = "4")
+  private Integer pageSize;
+
+  @Schema(description = "첫 번째 데이터 여부", example = "true")
+  private Boolean first;
+
+  @Schema(description = "마지막 데이터 여부", example = "false")
+  private Boolean last;
 }
