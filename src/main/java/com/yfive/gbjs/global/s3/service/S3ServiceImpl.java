@@ -3,6 +3,13 @@
  */
 package com.yfive.gbjs.global.s3.service;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
@@ -13,13 +20,9 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.s3.dto.S3Response;
 import com.yfive.gbjs.global.s3.entity.PathName;
 import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -65,10 +68,10 @@ public class S3ServiceImpl implements S3Service {
   public String createKeyName(PathName pathName) {
 
     return switch (pathName) {
-      case SEAL -> s3Config.getSealPath();
-      case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
-      case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
-    }
+          case SEAL -> s3Config.getSealPath();
+          case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
+          case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
+        }
         + '/'
         + UUID.randomUUID();
   }
@@ -98,13 +101,16 @@ public class S3ServiceImpl implements S3Service {
         };
 
     try {
-      List<String> urls = amazonS3
-          .listObjectsV2(
-              new ListObjectsV2Request().withBucketName(s3Config.getBucket()).withPrefix(prefix))
-          .getObjectSummaries()
-          .stream()
-          .map(obj -> amazonS3.getUrl(s3Config.getBucket(), obj.getKey()).toString())
-          .collect(Collectors.toList());
+      List<String> urls =
+          amazonS3
+              .listObjectsV2(
+                  new ListObjectsV2Request()
+                      .withBucketName(s3Config.getBucket())
+                      .withPrefix(prefix))
+              .getObjectSummaries()
+              .stream()
+              .map(obj -> amazonS3.getUrl(s3Config.getBucket(), obj.getKey()).toString())
+              .collect(Collectors.toList());
       log.info("파일 목록 조회 성공 - pathName: {}, 파일 수: {}", pathName, urls.size());
       return urls;
     } catch (Exception e) {
