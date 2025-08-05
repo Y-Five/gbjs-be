@@ -26,7 +26,7 @@ public interface S3Service {
 
   String extractKeyNameFromUrl(String imageUrl);
 
-  void existFile(String keyName);
+  void fileExists(String keyName);
 
   void validateFile(MultipartFile file);
 }

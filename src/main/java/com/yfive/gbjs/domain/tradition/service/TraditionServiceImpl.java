@@ -6,6 +6,7 @@ package com.yfive.gbjs.domain.tradition.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
@@ -18,6 +19,7 @@ import com.yfive.gbjs.domain.tradition.repository.TraditionRepository;
 import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.s3.entity.PathName;
+import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
 import com.yfive.gbjs.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
@@ -33,11 +35,20 @@ public class TraditionServiceImpl implements TraditionService {
   private final S3Service s3Service;
 
   @Override
+  @Transactional
   public TraditionResponse createTradition(
       TraditionType type, TraditionRequest request, MultipartFile image) {
 
     PathName pathName =
         type == TraditionType.SPECIALTIES ? PathName.SPECIALTIES : PathName.ACTIVITY;
+    String imageUrl = null;
+
+    try {
+      imageUrl = s3Service.uploadFile(pathName, image);
+    } catch (Exception e) {
+      log.error("S3 파일 업로드 실패 - name: {}", request.getName(), e);
+      throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
+    }
 
     Tradition tradition =
         Tradition.builder()
@@ -46,10 +57,15 @@ public class TraditionServiceImpl implements TraditionService {
             .name(request.getName())
             .description(request.getDescription())
             .price(request.getPrice())
-            .imageUrl(s3Service.uploadFile(pathName, image))
+            .imageUrl(imageUrl)
             .build();
 
-    traditionRepository.save(tradition);
+    try {
+      traditionRepository.save(tradition);
+    } catch (Exception e) {
+      s3Service.deleteFile(s3Service.extractKeyNameFromUrl(imageUrl));
+      throw e;
+    }
 
     log.info("전통문화 정보 생성 - type: {}, name: {}", type, request.getName());
 
@@ -75,6 +91,7 @@ public class TraditionServiceImpl implements TraditionService {
   }
 
   @Override
+  @Transactional
   public void deleteTradition(Long id) {
     Tradition tradition =
         traditionRepository
@@ -85,8 +102,15 @@ public class TraditionServiceImpl implements TraditionService {
                   return new CustomException(TraditionErrorStatus.TRADITION_NOT_FOUND);
                 });
 
+    String imageUrl = tradition.getImageUrl();
+
     traditionRepository.delete(tradition);
-    s3Service.deleteFile(s3Service.extractKeyNameFromUrl(tradition.getImageUrl()));
+
+    try {
+      s3Service.deleteFile(s3Service.extractKeyNameFromUrl(imageUrl));
+    } catch (Exception e) {
+      log.warn("S3 파일 삭제 실패 (DB 삭제는 완료) - imageUrl: {}", imageUrl, e);
+    }
 
     log.info("전통문화 정보 삭제 - id: {}, name: {}", tradition.getId(), tradition.getName());
   }

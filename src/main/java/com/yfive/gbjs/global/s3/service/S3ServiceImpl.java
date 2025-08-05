@@ -79,13 +79,13 @@ public class S3ServiceImpl implements S3Service {
   @Override
   public void deleteFile(String keyName) {
 
-    existFile(keyName);
+    fileExists(keyName);
 
     try {
       amazonS3.deleteObject(new DeleteObjectRequest(s3Config.getBucket(), keyName));
       log.info("파일 삭제 성공 - keyName: {}", keyName);
     } catch (Exception e) {
-      log.error("S3 upload 중 오류 발생", e);
+      log.error("S3 delete 중 오류 발생", e);
       throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
     }
   }
@@ -146,7 +146,7 @@ public class S3ServiceImpl implements S3Service {
     return keyName;
   }
 
-  public void existFile(String keyName) {
+  public void fileExists(String keyName) {
 
     if (!amazonS3.doesObjectExist(s3Config.getBucket(), keyName)) {
       throw new CustomException(S3ErrorStatus.FILE_NOT_FOUND);

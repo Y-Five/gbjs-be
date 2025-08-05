@@ -54,5 +54,5 @@ public interface TraditionController {
 
   @DeleteMapping("/dev/{id}")
   @Operation(summary = "[개발자]전통문화 삭제", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 삭제")
-  ResponseEntity<ApiResponse<String>> getTraditions(@PathVariable Long id);
+  ResponseEntity<ApiResponse<String>> deleteTradition(@PathVariable Long id);
 }
