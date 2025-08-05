@@ -28,20 +28,20 @@ public class SpotControllerImpl implements SpotController {
       @RequestParam Integer pageNum,
       @RequestParam Integer pageSize,
       @RequestParam String sortBy,
-      @RequestParam Double longitude,
-      @RequestParam Double latitude) {
+      @RequestParam Double latitude,
+      @RequestParam Double longitude) {
 
     Pageable pageable = PageRequest.of(pageNum, pageSize);
     PageResponse<SpotResponse> spotListResponse =
-        spotService.getSpotsByKeyword(keyword, pageable, sortBy, longitude, latitude);
+        spotService.getSpotsByKeyword(keyword, pageable, sortBy, latitude, longitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotListResponse));
   }
 
   @Override
   public ResponseEntity<ApiResponse<SpotResponse>> getSpotByContentId(
-      Long contentId, @RequestParam Double longitude, @RequestParam Double latitude) {
-    SpotResponse spotResponse = spotService.getSpotByContentId(contentId, longitude, latitude);
+      String contentId, @RequestParam Double latitude, @RequestParam Double longitude) {
+    SpotResponse spotResponse = spotService.getSpotByContentId(contentId, latitude, longitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotResponse));
   }

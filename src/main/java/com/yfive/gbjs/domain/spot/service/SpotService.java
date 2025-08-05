@@ -11,7 +11,7 @@ import com.yfive.gbjs.global.common.response.PageResponse;
 public interface SpotService {
 
   PageResponse<SpotResponse> getSpotsByKeyword(
-      String keyword, Pageable pageable, String sortBy, Double longitude, Double latitude);
+      String keyword, Pageable pageable, String sortBy, Double latitude, Double longitude);
 
-  SpotResponse getSpotByContentId(Long contentId, Double longitude, Double latitude);
+  SpotResponse getSpotByContentId(String contentId, Double latitude, Double longitude);
 }

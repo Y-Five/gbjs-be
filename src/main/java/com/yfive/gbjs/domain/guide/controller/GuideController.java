@@ -32,8 +32,8 @@ public interface GuideController {
   @GetMapping("/location")
   @Operation(summary = "관광지 위치기반 정보 목록 조회", description = "특정 GPS 좌표를 중심으로 반경 내 관광지 목록 조회")
   public ResponseEntity<ApiResponse<GuideListResponse>> getThemeLocationBasedList(
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
+      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "검색 반경(m)", example = "10000") @RequestParam(defaultValue = "10000")
           Integer radius,
       @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1")
@@ -62,8 +62,8 @@ public interface GuideController {
   @GetMapping("/audio-stories/location")
   @Operation(summary = "오디오 스토리 위치기반 정보 목록 조회", description = "좌표 기반 주변 오디오 스토리 목록 조회")
   public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStoryLocationBasedList(
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
+      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
       @Parameter(description = "검색 반경(m)", example = "10000") @RequestParam(defaultValue = "10000")
           Integer radius,
       @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1")

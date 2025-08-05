@@ -42,14 +42,22 @@ public class SpotServiceImpl implements SpotService {
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeyword(
-      String keyword, Pageable pageable, String sortBy, Double longitude, Double latitude) {
+      String keyword, Pageable pageable, String sortBy, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, longitude, latitude);
+    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
 
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
+
+    for (int i = 0; i < pageable.getPageSize(); i++) {
+      SpotResponse spotResponse =
+          getSpotByContentId(pageContent.get(i).getSpotId(), latitude, longitude);
+
+      pageContent.get(i).setOverview(spotResponse.getOverview());
+      pageContent.get(i).setType(spotResponse.getType());
+    }
 
     PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
@@ -99,8 +107,8 @@ public class SpotServiceImpl implements SpotService {
         SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
         spotResponses.add(spotResponse);
 
-        if (longitude != null
-            && latitude != null
+        if (latitude != null
+            && longitude != null
             && item.get("mapy") != null
             && item.get("mapx") != null) {
           double distance =
@@ -124,7 +132,7 @@ public class SpotServiceImpl implements SpotService {
   }
 
   @Override
-  public SpotResponse getSpotByContentId(Long contentId, Double longitude, Double latitude) {
+  public SpotResponse getSpotByContentId(String contentId, Double latitude, Double longitude) {
 
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/detailCommon2")
@@ -158,8 +166,8 @@ public class SpotServiceImpl implements SpotService {
 
       SpotResponse spotResponse = objectMapper.treeToValue(itemNode, SpotResponse.class);
 
-      if (longitude != null
-          && latitude != null
+      if (latitude != null
+          && longitude != null
           && itemNode.get("mapy") != null
           && itemNode.get("mapx") != null) {
         double distance =
