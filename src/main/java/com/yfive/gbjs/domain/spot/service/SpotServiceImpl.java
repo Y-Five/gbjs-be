@@ -18,9 +18,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
+import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,7 @@ public class SpotServiceImpl implements SpotService {
   private final RestClient restClient;
 
   @Override
-  public SpotPageResponse getSpotsByKeyword(
+  public PageResponse<SpotResponse> getSpotsByKeyword(
       String keyword, Pageable pageable, String sortBy, Double longitude, Double latitude) {
 
     List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, longitude, latitude);
@@ -53,7 +53,7 @@ public class SpotServiceImpl implements SpotService {
 
     PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
-    return SpotPageResponse.builder()
+    return PageResponse.<SpotResponse>builder()
         .content(page.getContent())
         .totalElements(page.getTotalElements())
         .totalPages(page.getTotalPages())
