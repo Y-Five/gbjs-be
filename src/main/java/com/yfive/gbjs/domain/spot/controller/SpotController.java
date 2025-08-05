@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.common.response.PageResponse;
 
@@ -24,17 +25,17 @@ public interface SpotController {
   @GetMapping
   @Operation(summary = "관광지 검색", description = "검색 키워드를 기반으로 관광지 리스트 반환")
   ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
-      @Parameter(description = "검색 키워드", example = "경주") @RequestParam String keyword,
       @Parameter(description = "페이지 번호", example = "0") @RequestParam Integer pageNum,
       @Parameter(description = "페이지 크기", example = "4") @RequestParam Integer pageSize,
-      @Parameter(description = "정렬 기준", example = "거리순") @RequestParam String sortBy,
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude);
+      @Parameter(description = "검색 키워드", example = "경주") @RequestParam String keyword,
+      @Parameter(description = "정렬 기준", example = "거리순") @RequestParam SortBy sortBy,
+      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
+      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
 
   @GetMapping("{id}")
   @Operation(summary = "관광지 단일 조회", description = "관광지 식별자를 통한 단일 조회")
   ResponseEntity<ApiResponse<SpotResponse>> getSpotByContentId(
-      @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") Long contentId,
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude);
+      @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") String contentId,
+      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
+      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
 }
