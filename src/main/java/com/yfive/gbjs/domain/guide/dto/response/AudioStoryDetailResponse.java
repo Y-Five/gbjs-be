@@ -11,43 +11,22 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(title = "AudioStoryListResponse DTO", description = "오디오 스토리 목록 응답")
-public class AudioStoryListResponse {
+@Schema(title = "AudioStoryDetailResponse DTO", description = "오디오 스토리 상세 정보 응답")
+public class AudioStoryDetailResponse {
 
-  @Schema(description = "전체 결과 수", example = "50")
-  private Integer totalCount;
-
-  @Schema(description = "페이지 번호", example = "1")
-  private Integer pageNo;
-
-  @Schema(description = "페이지당 결과 수", example = "10")
-  private Integer pageSize;
-
-  @Schema(description = "첫 페이지 여부", example = "true")
-  private Boolean first;
-
-  @Schema(description = "마지막 페이지 여부", example = "false")
-  private Boolean last;
-
-  @Schema(description = "오디오 스토리 목록")
-  private List<AudioStorySpot> audioSpotList;
+  @Schema(description = "오디오 스토리 상세 목록")
+  private List<AudioStoryDetail> audioSpotList;
 
   @Getter
   @Builder
-  @Schema(title = "AudioStoryItem", description = "오디오 스토리 항목")
-  public static class AudioStorySpot {
+  @Schema(title = "AudioStoryDetail", description = "오디오 스토리 상세 정보")
+  public static class AudioStoryDetail {
 
     @Schema(description = "관광지 ID", example = "TH00001")
     private String spotId;
 
-    @Schema(description = "테마 언어 ID", example = "TL00001")
-    private String tlid;
-
     @Schema(description = "오디오 스토리 ID", example = "ST00001")
     private String audioStoryId;
-
-    @Schema(description = "스토리 언어 아이디", example = "SL00001")
-    private String stlid;
 
     @Schema(description = "관광지명", example = "경복궁")
     private String title;
@@ -69,9 +48,6 @@ public class AudioStoryListResponse {
 
     @Schema(description = "오디오 파일 URL", example = "https://example.com/story_audio.mp3")
     private String audioUrl;
-
-    @Schema(description = "언어 코드", example = "ko")
-    private String langCode;
 
     @Schema(description = "관광지 이미지 URL", example = "https://example.com/image.jpg")
     private String imageUrl;

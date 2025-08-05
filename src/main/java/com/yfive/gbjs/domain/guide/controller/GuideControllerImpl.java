@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.yfive.gbjs.domain.guide.dto.response.AudioStoryDetailResponse;
 import com.yfive.gbjs.domain.guide.dto.response.AudioStoryListResponse;
-import com.yfive.gbjs.domain.guide.dto.response.GuideListResponse;
+import com.yfive.gbjs.domain.guide.dto.response.AudioStorySimpleListResponse;
 import com.yfive.gbjs.domain.guide.service.GuideService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
@@ -33,114 +34,83 @@ public class GuideControllerImpl implements GuideController {
   private final GuideService guideService;
 
   /**
-   * 관광지 기본 정보 목록을 페이징 조회합니다.
+   * 오디오 스토리 통합 조회를 처리합니다. 파라미터에 따라 기본정보, 위치기반, 키워드 검색을 수행합니다.
    *
-   * @param pageNo 페이지 번호 (기본값: 1)
-   * @param numOfRows 페이지당 결과 수 (기본값: 10)
-   * @return 관광지 목록이 포함된 응답 객체
-   */
-  @Override
-  public ResponseEntity<ApiResponse<GuideListResponse>> getThemeBasedList(
-      @RequestParam(defaultValue = "1") Integer pageNo,
-      @RequestParam(defaultValue = "10") Integer numOfRows) {
-    GuideListResponse response = guideService.getThemeBasedList(pageNo, numOfRows);
-    return ResponseEntity.ok(ApiResponse.success(response));
-  }
-
-  /**
-   * 특정 GPS 좌표를 중심으로 반경 내 관광지 목록을 조회합니다.
-   *
-   * @param longitude 경도 (예: 128.505832)
-   * @param latitude 위도 (예: 36.5759985)
-   * @param radius 검색 반경(m) (기본값: 1000)
-   * @param pageNo 페이지 번호 (기본값: 1)
-   * @param numOfRows 페이지당 결과 수 (기본값: 10)
-   * @return 위치 기반 관광지 목록이 포함된 응답 객체
-   */
-  @Override
-  public ResponseEntity<ApiResponse<GuideListResponse>> getThemeLocationBasedList(
-      @RequestParam Double longitude,
-      @RequestParam Double latitude,
-      @RequestParam(defaultValue = "1000") Integer radius,
-      @RequestParam(defaultValue = "1") Integer pageNo,
-      @RequestParam(defaultValue = "10") Integer numOfRows) {
-    GuideListResponse response =
-        guideService.getThemeLocationBasedList(longitude, latitude, radius, pageNo, numOfRows);
-    return ResponseEntity.ok(ApiResponse.success(response));
-  }
-
-  /**
-   * 키워드로 관광지를 검색합니다.
-   *
-   * @param keyword 검색 키워드 (예: 경복궁)
-   * @param pageNo 페이지 번호 (기본값: 1)
-   * @param numOfRows 페이지당 결과 수 (기본값: 10)
-   * @return 키워드 검색 결과 관광지 목록이 포함된 응답 객체
-   */
-  @Override
-  public ResponseEntity<ApiResponse<GuideListResponse>> getThemeSearchList(
-      @RequestParam String keyword,
-      @RequestParam(defaultValue = "1") Integer pageNo,
-      @RequestParam(defaultValue = "10") Integer numOfRows) {
-    GuideListResponse response = guideService.getThemeSearchList(keyword, pageNo, numOfRows);
-    return ResponseEntity.ok(ApiResponse.success(response));
-  }
-
-  /**
-   * 관광지 ID를 기준으로 관련 오디오 스토리 정보를 조회합니다.
-   *
-   * @param themeId 관광지 ID (예: TH00001)
+   * @param spotId 관광지 ID (기본정보 조회시)
+   * @param longitude 경도 (위치기반 조회시)
+   * @param latitude 위도 (위치기반 조회시)
+   * @param keyword 검색 키워드 (키워드 검색시)
    * @param pageNo 페이지 번호 (기본값: 1)
    * @param numOfRows 페이지당 결과 수 (기본값: 10)
    * @return 오디오 스토리 목록이 포함된 응답 객체
    */
   @Override
-  public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStoryBasedList(
-      @PathVariable String themeId,
+  public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStoryList(
+      @RequestParam(required = false) String spotId,
+      @RequestParam(required = false) Double longitude,
+      @RequestParam(required = false) Double latitude,
+      @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Integer pageNo,
       @RequestParam(defaultValue = "10") Integer numOfRows) {
-    AudioStoryListResponse response =
-        guideService.getAudioStoryBasedList(themeId, pageNo, numOfRows);
+
+    AudioStoryListResponse response;
+
+    // 키워드 검색
+    if (keyword != null && !keyword.trim().isEmpty()) {
+      response = guideService.getAudioStorySearchList(keyword, pageNo, numOfRows);
+    }
+    // 위치기반 조회
+    else if (longitude != null && latitude != null) {
+      response =
+          guideService.getAudioStoryLocationBasedList(longitude, latitude, pageNo, numOfRows);
+    }
+    // 기본정보 조회 (spotId 유무와 관계없이)
+    else {
+      response = guideService.getAudioStoryBasedList(spotId, null, pageNo, numOfRows);
+    }
+
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   /**
-   * 좌표를 기준으로 주변 오디오 스토리 목록을 조회합니다.
+   * 오디오 스토리 간략 목록을 조회합니다. 파라미터에 따라 기본정보, 위치기반, 키워드 검색을 수행합니다.
    *
-   * @param longitude 경도 (예: 128.505832)
-   * @param latitude 위도 (예: 36.5759985)
-   * @param radius 검색 반경(m) (기본값: 1000)
+   * @param spotId 관광지 ID (기본정보 조회시)
+   * @param longitude 경도 (위치기반 조회시)
+   * @param latitude 위도 (위치기반 조회시)
+   * @param keyword 검색 키워드 (키워드 검색시)
    * @param pageNo 페이지 번호 (기본값: 1)
    * @param numOfRows 페이지당 결과 수 (기본값: 10)
-   * @return 위치 기반 오디오 스토리 목록이 포함된 응답 객체
+   * @return 오디오 스토리 간략 목록이 포함된 응답 객체
    */
   @Override
-  public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStoryLocationBasedList(
-      @RequestParam Double longitude,
-      @RequestParam Double latitude,
-      @RequestParam(defaultValue = "1000") Integer radius,
+  public ResponseEntity<ApiResponse<AudioStorySimpleListResponse>> getAudioStorySimpleList(
+      @RequestParam(required = false) String spotId,
+      @RequestParam(required = false) Double longitude,
+      @RequestParam(required = false) Double latitude,
+      @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Integer pageNo,
       @RequestParam(defaultValue = "10") Integer numOfRows) {
-    AudioStoryListResponse response =
-        guideService.getAudioStoryLocationBasedList(longitude, latitude, radius, pageNo, numOfRows);
+
+    AudioStorySimpleListResponse response =
+        guideService.getAudioStorySimpleList(
+            spotId, longitude, latitude, keyword, pageNo, numOfRows);
+
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   /**
-   * 키워드로 오디오 스토리를 검색합니다.
+   * 특정 관광지의 오디오 스토리 상세 정보를 조회합니다.
    *
-   * @param keyword 검색 키워드
-   * @param pageNo 페이지 번호 (기본값: 1)
-   * @param numOfRows 페이지당 결과 수 (기본값: 10)
-   * @return 키워드 검색 결과 오디오 스토리 목록이 포함된 응답 객체
+   * @param spotId 관광지 ID
+   * @return 오디오 스토리 상세 정보가 포함된 응답 객체
    */
   @Override
-  public ResponseEntity<ApiResponse<AudioStoryListResponse>> getAudioStorySearchList(
-      @RequestParam String keyword,
-      @RequestParam(defaultValue = "1") Integer pageNo,
-      @RequestParam(defaultValue = "10") Integer numOfRows) {
-    AudioStoryListResponse response =
-        guideService.getAudioStorySearchList(keyword, pageNo, numOfRows);
+  public ResponseEntity<ApiResponse<AudioStoryDetailResponse>> getAudioStoryDetail(
+      @PathVariable String spotId) {
+
+    AudioStoryDetailResponse response = guideService.getAudioStoryDetail(spotId);
+
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 }
