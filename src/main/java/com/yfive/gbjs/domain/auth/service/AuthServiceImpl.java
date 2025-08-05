@@ -4,7 +4,9 @@
 package com.yfive.gbjs.domain.auth.service;
 
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,7 +17,6 @@ import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
 import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.gbjs.global.config.jwt.TokenRepository;
 import com.yfive.gbjs.global.error.exception.InvalidTokenException;
 
 import lombok.RequiredArgsConstructor;
@@ -37,8 +38,8 @@ public class AuthServiceImpl implements AuthService {
   /** JWT 토큰 제공자 */
   private final JwtTokenProvider jwtTokenProvider;
 
-  /** 토큰 저장소 */
-  private final TokenRepository tokenRepository;
+  private final JwtTokenProvider jwtProvider;
+  private final RedisTemplate<String, String> redisTemplate;
 
   /** {@inheritDoc} */
   @Override
@@ -100,17 +101,22 @@ public class AuthServiceImpl implements AuthService {
   /** {@inheritDoc} */
   @Override
   public void logout(String accessToken) {
-    if (accessToken != null && !accessToken.isEmpty()) {
-      // 토큰에서 사용자 정보 추출
-      String username = jwtTokenProvider.getUsernameFromToken(accessToken);
+    String username = jwtProvider.getUsernameFromToken(accessToken);
+    String redisKey = "RT:" + username;
+    Boolean result = redisTemplate.delete(redisKey);
 
-      // Access Token 블랙리스트에 추가
-      jwtTokenProvider.blacklistToken(accessToken);
-
-      // Refresh Token 삭제
-      tokenRepository.deleteRefreshToken(username);
-
-      log.info("로그아웃 처리 완료: {}", username);
+    if (result) {
+      log.info("Logout success: refresh token for '{}' deleted from Redis.", username);
+    } else {
+      log.warn("Logout attempted, but no refresh token found for '{}'.", username);
     }
+
+    // 액세스 토큰 블랙리스트 처리
+    long expiration = jwtProvider.getExpirationTime(accessToken);
+    redisTemplate
+        .opsForValue()
+        .set("BL:" + accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
+
+    log.info("Access token for '{}' blacklisted until expiration.", username);
   }
 }
