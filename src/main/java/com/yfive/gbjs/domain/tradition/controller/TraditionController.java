@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -36,7 +38,7 @@ public interface TraditionController {
   ResponseEntity<ApiResponse<TraditionResponse>> createTradition(
       @Parameter(description = "전통문화 분류", example = "SPECIALTIES") @RequestParam TraditionType type,
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
-          @RequestPart(value = "booth")
+          @RequestPart(value = "tradition")
           @Valid
           TraditionRequest request,
       @Parameter(
@@ -51,6 +53,11 @@ public interface TraditionController {
       @Parameter(description = "전통문화 분류", example = "SPECIALTIES") @RequestParam TraditionType type,
       @Parameter(description = "페이지 번호", example = "0") @RequestParam Integer pageNum,
       @Parameter(description = "페이지 크기", example = "4") @RequestParam Integer pageSize);
+
+  @PutMapping("/{id}")
+  @Operation(summary = "[개발자]전통문화 수정", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 수정")
+  ResponseEntity<ApiResponse<TraditionResponse>> updateTradition(
+      @PathVariable Long id, @RequestBody @Valid TraditionRequest request, String imageUrl);
 
   @DeleteMapping("/dev/{id}")
   @Operation(summary = "[개발자]전통문화 삭제", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 삭제")

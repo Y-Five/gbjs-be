@@ -74,6 +74,7 @@ public class TraditionServiceImpl implements TraditionService {
 
   @Override
   public PageResponse<TraditionResponse> getTraditions(TraditionType type, Pageable pageable) {
+
     Page<TraditionResponse> responsePage =
         traditionRepository.findByType(type, pageable).map(traditionMapper::toTraditionResponse);
 
@@ -91,14 +92,29 @@ public class TraditionServiceImpl implements TraditionService {
   }
 
   @Override
+  public TraditionResponse updateTradition(Long id, TraditionRequest request, String imageUrl) {
+
+    Tradition tradition =
+        traditionRepository
+            .findById(id)
+            .orElseThrow(() -> new CustomException(TraditionErrorStatus.TRADITION_NOT_FOUND));
+
+    tradition.update(request, imageUrl);
+
+    log.info("전통문화 정보 수정 - id: {}, name: {}", tradition.getId(), tradition.getName());
+
+    return traditionMapper.toTraditionResponse(tradition);
+  }
+
+  @Override
   @Transactional
   public void deleteTradition(Long id) {
+
     Tradition tradition =
         traditionRepository
             .findById(id)
             .orElseThrow(
                 () -> {
-                  log.error("삭제 실패 - 전통문화 정보가 존재하지 않음. id: {}", id);
                   return new CustomException(TraditionErrorStatus.TRADITION_NOT_FOUND);
                 });
 

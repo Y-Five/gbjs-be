@@ -18,5 +18,7 @@ public interface TraditionService {
   TraditionResponse createTradition(
       TraditionType type, TraditionRequest request, MultipartFile image);
 
+  TraditionResponse updateTradition(Long id, TraditionRequest request, String imageUrl);
+
   void deleteTradition(Long id);
 }

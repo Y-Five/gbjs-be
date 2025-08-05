@@ -10,6 +10,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,4 +48,12 @@ public class Tradition {
 
   @Column(name = "imageUrl", nullable = false)
   private String imageUrl;
+
+  public void update(TraditionRequest request, String imageUrl) {
+    this.address = request.getAddress();
+    this.name = request.getName();
+    this.description = request.getDescription();
+    this.price = request.getPrice();
+    this.imageUrl = imageUrl;
+  }
 }

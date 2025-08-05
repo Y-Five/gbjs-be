@@ -53,6 +53,15 @@ public class TraditionControllerImpl implements TraditionController {
   }
 
   @Override
+  public ResponseEntity<ApiResponse<TraditionResponse>> updateTradition(
+      @PathVariable Long id, @RequestBody @Valid TraditionRequest request, String imageUrl) {
+
+    TraditionResponse traditionResponse = traditionService.updateTradition(id, request, imageUrl);
+
+    return ResponseEntity.ok(ApiResponse.success(traditionResponse));
+  }
+
+  @Override
   public ResponseEntity<ApiResponse<String>> deleteTradition(@PathVariable Long id) {
 
     traditionService.deleteTradition(id);
