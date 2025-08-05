@@ -3,25 +3,28 @@
  */
 package com.yfive.gbjs.domain.spot.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
-import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
-import com.yfive.gbjs.global.common.response.PageResponse;
-import com.yfive.gbjs.global.error.exception.CustomException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
+import com.yfive.gbjs.global.common.response.PageResponse;
+import com.yfive.gbjs.global.error.exception.CustomException;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -41,13 +44,9 @@ public class SpotServiceImpl implements SpotService {
   public PageResponse<SpotResponse> getSpotsByKeyword(
       Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(
-        pageable.getPageSize(),
-        pageable.getPageNumber(),
-        keyword,
-        latitude,
-        longitude
-    );
+    List<SpotResponse> spotResponses =
+        fetchSpotListByKeyword(
+            pageable.getPageSize(), pageable.getPageNumber(), keyword, latitude, longitude);
 
     PageImpl<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
 
@@ -74,8 +73,8 @@ public class SpotServiceImpl implements SpotService {
   public PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
       Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(1000, 1, keyword, latitude,
-        longitude);
+    List<SpotResponse> spotResponses =
+        fetchSpotListByKeyword(1000, 1, keyword, latitude, longitude);
 
     spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
@@ -278,9 +277,9 @@ public class SpotServiceImpl implements SpotService {
     double a =
         Math.sin(latDist / 2) * Math.sin(latDist / 2)
             + Math.cos(Math.toRadians(lat1))
-            * Math.cos(Math.toRadians(lat2))
-            * Math.sin(lonDist / 2)
-            * Math.sin(lonDist / 2);
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDist / 2)
+                * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
