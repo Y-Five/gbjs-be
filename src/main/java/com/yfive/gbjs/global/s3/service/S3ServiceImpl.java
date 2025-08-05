@@ -3,13 +3,6 @@
  */
 package com.yfive.gbjs.global.s3.service;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
@@ -20,9 +13,13 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.s3.dto.S3Response;
 import com.yfive.gbjs.global.s3.entity.PathName;
 import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
-
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -36,6 +33,8 @@ public class S3ServiceImpl implements S3Service {
   public S3Response uploadImage(PathName pathName, MultipartFile file) {
 
     String imgUrl = uploadFile(pathName, file);
+
+    log.info("이미지 업로드 성공 - pathName: {}, imageUrl: {}", pathName, imgUrl);
 
     return S3Response.builder().imageUrl(imgUrl).build();
   }
@@ -54,6 +53,7 @@ public class S3ServiceImpl implements S3Service {
     try {
       amazonS3.putObject(
           new PutObjectRequest(s3Config.getBucket(), keyName, file.getInputStream(), metadata));
+      log.info("파일 업로드 성공 - keyName: {}", keyName);
       return amazonS3.getUrl(s3Config.getBucket(), keyName).toString();
     } catch (Exception e) {
       log.error("S3 upload 중 오류 발생", e);
@@ -65,10 +65,10 @@ public class S3ServiceImpl implements S3Service {
   public String createKeyName(PathName pathName) {
 
     return switch (pathName) {
-          case SEAL -> s3Config.getSealPath();
-          case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
-          case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
-        }
+      case SEAL -> s3Config.getSealPath();
+      case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
+      case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
+    }
         + '/'
         + UUID.randomUUID();
   }
@@ -80,6 +80,7 @@ public class S3ServiceImpl implements S3Service {
 
     try {
       amazonS3.deleteObject(new DeleteObjectRequest(s3Config.getBucket(), keyName));
+      log.info("파일 삭제 성공 - keyName: {}", keyName);
     } catch (Exception e) {
       log.error("S3 upload 중 오류 발생", e);
       throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
@@ -97,13 +98,15 @@ public class S3ServiceImpl implements S3Service {
         };
 
     try {
-      return amazonS3
+      List<String> urls = amazonS3
           .listObjectsV2(
               new ListObjectsV2Request().withBucketName(s3Config.getBucket()).withPrefix(prefix))
           .getObjectSummaries()
           .stream()
           .map(obj -> amazonS3.getUrl(s3Config.getBucket(), obj.getKey()).toString())
           .collect(Collectors.toList());
+      log.info("파일 목록 조회 성공 - pathName: {}, 파일 수: {}", pathName, urls.size());
+      return urls;
     } catch (Exception e) {
       log.error("S3 파일 목록 조회 중 오류 발생", e);
       throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
@@ -120,6 +123,7 @@ public class S3ServiceImpl implements S3Service {
           case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
         };
     String keyName = prefix + "/" + fileName;
+    log.info("파일 삭제 요청 - pathName: {}, fileName: {}", pathName, fileName);
     deleteFile(keyName);
   }
 
@@ -131,7 +135,9 @@ public class S3ServiceImpl implements S3Service {
     if (!imageUrl.startsWith(bucketUrl)) {
       throw new CustomException(S3ErrorStatus.FILE_URL_INVALID);
     }
-    return imageUrl.substring(bucketUrl.length());
+    String keyName = imageUrl.substring(bucketUrl.length());
+    log.info("keyName 추출 성공 - keyName: {}", keyName);
+    return keyName;
   }
 
   public void existFile(String keyName) {
