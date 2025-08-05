@@ -9,10 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.common.response.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +23,7 @@ public class SpotControllerImpl implements SpotController {
   private final SpotService spotService;
 
   @Override
-  public ResponseEntity<ApiResponse<SpotPageResponse>> getSpotsByKeyword(
+  public ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
       @RequestParam String keyword,
       @RequestParam Integer pageNum,
       @RequestParam Integer pageSize,
@@ -32,7 +32,7 @@ public class SpotControllerImpl implements SpotController {
       @RequestParam Double latitude) {
 
     Pageable pageable = PageRequest.of(pageNum, pageSize);
-    SpotPageResponse spotListResponse =
+    PageResponse<SpotResponse> spotListResponse =
         spotService.getSpotsByKeyword(keyword, pageable, sortBy, longitude, latitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotListResponse));

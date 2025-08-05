@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.yfive.gbjs.domain.spot.dto.response.SpotPageResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.common.response.PageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,7 +23,7 @@ public interface SpotController {
 
   @GetMapping
   @Operation(summary = "관광지 검색", description = "검색 키워드를 기반으로 관광지 리스트 반환")
-  ResponseEntity<ApiResponse<SpotPageResponse>> getSpotsByKeyword(
+  ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
       @Parameter(description = "검색 키워드", example = "경주") @RequestParam String keyword,
       @Parameter(description = "페이지 번호", example = "0") @RequestParam Integer pageNum,
       @Parameter(description = "페이지 크기", example = "4") @RequestParam Integer pageSize,
