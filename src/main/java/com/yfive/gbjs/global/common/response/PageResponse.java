@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.gbjs.domain.spot.dto.response;
+package com.yfive.gbjs.global.common.response;
 
 import java.util.List;
 
@@ -11,11 +11,11 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(title = "SpotPageResponse DTO", description = "관광지 리스트 페이지 응답 반환")
-public class SpotPageResponse {
+@Schema(title = "PageResponse DTO", description = "응답 객체들에 대한 리스트를 페이지로 응답 반환")
+public class PageResponse<T> {
 
   @Schema(description = "데이터 리스트")
-  private List<SpotResponse> content;
+  private List<T> content;
 
   @Schema(description = "전체 데이터의 개수", example = "200")
   private Long totalElements;
