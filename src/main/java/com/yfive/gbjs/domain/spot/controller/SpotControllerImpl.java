@@ -3,18 +3,17 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
+import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.entity.SortBy;
+import com.yfive.gbjs.domain.spot.service.SpotService;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.common.response.PageResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
-import com.yfive.gbjs.domain.spot.service.SpotService;
-import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
-
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,16 +23,23 @@ public class SpotControllerImpl implements SpotController {
 
   @Override
   public ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
-      @RequestParam String keyword,
       @RequestParam Integer pageNum,
       @RequestParam Integer pageSize,
-      @RequestParam String sortBy,
+      @RequestParam String keyword,
+      @RequestParam SortBy sortBy,
       @RequestParam Double latitude,
       @RequestParam Double longitude) {
 
     Pageable pageable = PageRequest.of(pageNum, pageSize);
-    PageResponse<SpotResponse> spotListResponse =
-        spotService.getSpotsByKeyword(keyword, pageable, sortBy, latitude, longitude);
+    PageResponse<SpotResponse> spotListResponse;
+
+    if (sortBy == SortBy.DISTANCE) {
+      spotListResponse =
+          spotService.getSpotsByKeywordSortedByDistance(pageable, keyword, latitude, longitude);
+    } else {
+      spotListResponse =
+          spotService.getSpotsByKeyword(pageable, keyword, latitude, longitude);
+    }
 
     return ResponseEntity.ok(ApiResponse.success(spotListResponse));
   }

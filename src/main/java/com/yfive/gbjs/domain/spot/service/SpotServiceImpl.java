@@ -3,28 +3,25 @@
  */
 package com.yfive.gbjs.domain.spot.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
 import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -42,16 +39,52 @@ public class SpotServiceImpl implements SpotService {
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeyword(
-      String keyword, Pageable pageable, String sortBy, Double latitude, Double longitude) {
+      Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
+    List<SpotResponse> spotResponses = fetchSpotListByKeyword(
+        pageable.getPageSize(),
+        pageable.getPageNumber(),
+        keyword,
+        latitude,
+        longitude
+    );
+
+    PageImpl<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
+
+    for (int i = 0; i < page.getSize(); i++) {
+      SpotResponse spotResponse =
+          getSpotByContentId(page.getContent().get(i).getSpotId(), latitude, longitude);
+
+      page.getContent().get(i).setOverview(spotResponse.getOverview());
+      page.getContent().get(i).setType(spotResponse.getType());
+    }
+
+    return PageResponse.<SpotResponse>builder()
+        .content(page.getContent())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .pageNum(page.getNumber())
+        .pageSize(page.getSize())
+        .last(page.isLast())
+        .first(page.isFirst())
+        .build();
+  }
+
+  @Override
+  public PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
+      Pageable pageable, String keyword, Double latitude, Double longitude) {
+
+    List<SpotResponse> spotResponses = fetchSpotListByKeyword(1000, 1, keyword, latitude,
+        longitude);
+
+    spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
 
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
 
-    for (int i = 0; i < pageable.getPageSize(); i++) {
+    for (int i = 0; i < pageContent.size(); i++) {
       SpotResponse spotResponse =
           getSpotByContentId(pageContent.get(i).getSpotId(), latitude, longitude);
 
@@ -73,21 +106,25 @@ public class SpotServiceImpl implements SpotService {
   }
 
   private List<SpotResponse> fetchSpotListByKeyword(
-      String keyword, Double latitude, Double longitude) {
+      Integer pageSize, Integer pageNum, String keyword, Double latitude, Double longitude) {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/searchKeyword2")
             .queryParam("serviceKey", serviceKey)
-            .queryParam("numOfRows", 1000)
+            .queryParam("numOfRows", pageSize)
+            .queryParam("pageNo", pageNum)
             .queryParam("MobileOS", "WEB")
             .queryParam("MobileApp", "gbjs")
             .queryParam("_type", "JSON")
+            .queryParam("arrange", "O")
             .queryParam("keyword", encodedKeyword)
             .queryParam("areaCode", "35");
 
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
+
+    log.info("response={}", response);
 
     if (response == null || response.isBlank()) {
       log.error("빈 응답 수신");
@@ -121,8 +158,6 @@ public class SpotServiceImpl implements SpotService {
 
         spotResponse.setAudio(false);
       }
-
-      spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
       return spotResponses;
     } catch (Exception e) {
@@ -243,9 +278,9 @@ public class SpotServiceImpl implements SpotService {
     double a =
         Math.sin(latDist / 2) * Math.sin(latDist / 2)
             + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDist / 2)
-                * Math.sin(lonDist / 2);
+            * Math.cos(Math.toRadians(lat2))
+            * Math.sin(lonDist / 2)
+            * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
