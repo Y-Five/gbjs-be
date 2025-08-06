@@ -40,7 +40,6 @@ dependencies {
 
     // Springdoc OpenAPI
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-api:${springdocVersion}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

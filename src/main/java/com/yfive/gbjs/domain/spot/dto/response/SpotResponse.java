@@ -32,6 +32,7 @@ public class SpotResponse {
   @Schema(description = "관광지 분류코드", example = "유적지/사적지")
   private String type;
 
+  @Setter
   @Schema(description = "관광지 설명", example = "첨성대는 신라 제27대 선덕여왕 때 건립된 것으로 추정되며...")
   private String overview;
 

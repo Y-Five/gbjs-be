@@ -42,14 +42,54 @@ public class SpotServiceImpl implements SpotService {
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeyword(
-      String keyword, Pageable pageable, String sortBy, Double longitude, Double latitude) {
+      Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, longitude, latitude);
+    List<SpotResponse> spotResponses =
+        fetchSpotListByKeyword(
+            pageable.getPageSize(), pageable.getPageNumber(), keyword, latitude, longitude);
+
+    PageImpl<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
+
+    for (int i = 0; i < page.getSize(); i++) {
+      SpotResponse spotResponse =
+          getSpotByContentId(page.getContent().get(i).getSpotId(), latitude, longitude);
+
+      page.getContent().get(i).setOverview(spotResponse.getOverview());
+      page.getContent().get(i).setType(spotResponse.getType());
+    }
+
+    return PageResponse.<SpotResponse>builder()
+        .content(page.getContent())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .pageNum(page.getNumber())
+        .pageSize(page.getSize())
+        .last(page.isLast())
+        .first(page.isFirst())
+        .build();
+  }
+
+  @Override
+  public PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
+      Pageable pageable, String keyword, Double latitude, Double longitude) {
+
+    List<SpotResponse> spotResponses =
+        fetchSpotListByKeyword(1000, 1, keyword, latitude, longitude);
+
+    spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
 
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
+
+    for (int i = 0; i < pageContent.size(); i++) {
+      SpotResponse spotResponse =
+          getSpotByContentId(pageContent.get(i).getSpotId(), latitude, longitude);
+
+      pageContent.get(i).setOverview(spotResponse.getOverview());
+      pageContent.get(i).setType(spotResponse.getType());
+    }
 
     PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
@@ -65,21 +105,25 @@ public class SpotServiceImpl implements SpotService {
   }
 
   private List<SpotResponse> fetchSpotListByKeyword(
-      String keyword, Double latitude, Double longitude) {
+      Integer pageSize, Integer pageNum, String keyword, Double latitude, Double longitude) {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/searchKeyword2")
             .queryParam("serviceKey", serviceKey)
-            .queryParam("numOfRows", 1000)
+            .queryParam("numOfRows", pageSize)
+            .queryParam("pageNo", pageNum)
             .queryParam("MobileOS", "WEB")
             .queryParam("MobileApp", "gbjs")
             .queryParam("_type", "JSON")
+            .queryParam("arrange", "O")
             .queryParam("keyword", encodedKeyword)
             .queryParam("areaCode", "35");
 
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
+
+    log.info("response={}", response);
 
     if (response == null || response.isBlank()) {
       log.error("빈 응답 수신");
@@ -99,8 +143,8 @@ public class SpotServiceImpl implements SpotService {
         SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
         spotResponses.add(spotResponse);
 
-        if (longitude != null
-            && latitude != null
+        if (latitude != null
+            && longitude != null
             && item.get("mapy") != null
             && item.get("mapx") != null) {
           double distance =
@@ -114,8 +158,6 @@ public class SpotServiceImpl implements SpotService {
         spotResponse.setAudio(false);
       }
 
-      spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
-
       return spotResponses;
     } catch (Exception e) {
       log.error("관광지 목록 파싱 실패", e);
@@ -124,7 +166,7 @@ public class SpotServiceImpl implements SpotService {
   }
 
   @Override
-  public SpotResponse getSpotByContentId(Long contentId, Double longitude, Double latitude) {
+  public SpotResponse getSpotByContentId(String contentId, Double latitude, Double longitude) {
 
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/detailCommon2")
@@ -158,8 +200,8 @@ public class SpotServiceImpl implements SpotService {
 
       SpotResponse spotResponse = objectMapper.treeToValue(itemNode, SpotResponse.class);
 
-      if (longitude != null
-          && latitude != null
+      if (latitude != null
+          && longitude != null
           && itemNode.get("mapy") != null
           && itemNode.get("mapx") != null) {
         double distance =

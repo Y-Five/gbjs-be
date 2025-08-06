@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.common.response.PageResponse;
@@ -24,24 +25,30 @@ public class SpotControllerImpl implements SpotController {
 
   @Override
   public ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
-      @RequestParam String keyword,
       @RequestParam Integer pageNum,
       @RequestParam Integer pageSize,
-      @RequestParam String sortBy,
-      @RequestParam Double longitude,
-      @RequestParam Double latitude) {
+      @RequestParam String keyword,
+      @RequestParam SortBy sortBy,
+      @RequestParam Double latitude,
+      @RequestParam Double longitude) {
 
     Pageable pageable = PageRequest.of(pageNum, pageSize);
-    PageResponse<SpotResponse> spotListResponse =
-        spotService.getSpotsByKeyword(keyword, pageable, sortBy, longitude, latitude);
+    PageResponse<SpotResponse> spotListResponse;
+
+    if (sortBy == SortBy.DISTANCE) {
+      spotListResponse =
+          spotService.getSpotsByKeywordSortedByDistance(pageable, keyword, latitude, longitude);
+    } else {
+      spotListResponse = spotService.getSpotsByKeyword(pageable, keyword, latitude, longitude);
+    }
 
     return ResponseEntity.ok(ApiResponse.success(spotListResponse));
   }
 
   @Override
   public ResponseEntity<ApiResponse<SpotResponse>> getSpotByContentId(
-      Long contentId, @RequestParam Double longitude, @RequestParam Double latitude) {
-    SpotResponse spotResponse = spotService.getSpotByContentId(contentId, longitude, latitude);
+      String contentId, @RequestParam Double latitude, @RequestParam Double longitude) {
+    SpotResponse spotResponse = spotService.getSpotByContentId(contentId, latitude, longitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotResponse));
   }
