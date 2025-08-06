@@ -172,11 +172,8 @@ public class GlobalExceptionHandler {
 
   // CustomException 처리
   @ExceptionHandler(CustomException.class)
-  public ResponseEntity<Map<String, Object>> handleCustomException(CustomException e) {
-    log.error("CustomException: {}", e.getMessage());
-    Map<String, Object> errorResponse = new HashMap<>();
-    errorResponse.put("code", e.getErrorCode().getCode());
-    errorResponse.put("message", e.getErrorCode().getMessage());
-    return ResponseEntity.status(e.getErrorCode().getStatus()).body(errorResponse);
+  public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
+    return ResponseEntity.status(e.getErrorCode().getStatus())
+        .body(ApiResponse.error(ResponseCode.BAD_REQUEST, e.getErrorCode().getMessage()));
   }
 }

@@ -87,5 +87,10 @@ public class AudioGuide extends BaseTimeEntity {
     this.syncStatus = updatedData.getSyncStatus();
     this.apiModifiedTime = updatedData.getApiModifiedTime();
     this.lastSyncedAt = updatedData.getLastSyncedAt();
+    this.tlid = updatedData.getTlid();
+    this.audioGuideId = updatedData.getAudioGuideId();
+    this.stlid = updatedData.getStlid();
+    this.langCode = updatedData.getLangCode();
+    this.apiCreatedTime = updatedData.getApiCreatedTime();
   }
 }

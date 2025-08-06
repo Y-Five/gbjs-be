@@ -32,6 +32,6 @@ public interface AudioGuideRepository extends JpaRepository<AudioGuide, Long> {
   List<AudioGuide> findByTitle(String title);
 
   // 관광지명으로 조회 (LIKE 검색 - 부분 일치)
-  @Query("SELECT a FROM AudioGuide a WHERE a.title LIKE %:title%")
+  @Query("SELECT a FROM AudioGuide a WHERE a.title LIKE CONCAT('%', :title, '%')")
   List<AudioGuide> findByTitleLike(@Param("title") String title);
 }

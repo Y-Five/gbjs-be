@@ -171,10 +171,10 @@ public class GuideServiceImpl implements GuideService {
                 double longitude = Double.parseDouble(mapX); // mapX는 경도
                 double latitude = Double.parseDouble(mapY); // mapY는 위도
 
-                if (latitude >= 35.5
-                    && latitude <= 37.5
-                    && longitude >= 128.0
-                    && longitude <= 130.0) {
+                if (latitude >= 35.5667
+                    && latitude <= 37.55
+                    && longitude >= 127.8
+                    && longitude <= 131.8667) {
 
                   pageGyeongbukCount++;
                   String spotId = item.path("tid").asText();
