@@ -4,37 +4,35 @@
 package com.yfive.gbjs.domain.guide.service;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.guide.dto.response.AudioStoryDetailResponse;
-import com.yfive.gbjs.domain.guide.dto.response.AudioStoryListResponse;
-import com.yfive.gbjs.domain.guide.dto.response.AudioStorySimpleListResponse;
-import com.yfive.gbjs.domain.guide.exception.GuideErrorStatus;
-import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.domain.guide.converter.AudioGuideConverter;
+import com.yfive.gbjs.domain.guide.dto.response.AudioDetailResponse;
+import com.yfive.gbjs.domain.guide.entity.AudioGuide;
+import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GuideServiceImpl implements GuideService {
 
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
+  private final AudioGuideRepository audioGuideRepository;
+  private final AudioGuideConverter audioGuideConverter;
 
   @Value("${audio.api.host}")
   private String audioApiHost;
@@ -56,212 +54,6 @@ public class GuideServiceImpl implements GuideService {
     return builder.build(true).toUri();
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public AudioStoryListResponse getAudioStoryBasedList(
-      String spotId, String tlid, Integer pageNo, Integer numOfRows) {
-    Map<String, Object> params = new java.util.HashMap<>();
-
-    if (spotId != null) {
-      // spotId가 있으면 원래대로 페이징 적용
-      params.put("pageNo", pageNo);
-      params.put("numOfRows", numOfRows);
-      params.put("tid", spotId);
-    } else {
-      // spotId가 없으면 경상북도 필터링을 위해 많은 데이터를 가져옴
-      params.put("pageNo", 1);
-      params.put("numOfRows", 1000);
-    }
-
-    if (tlid != null) {
-      params.put("tlid", tlid);
-    }
-
-    URI url = buildUri("/storyBasedList", params);
-
-    // spotId가 지정된 경우에는 필터링 없이, 없는 경우에는 경상북도 필터링 적용
-    if (spotId != null) {
-      return executeApiCall(
-          url,
-          "audio story based list",
-          response -> parseAudioStoryResponseForSpecificSpot(response, pageNo, numOfRows));
-    } else {
-      return executeApiCall(
-          url,
-          "audio story based list",
-          response -> parseAudioStoryResponse(response, pageNo, numOfRows));
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public AudioStoryListResponse getAudioStoryLocationBasedList(
-      Double longitude, Double latitude, Integer pageNo, Integer numOfRows) {
-    Map<String, Object> params = new java.util.HashMap<>();
-    params.put("mapX", longitude);
-    params.put("mapY", latitude);
-    params.put("pageNo", 1); // 경상북도 필터링을 위해 충분한 데이터 가져오기
-    params.put("numOfRows", 1000);
-    params.put("radius", 999999); // 반경 제한 없이 모든 데이터를 가져오기 위해 매우 큰 값 설정
-
-    URI url = buildUri("/storyLocationBasedList", params);
-    return executeApiCall(
-        url,
-        "audio story location based list",
-        response ->
-            parseAudioStoryLocationResponse(response, longitude, latitude, pageNo, numOfRows));
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public AudioStoryListResponse getAudioStorySearchList(
-      String keyword, Integer pageNo, Integer numOfRows) {
-    URI url =
-        buildUri(
-            "/storySearchList",
-            Map.of(
-                "keyword", URLEncoder.encode(keyword, StandardCharsets.UTF_8),
-                "pageNo", 1, // 경상북도 필터링을 위해 충분한 데이터 가져오기
-                "numOfRows", 1000));
-    return executeApiCall(
-        url,
-        "audio story search list",
-        response -> parseAudioStoryResponse(response, pageNo, numOfRows));
-  }
-
-  /**
-   * 공통 API 호출 로직을 처리합니다.
-   *
-   * @param url 호출할 API URL
-   * @param operation 작업 설명 (로깅용)
-   * @param responseParser 응답 파싱 함수
-   * @param <T> 반환 타입
-   * @return 파싱된 응답 객체
-   */
-  private <T> T executeApiCall(URI url, String operation, Function<String, T> responseParser) {
-    log.info("Requesting {}: {}", operation, url);
-
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-      if (response == null || response.isBlank()) {
-        log.warn("가이드 API 응답이 비어있습니다.");
-        throw new CustomException(GuideErrorStatus.EMPTY_RESPONSE);
-      }
-      return responseParser.apply(response);
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error("{} 실패: {}", operation, e.getMessage(), e);
-      throw new CustomException(GuideErrorStatus.API_REQUEST_FAILED);
-    }
-  }
-
-  /**
-   * 오디오 스토리 API 응답을 파싱하여 AudioStoryListResponse 객체로 변환합니다.
-   *
-   * @param response API 응답 JSON 문자열
-   * @return 파싱된 오디오 스토리 목록 응답 객체
-   * @throws CustomException 응답 파싱 중 오류 발생 시
-   */
-  private AudioStoryListResponse parseAudioStoryResponse(
-      String response, Integer requestedPageNo, Integer requestedNumOfRows) {
-    try {
-      JsonNode root = objectMapper.readTree(response);
-      JsonNode body = root.path("response").path("body");
-
-      if (body.isMissingNode()) {
-        log.warn("가이드 API 응답 구조가 올바르지 않습니다.");
-        throw new CustomException(GuideErrorStatus.PARSING_ERROR);
-      }
-
-      Integer totalCount = body.path("totalCount").asInt(0);
-      // API에서 받은 값이 아닌 요청한 값을 사용
-      Integer pageNo = requestedPageNo;
-      Integer numOfRows = requestedNumOfRows;
-
-      JsonNode items = body.path("items").path("item");
-      List<AudioStoryListResponse.AudioStorySpot> audioStorySpots = new ArrayList<>();
-      int filteredCount = 0;
-
-      if (items.isArray()) {
-        for (JsonNode item : items) {
-          // 좌표 값 가져오기
-          String mapX = item.path("mapX").asText();
-          String mapY = item.path("mapY").asText();
-
-          // 경상북도 지역 좌표 범위 확인 (위도: 35.5~37.5, 경도: 128.0~130.0)
-          if (mapX != null && mapY != null && !mapX.isEmpty() && !mapY.isEmpty()) {
-            try {
-              double longitude = Double.parseDouble(mapX); // mapX는 경도
-              double latitude = Double.parseDouble(mapY); // mapY는 위도
-
-              // 디버깅: 좌표 값 출력
-              log.info("좌표 확인 - 경도: {}, 위도: {}", longitude, latitude);
-
-              if (latitude >= 35.5
-                  && latitude <= 37.5
-                  && longitude >= 128.0
-                  && longitude <= 130.0) {
-                filteredCount++;
-                String spotId = item.path("tid").asText();
-
-                AudioStoryListResponse.AudioStorySpot audioStorySpot =
-                    AudioStoryListResponse.AudioStorySpot.builder()
-                        .spotId(spotId)
-                        .tlid(item.path("tlid").asText())
-                        .audioStoryId(item.path("stid").asText())
-                        .stlid(item.path("stlid").asText())
-                        .title(item.path("title").asText())
-                        .addr1(item.path("mapX").asText()) // 경도
-                        .addr2(item.path("mapY").asText()) // 위도
-                        .audioTitle(item.path("audioTitle").asText())
-                        .script(item.path("script").asText())
-                        .playTime(parsePlayTime(item.path("playTime").asText()))
-                        .audioUrl(item.path("audioUrl").asText())
-                        .langCode(item.path("langCode").asText())
-                        .imageUrl(item.path("imageUrl").asText())
-                        .build();
-                audioStorySpots.add(audioStorySpot);
-              }
-            } catch (NumberFormatException e) {
-              // 좌표 변환 실패 시 무시
-              log.warn("좌표 변환 실패: mapX={}, mapY={}", mapX, mapY);
-            }
-          }
-        }
-      }
-
-      log.info("전체 오디오 스토리: {}, 경상북도 필터링 후: {}", items.size(), filteredCount);
-
-      // 페이징 처리
-      int startIndex = (pageNo - 1) * numOfRows;
-      int endIndex = Math.min(startIndex + numOfRows, audioStorySpots.size());
-
-      List<AudioStoryListResponse.AudioStorySpot> pagedSpots =
-          startIndex < audioStorySpots.size()
-              ? audioStorySpots.subList(startIndex, endIndex)
-              : new ArrayList<>();
-
-      // 첫 페이지와 마지막 페이지 여부 계산
-      boolean first = (pageNo == 1);
-      boolean last = endIndex >= audioStorySpots.size();
-
-      return AudioStoryListResponse.builder()
-          .totalCount(filteredCount) // 필터링된 개수로 설정
-          .pageNo(pageNo)
-          .pageSize(numOfRows)
-          .first(first)
-          .last(last)
-          .audioSpotList(pagedSpots)
-          .build();
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error("오디오 스토리 응답 파싱 실패: {}", e.getMessage(), e);
-      throw new CustomException(GuideErrorStatus.PARSING_ERROR);
-    }
-  }
-
   /**
    * 재생 시간 문자열을 Integer로 파싱합니다.
    *
@@ -273,324 +65,220 @@ public class GuideServiceImpl implements GuideService {
     try {
       return Integer.parseInt(playTime.trim());
     } catch (NumberFormatException e) {
-      log.warn("재생 시간 파싱 실패: {}", playTime);
       return null;
     }
   }
 
   /**
-   * 특정 관광지의 오디오 스토리 API 응답을 파싱합니다. 특정 spotId 조회 시에는 경상북도 필터링을 적용하지 않습니다.
+   * 관광지의 오디오 상세 정보를 가져옵니다.
    *
-   * @param response API 응답 JSON 문자열
-   * @return 파싱된 오디오 스토리 목록 응답 객체
-   * @throws CustomException 응답 파싱 중 오류 발생 시
+   * @param spotId 관광지 ID
+   * @return 오디오 상세 정보
    */
-  private AudioStoryListResponse parseAudioStoryResponseForSpecificSpot(
-      String response, Integer pageNo, Integer numOfRows) {
+  private JsonNode fetchAudioDetail(String spotId) {
+    Map<String, Object> params = new java.util.HashMap<>();
+    params.put("tid", spotId);
+    params.put("pageNo", 1);
+    params.put("numOfRows", 10);
+
+    URI url = buildUri("/storyBasedList", params);
+
     try {
+      String response = restClient.get().uri(url).retrieve().body(String.class);
+      if (response == null || response.isBlank()) {
+        return null;
+      }
+
       JsonNode root = objectMapper.readTree(response);
-      JsonNode body = root.path("response").path("body");
+      JsonNode items = root.path("response").path("body").path("items").path("item");
 
-      if (body.isMissingNode()) {
-        log.warn("가이드 API 응답 구조가 올바르지 않습니다.");
-        throw new CustomException(GuideErrorStatus.PARSING_ERROR);
+      if (items.isArray() && items.size() > 0) {
+        return items.get(0);
       }
-
-      Integer totalCount = body.path("totalCount").asInt(0);
-
-      JsonNode items = body.path("items").path("item");
-      List<AudioStoryListResponse.AudioStorySpot> audioStorySpots = new ArrayList<>();
-
-      if (items.isArray()) {
-        for (JsonNode item : items) {
-          AudioStoryListResponse.AudioStorySpot audioStorySpot =
-              AudioStoryListResponse.AudioStorySpot.builder()
-                  .spotId(item.path("tid").asText())
-                  .tlid(item.path("tlid").asText())
-                  .audioStoryId(item.path("stid").asText())
-                  .stlid(item.path("stlid").asText())
-                  .title(item.path("title").asText())
-                  .addr1(item.path("mapX").asText()) // 경도
-                  .addr2(item.path("mapY").asText()) // 위도
-                  .audioTitle(item.path("audioTitle").asText())
-                  .script(item.path("script").asText())
-                  .playTime(parsePlayTime(item.path("playTime").asText()))
-                  .audioUrl(item.path("audioUrl").asText())
-                  .langCode(item.path("langCode").asText())
-                  .imageUrl(item.path("imageUrl").asText())
-                  .build();
-          audioStorySpots.add(audioStorySpot);
-        }
-      }
-
-      // 첫 페이지와 마지막 페이지 여부 계산
-      boolean first = (pageNo == 1);
-      boolean last = (pageNo * numOfRows) >= totalCount;
-
-      return AudioStoryListResponse.builder()
-          .totalCount(totalCount)
-          .pageNo(pageNo)
-          .pageSize(numOfRows)
-          .first(first)
-          .last(last)
-          .audioSpotList(audioStorySpots)
-          .build();
-    } catch (CustomException e) {
-      throw e;
+      return null;
     } catch (Exception e) {
-      log.error("특정 관광지 오디오 스토리 응답 파싱 실패: {}", e.getMessage(), e);
-      throw new CustomException(GuideErrorStatus.PARSING_ERROR);
+      return null;
     }
   }
 
-  /**
-   * 위치기반 오디오 스토리 API 응답을 파싱합니다. 사용자 위치로부터의 거리를 계산하여 가까운 순으로 정렬합니다.
-   *
-   * @param response API 응답 JSON 문자열
-   * @param userLongitude 사용자 경도
-   * @param userLatitude 사용자 위도
-   * @return 경상북도 지역으로 필터링되고 거리순으로 정렬된 오디오 스토리 목록 응답 객체
-   * @throws CustomException 응답 파싱 중 오류 발생 시
-   */
-  private AudioStoryListResponse parseAudioStoryLocationResponse(
-      String response,
-      Double userLongitude,
-      Double userLatitude,
-      Integer requestedPageNo,
-      Integer requestedNumOfRows) {
-    try {
-      JsonNode root = objectMapper.readTree(response);
-      JsonNode body = root.path("response").path("body");
+  /** {@inheritDoc} */
+  @Override
+  @Transactional
+  public int syncGyeongbukAudioStories() {
 
-      if (body.isMissingNode()) {
-        log.warn("가이드 API 응답 구조가 올바르지 않습니다.");
-        throw new CustomException(GuideErrorStatus.PARSING_ERROR);
+    // 마지막 동기화 시간 조회
+    Optional<String> lastModifiedTime = audioGuideRepository.findLatestModifiedTime();
+    String modifiedTimeParam = lastModifiedTime.orElse(null);
+
+    if (modifiedTimeParam != null) {
+    } else {
+    }
+
+    String currentSyncTime =
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+    int totalNewCount = 0;
+    int totalUpdatedCount = 0;
+    int totalDeletedCount = 0;
+    int pageNo = 1;
+    boolean hasMoreData = true;
+
+    // 페이지네이션을 통해 모든 데이터 가져오기
+    while (hasMoreData) {
+      Map<String, Object> params = new java.util.HashMap<>();
+      params.put("pageNo", pageNo);
+      params.put("numOfRows", 1000);
+
+      // 증분 동기화를 위한 파라미터 설정
+      if (modifiedTimeParam != null) {
+        params.put("modifiedtime", modifiedTimeParam.substring(0, 8)); // yyyyMMdd 형식
       }
 
-      Integer totalCount = body.path("totalCount").asInt(0);
-      // API에서 받은 값이 아닌 요청한 값을 사용
-      Integer pageNo = requestedPageNo;
-      Integer numOfRows = requestedNumOfRows;
+      URI url = buildUri("/storyBasedSyncList", params);
 
-      JsonNode items = body.path("items").path("item");
-      List<SpotWithDistance> spotsWithDistance = new ArrayList<>();
+      try {
+        String response = restClient.get().uri(url).retrieve().body(String.class);
+        if (response == null || response.isBlank()) {
+          break;
+        }
 
-      if (items.isArray()) {
-        for (JsonNode item : items) {
-          String spotId = item.path("tid").asText();
+        JsonNode root = objectMapper.readTree(response);
+        JsonNode body = root.path("response").path("body");
 
-          // 좌표 값 가져오기
-          String mapX = item.path("mapX").asText();
-          String mapY = item.path("mapY").asText();
+        if (body.isMissingNode()) {
+          break;
+        }
 
-          // 경상북도 지역 좌표 범위 확인 (위도: 35.5~37.5, 경도: 128.0~130.0)
-          if (mapX != null && mapY != null && !mapX.isEmpty() && !mapY.isEmpty()) {
-            try {
-              double longitude = Double.parseDouble(mapX); // mapX는 경도
-              double latitude = Double.parseDouble(mapY); // mapY는 위도
+        // 전체 개수와 현재 페이지 정보 확인
+        int totalCount = body.path("totalCount").asInt(0);
+        int numOfRows = body.path("numOfRows").asInt(0);
 
-              if (latitude >= 35.5
-                  && latitude <= 37.5
-                  && longitude >= 128.0
-                  && longitude <= 130.0) {
+        JsonNode items = body.path("items").path("item");
+        int pageGyeongbukCount = 0;
+        int pageNewCount = 0;
+        int pageUpdatedCount = 0;
+        int pageDeletedCount = 0;
 
-                // 거리 계산
-                double distance =
-                    calculateDistance(userLatitude, userLongitude, latitude, longitude);
+        if (items.isArray() && items.size() > 0) {
+          for (JsonNode item : items) {
+            // 좌표 값 가져오기
+            String mapX = item.path("mapX").asText();
+            String mapY = item.path("mapY").asText();
 
-                AudioStoryListResponse.AudioStorySpot audioStorySpot =
-                    AudioStoryListResponse.AudioStorySpot.builder()
-                        .spotId(spotId)
-                        .tlid(item.path("tlid").asText())
-                        .audioStoryId(item.path("stid").asText())
-                        .stlid(item.path("stlid").asText())
-                        .title(item.path("title").asText())
-                        .addr1(item.path("mapX").asText()) // 경도
-                        .addr2(item.path("mapY").asText()) // 위도
-                        .audioTitle(item.path("audioTitle").asText())
-                        .script(item.path("script").asText())
-                        .playTime(parsePlayTime(item.path("playTime").asText()))
-                        .audioUrl(item.path("audioUrl").asText())
-                        .langCode(item.path("langCode").asText())
-                        .imageUrl(item.path("imageUrl").asText())
-                        .build();
-                spotsWithDistance.add(new SpotWithDistance(audioStorySpot, distance));
+            // 경상북도 지역 좌표 범위 확인 (위도: 35.5~37.5, 경도: 128.0~130.0)
+            if (mapX != null && mapY != null && !mapX.isEmpty() && !mapY.isEmpty()) {
+              try {
+                double longitude = Double.parseDouble(mapX); // mapX는 경도
+                double latitude = Double.parseDouble(mapY); // mapY는 위도
+
+                if (latitude >= 35.5
+                    && latitude <= 37.5
+                    && longitude >= 128.0
+                    && longitude <= 130.0) {
+
+                  pageGyeongbukCount++;
+                  String spotId = item.path("tid").asText();
+                  String syncStatus = item.path("syncStatus").asText();
+
+                  // syncStatus에 따른 처리
+                  if ("D".equals(syncStatus)) {
+                    // 삭제 처리
+                    audioGuideRepository.deleteBySpotId(spotId);
+                    pageDeletedCount++;
+                  } else {
+                    // 신규(A) 또는 수정(U) 처리
+                    Optional<AudioGuide> existingGuide = audioGuideRepository.findBySpotId(spotId);
+
+                    // 상세 정보 가져오기 (syncList API에는 상세 정보가 없음)
+                    JsonNode detailInfo = fetchAudioDetail(spotId);
+
+                    AudioGuide.AudioGuideBuilder builder =
+                        AudioGuide.builder()
+                            .spotId(spotId)
+                            .tlid(item.path("tlid").asText())
+                            .title(item.path("title").asText())
+                            .longitude(mapX)
+                            .latitude(mapY)
+                            .langCode(item.path("langCode").asText())
+                            .imageUrl(item.path("imageUrl").asText())
+                            .syncStatus(syncStatus)
+                            .apiCreatedTime(item.path("createdtime").asText())
+                            .apiModifiedTime(item.path("modifiedtime").asText())
+                            .lastSyncedAt(currentSyncTime);
+
+                    // 상세 정보가 있으면 추가
+                    if (detailInfo != null) {
+                      builder
+                          .audioGuideId(detailInfo.path("stid").asText())
+                          .stlid(detailInfo.path("stlid").asText())
+                          .audioTitle(detailInfo.path("audioTitle").asText())
+                          .script(detailInfo.path("script").asText())
+                          .playTime(parsePlayTime(detailInfo.path("playTime").asText()))
+                          .audioUrl(detailInfo.path("audioUrl").asText());
+                    }
+
+                    AudioGuide audioGuide = builder.build();
+
+                    if (existingGuide.isPresent()) {
+                      // 기존 데이터 업데이트
+                      AudioGuide existing = existingGuide.get();
+                      existing.updateFromSync(audioGuide);
+                      audioGuideRepository.save(existing);
+                      pageUpdatedCount++;
+                    } else {
+                      // 신규 데이터 저장
+                      audioGuideRepository.save(audioGuide);
+                      pageNewCount++;
+                    }
+                  }
+                }
+              } catch (NumberFormatException e) {
               }
-            } catch (NumberFormatException e) {
-              // 좌표 변환 실패 시 무시
-              log.warn("좌표 변환 실패: mapX={}, mapY={}", mapX, mapY);
             }
           }
+
+          totalNewCount += pageNewCount;
+          totalUpdatedCount += pageUpdatedCount;
+          totalDeletedCount += pageDeletedCount;
+
+          // 다음 페이지가 있는지 확인
+          if (pageNo * numOfRows >= totalCount || items.size() < numOfRows) {
+            hasMoreData = false;
+          } else {
+            pageNo++;
+          }
+        } else {
+          // 더 이상 데이터가 없음
+          hasMoreData = false;
         }
+
+      } catch (Exception e) {
+        break;
       }
-
-      // 거리순으로 정렬
-      spotsWithDistance.sort(Comparator.comparingDouble(SpotWithDistance::getDistance));
-
-      // 정렬된 결과에서 AudioStorySpot 리스트 추출
-      List<AudioStoryListResponse.AudioStorySpot> audioStorySpots =
-          spotsWithDistance.stream().map(SpotWithDistance::getSpot).toList();
-
-      int filteredCount = audioStorySpots.size();
-      log.info("전체 오디오 스토리: {}, 경상북도 필터링 후: {}", items.size(), filteredCount);
-
-      // 페이징 처리
-      int startIndex = (pageNo - 1) * numOfRows;
-      int endIndex = Math.min(startIndex + numOfRows, audioStorySpots.size());
-
-      List<AudioStoryListResponse.AudioStorySpot> pagedSpots =
-          startIndex < audioStorySpots.size()
-              ? audioStorySpots.subList(startIndex, endIndex)
-              : new ArrayList<>();
-
-      // 첫 페이지와 마지막 페이지 여부 계산
-      boolean first = (pageNo == 1);
-      boolean last = endIndex >= audioStorySpots.size();
-
-      return AudioStoryListResponse.builder()
-          .totalCount(filteredCount) // 필터링된 개수로 설정
-          .pageNo(pageNo)
-          .pageSize(numOfRows)
-          .first(first)
-          .last(last)
-          .audioSpotList(pagedSpots)
-          .build();
-    } catch (CustomException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error("위치기반 오디오 스토리 응답 파싱 실패: {}", e.getMessage(), e);
-      throw new CustomException(GuideErrorStatus.PARSING_ERROR);
-    }
-  }
-
-  /**
-   * 두 지점 간의 거리를 계산합니다 (Haversine formula 사용).
-   *
-   * @param lat1 첫 번째 지점의 위도
-   * @param lon1 첫 번째 지점의 경도
-   * @param lat2 두 번째 지점의 위도
-   * @param lon2 두 번째 지점의 경도
-   * @return 두 지점 간의 거리 (미터 단위)
-   */
-  private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    final int EARTH_RADIUS = 6371000; // 지구 반경 (미터)
-
-    double lat1Rad = Math.toRadians(lat1);
-    double lat2Rad = Math.toRadians(lat2);
-    double deltaLat = Math.toRadians(lat2 - lat1);
-    double deltaLon = Math.toRadians(lon2 - lon1);
-
-    double a =
-        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
-            + Math.cos(lat1Rad)
-                * Math.cos(lat2Rad)
-                * Math.sin(deltaLon / 2)
-                * Math.sin(deltaLon / 2);
-
-    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return EARTH_RADIUS * c;
-  }
-
-  /** 거리 정보와 함께 AudioStorySpot을 저장하는 내부 클래스 */
-  private static class SpotWithDistance {
-    private final AudioStoryListResponse.AudioStorySpot spot;
-    private final double distance;
-
-    public SpotWithDistance(AudioStoryListResponse.AudioStorySpot spot, double distance) {
-      this.spot = spot;
-      this.distance = distance;
     }
 
-    public AudioStoryListResponse.AudioStorySpot getSpot() {
-      return spot;
-    }
-
-    public double getDistance() {
-      return distance;
-    }
+    return totalNewCount + totalUpdatedCount;
   }
 
   /** {@inheritDoc} */
   @Override
-  public AudioStorySimpleListResponse getAudioStorySimpleList(
-      String spotId,
-      Double longitude,
-      Double latitude,
-      String keyword,
-      Integer pageNo,
-      Integer numOfRows) {
-
-    // 기존 메서드 호출하여 전체 데이터 가져오기
-    AudioStoryListResponse fullResponse;
-
-    // 키워드 검색
-    if (keyword != null && !keyword.trim().isEmpty()) {
-      fullResponse = getAudioStorySearchList(keyword, pageNo, numOfRows);
+  public List<AudioDetailResponse> searchAudioGuideByTitle(String title) {
+    List<AudioGuide> audioGuides = audioGuideRepository.findByTitle(title);
+    if (audioGuides.isEmpty()) {
+      throw new com.yfive.gbjs.global.error.exception.CustomException(
+          com.yfive.gbjs.domain.guide.exception.GuideErrorStatus.AUDIO_GUIDE_NOT_FOUND);
     }
-    // 위치기반 조회
-    else if (longitude != null && latitude != null) {
-      fullResponse = getAudioStoryLocationBasedList(longitude, latitude, pageNo, numOfRows);
-    }
-    // 기본정보 조회 (spotId 유무와 관계없이)
-    else {
-      fullResponse = getAudioStoryBasedList(spotId, null, pageNo, numOfRows);
-    }
-
-    // 간략한 정보만 추출하여 새로운 응답 객체 생성
-    List<AudioStorySimpleListResponse.AudioStorySimpleSpot> simpleSpots =
-        fullResponse.getAudioSpotList().stream()
-            .map(
-                spot ->
-                    AudioStorySimpleListResponse.AudioStorySimpleSpot.builder()
-                        .spotId(spot.getSpotId())
-                        .title(spot.getTitle())
-                        .addr1(spot.getAddr1())
-                        .addr2(spot.getAddr2())
-                        .audioUrl(spot.getAudioUrl())
-                        .imageUrl(spot.getImageUrl())
-                        .build())
-            .toList();
-
-    return AudioStorySimpleListResponse.builder()
-        .totalCount(fullResponse.getTotalCount())
-        .pageNo(fullResponse.getPageNo())
-        .pageSize(fullResponse.getPageSize())
-        .first(fullResponse.getFirst())
-        .last(fullResponse.getLast())
-        .audioSpotList(simpleSpots)
-        .build();
+    return audioGuideConverter.toAudioDetailResponseList(audioGuides);
   }
 
   /** {@inheritDoc} */
   @Override
-  public AudioStoryDetailResponse getAudioStoryDetail(String spotId) {
-    if (spotId == null || spotId.trim().isEmpty()) {
-      throw new CustomException(GuideErrorStatus.INVALID_PARAMETER);
+  public List<AudioDetailResponse> searchAudioGuideByTitleLike(String title) {
+    List<AudioGuide> audioGuides = audioGuideRepository.findByTitleLike(title);
+    if (audioGuides.isEmpty()) {
+      throw new com.yfive.gbjs.global.error.exception.CustomException(
+          com.yfive.gbjs.domain.guide.exception.GuideErrorStatus.AUDIO_GUIDE_NOT_FOUND);
     }
-
-    // 페이징 없이 모든 스토리 가져오기 (최대 100개)
-    AudioStoryListResponse fullResponse = getAudioStoryBasedList(spotId, null, 1, 100);
-
-    // 상세 정보 추출
-    List<AudioStoryDetailResponse.AudioStoryDetail> detailList =
-        fullResponse.getAudioSpotList().stream()
-            .map(
-                spot ->
-                    AudioStoryDetailResponse.AudioStoryDetail.builder()
-                        .spotId(spot.getSpotId())
-                        .audioStoryId(spot.getAudioStoryId())
-                        .title(spot.getTitle())
-                        .addr1(spot.getAddr1())
-                        .addr2(spot.getAddr2())
-                        .audioTitle(spot.getAudioTitle())
-                        .script(spot.getScript())
-                        .playTime(spot.getPlayTime())
-                        .audioUrl(spot.getAudioUrl())
-                        .imageUrl(spot.getImageUrl())
-                        .build())
-            .toList();
-
-    return AudioStoryDetailResponse.builder().audioSpotList(detailList).build();
+    return audioGuideConverter.toAudioDetailResponseList(audioGuides);
   }
 }
