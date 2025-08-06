@@ -75,7 +75,7 @@ public class SecurityConfig {
                     // 공개 API
                     .requestMatchers(
                         "/api/auth/**",
-                        "/api/guides/**",
+                        "/api/audio-guide/**",
                         "/api/weathers/**",
                         "/api/festivals/**",
                         "/api/seals/**",
