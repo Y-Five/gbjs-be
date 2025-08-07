@@ -24,8 +24,8 @@ public class AudioGuide extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "spot_id", nullable = false)
-  private String spotId;
+  @Column(name = "tid", nullable = false)
+  private String tid;
 
   @Column(name = "tlid")
   private String tlid;
@@ -76,7 +76,8 @@ public class AudioGuide extends BaseTimeEntity {
   private String lastSyncedAt; // 마지막 동기화 시간
 
   public void updateFromSync(AudioGuide updatedData) {
-    // 기본 정보만 업데이트 (syncList API는 오디오 정보를 포함하지 않음)
+    // 모든 정보 업데이트 (syncList API도 오디오 정보를 포함함)
+    this.tid = updatedData.getTid();
     this.title = updatedData.getTitle();
     this.longitude = updatedData.getLongitude();
     this.latitude = updatedData.getLatitude();
@@ -87,8 +88,11 @@ public class AudioGuide extends BaseTimeEntity {
     this.tlid = updatedData.getTlid();
     this.langCode = updatedData.getLangCode();
     this.apiCreatedTime = updatedData.getApiCreatedTime();
-    // 오디오 관련 필드는 기존 값 유지
-    // this.audioTitle, this.script, this.playTime, this.audioUrl
-    // this.audioGuideId, this.stlid
+    this.audioTitle = updatedData.getAudioTitle();
+    this.script = updatedData.getScript();
+    this.playTime = updatedData.getPlayTime();
+    this.audioUrl = updatedData.getAudioUrl();
+    this.audioGuideId = updatedData.getAudioGuideId();
+    this.stlid = updatedData.getStlid();
   }
 }
