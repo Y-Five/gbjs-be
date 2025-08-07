@@ -109,8 +109,3 @@ tasks.register('preCommitCheck') {
     group = 'verification'
     description = '커밋 전 코드 스타일 검사'
 }
-
-test {
-    useJUnitPlatform()
-    timeout = Duration.ofMinutes(5)
-}
