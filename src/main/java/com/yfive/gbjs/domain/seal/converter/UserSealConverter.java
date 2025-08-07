@@ -23,7 +23,9 @@ public class UserSealConverter {
         .locationName(seal.getLocationName())
         .location(seal.getLocation())
         .content(seal.getContent())
-        .imageUrl(seal.getImageUrl())
+        .rarity(seal.getRarity())
+        .frontImageUrl(seal.getFrontImageUrl())
+        .backImageUrl(seal.getBackImageUrl())
         .collected(collected)
         .collectedAt(collectedAt)
         .build();

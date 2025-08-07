@@ -31,13 +31,25 @@ public class Seal extends BaseTimeEntity {
   @Column(name = "locationName", nullable = false, unique = true)
   private String locationName;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "location", nullable = false)
-  private Location location;
-
   @Column(name = "content", nullable = false)
   private String content;
 
-  @Column(name = "imageUrl", nullable = false)
-  private String imageUrl;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "rarity", nullable = false)
+  private Rarity rarity;
+
+  @Column(name = "frontImageUrl", nullable = false)
+  private String frontImageUrl;
+
+  @Column(name = "backImageUrl", nullable = false)
+  private String backImageUrl;
+
+  // 외래키 관계
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "seal_spot_id")
+  private SealSpot sealSpot;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "location", nullable = false)
+  private Location location;
 }

@@ -55,17 +55,18 @@ public class SealServiceImpl implements SealService {
     List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
 
     // 사용자가 수집한 띠부씰을 Map으로 변환 (빠른 조회를 위해)
-    Map<Long, LocalDateTime> userSealMap =
+    Map<Long, UserSeal> userSealMap =
         userSeals.stream()
-            .collect(Collectors.toMap(us -> us.getSeal().getId(), UserSeal::getCollectedAt));
+            .collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
     // 모든 띠부씰에 대해 사용자의 수집 정보를 합쳐서 반환
     List<UserSealResponse.UserSealDTO> userSealDTOs =
         allSeals.stream()
             .map(
                 seal -> {
-                  boolean collected = userSealMap.containsKey(seal.getId());
-                  LocalDateTime collectedAt = userSealMap.get(seal.getId());
+                  UserSeal userSeal = userSealMap.get(seal.getId());
+                  boolean collected = userSeal != null && userSeal.getCollected();
+                  LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
                   return userSealConverter.toDTO(seal, collected, collectedAt);
                 })
             .collect(Collectors.toList());

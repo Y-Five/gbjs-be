@@ -38,6 +38,9 @@ public class UserSeal extends BaseTimeEntity {
   @JoinColumn(name = "seal_id", nullable = false)
   private Seal seal;
 
+  @Column(name = "collected", nullable = false)
+  private Boolean collected;
+
   @Column(name = "collected_at", nullable = false)
   private java.time.LocalDateTime collectedAt;
 
