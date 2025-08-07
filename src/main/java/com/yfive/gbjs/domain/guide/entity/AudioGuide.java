@@ -76,21 +76,19 @@ public class AudioGuide extends BaseTimeEntity {
   private String lastSyncedAt; // 마지막 동기화 시간
 
   public void updateFromSync(AudioGuide updatedData) {
+    // 기본 정보만 업데이트 (syncList API는 오디오 정보를 포함하지 않음)
     this.title = updatedData.getTitle();
     this.longitude = updatedData.getLongitude();
     this.latitude = updatedData.getLatitude();
-    this.audioTitle = updatedData.getAudioTitle();
-    this.script = updatedData.getScript();
-    this.playTime = updatedData.getPlayTime();
-    this.audioUrl = updatedData.getAudioUrl();
     this.imageUrl = updatedData.getImageUrl();
     this.syncStatus = updatedData.getSyncStatus();
     this.apiModifiedTime = updatedData.getApiModifiedTime();
     this.lastSyncedAt = updatedData.getLastSyncedAt();
     this.tlid = updatedData.getTlid();
-    this.audioGuideId = updatedData.getAudioGuideId();
-    this.stlid = updatedData.getStlid();
     this.langCode = updatedData.getLangCode();
     this.apiCreatedTime = updatedData.getApiCreatedTime();
+    // 오디오 관련 필드는 기존 값 유지
+    // this.audioTitle, this.script, this.playTime, this.audioUrl
+    // this.audioGuideId, this.stlid
   }
 }
