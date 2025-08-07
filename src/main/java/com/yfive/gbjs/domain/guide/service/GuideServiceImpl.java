@@ -179,13 +179,13 @@ public class GuideServiceImpl implements GuideService {
                 // 경북 지역 확인 (대구, 충주 제외)
                 if (isInGyeongbukRegion(latitude, longitude)) {
 
-                  String spotId = item.path("tid").asText();
+                  String tid = item.path("tid").asText();
                   String title = item.path("title").asText();
 
                   // storyBasedList API에서 직접 모든 정보를 가져옴
                   AudioGuide audioGuide =
                       AudioGuide.builder()
-                          .spotId(spotId)
+                          .tid(tid)
                           .tlid(item.path("tlid").asText())
                           .title(title)
                           .longitude(mapX)
@@ -316,22 +316,22 @@ public class GuideServiceImpl implements GuideService {
                 if (isInGyeongbukRegion(latitude, longitude)) {
 
                   pageGyeongbukCount++;
-                  String spotId = item.path("tid").asText();
+                  String tid = item.path("tid").asText();
                   String syncStatus = item.path("syncStatus").asText();
 
                   // syncStatus에 따른 처리
                   if ("D".equals(syncStatus)) {
                     // 삭제 처리
-                    audioGuideRepository.deleteBySpotId(spotId);
+                    audioGuideRepository.deleteByTid(tid);
                     pageDeletedCount++;
                   } else {
                     // 신규(A) 또는 수정(U) 처리
-                    Optional<AudioGuide> existingGuide = audioGuideRepository.findBySpotId(spotId);
+                    Optional<AudioGuide> existingGuide = audioGuideRepository.findByTid(tid);
 
-                    // syncList API는 기본 정보만 포함하므로 오디오 정보는 업데이트하지 않음
+                    // syncList API
                     AudioGuide audioGuide =
                         AudioGuide.builder()
-                            .spotId(spotId)
+                            .tid(tid)
                             .tlid(item.path("tlid").asText())
                             .title(item.path("title").asText())
                             .longitude(mapX)
@@ -342,6 +342,12 @@ public class GuideServiceImpl implements GuideService {
                             .apiCreatedTime(item.path("createdtime").asText())
                             .apiModifiedTime(item.path("modifiedtime").asText())
                             .lastSyncedAt(currentSyncTime)
+                            .audioGuideId(item.path("stid").asText())
+                            .stlid(item.path("stlid").asText())
+                            .audioTitle(item.path("audioTitle").asText())
+                            .script(item.path("script").asText())
+                            .playTime(parsePlayTime(item.path("playTime").asText()))
+                            .audioUrl(item.path("audioUrl").asText())
                             .build();
 
                     if (existingGuide.isPresent()) {

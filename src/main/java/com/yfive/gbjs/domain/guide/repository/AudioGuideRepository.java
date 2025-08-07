@@ -16,13 +16,13 @@ import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 @Repository
 public interface AudioGuideRepository extends JpaRepository<AudioGuide, Long> {
 
-  boolean existsBySpotIdAndAudioGuideId(String spotId, String audioGuideId);
+  boolean existsByTidAndAudioGuideId(String tid, String audioGuideId);
 
-  // spotId로 조회
-  Optional<AudioGuide> findBySpotId(String spotId);
+  // tid로 조회
+  Optional<AudioGuide> findByTid(String tid);
 
-  // spotId로 삭제
-  void deleteBySpotId(String spotId);
+  // tid로 삭제
+  void deleteByTid(String tid);
 
   // 마지막 동기화 시간 조회
   @Query("SELECT MAX(a.apiModifiedTime) FROM AudioGuide a")
