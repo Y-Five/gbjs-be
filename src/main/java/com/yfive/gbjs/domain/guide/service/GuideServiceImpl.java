@@ -24,7 +24,9 @@ import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GuideServiceImpl implements GuideService {
@@ -39,6 +41,24 @@ public class GuideServiceImpl implements GuideService {
 
   @Value("${openapi.secret.key}")
   private String serviceKey;
+
+  // 경상북도 좌표 범위
+  private static final double GYEONGBUK_LAT_MIN = 35.5667;
+  private static final double GYEONGBUK_LAT_MAX = 37.55;
+  private static final double GYEONGBUK_LON_MIN = 127.8;
+  private static final double GYEONGBUK_LON_MAX = 131.8667;
+
+  // 대구광역시 좌표 범위 (제외)
+  private static final double DAEGU_LAT_MIN = 35.8;
+  private static final double DAEGU_LAT_MAX = 35.95;
+  private static final double DAEGU_LON_MIN = 128.47;
+  private static final double DAEGU_LON_MAX = 128.76;
+
+  // 충주 및 충북 북부 지역 좌표 범위 (제외)
+  private static final double CHUNGJU_LAT_MIN = 36.9;
+  private static final double CHUNGJU_LAT_MAX = 37.2;
+  private static final double CHUNGJU_LON_MIN = 127.8;
+  private static final double CHUNGJU_LON_MAX = 128.2;
 
   private URI buildUri(String path, Map<String, Object> queryParams) {
     UriComponentsBuilder builder =
@@ -70,41 +90,162 @@ public class GuideServiceImpl implements GuideService {
   }
 
   /**
-   * 관광지의 오디오 상세 정보를 가져옵니다.
+   * 주어진 좌표가 경상북도 지역(대구, 충주 제외)에 속하는지 확인합니다.
    *
-   * @param spotId 관광지 ID
-   * @return 오디오 상세 정보
+   * @param latitude 위도
+   * @param longitude 경도
+   * @return 경북 지역 포함 여부
    */
-  private JsonNode fetchAudioDetail(String spotId) {
-    Map<String, Object> params = new java.util.HashMap<>();
-    params.put("tid", spotId);
-    params.put("pageNo", 1);
-    params.put("numOfRows", 10);
+  private boolean isInGyeongbukRegion(double latitude, double longitude) {
+    // 경상북도 범위에 포함되는지 확인
+    boolean isGyeongbuk =
+        latitude >= GYEONGBUK_LAT_MIN
+            && latitude <= GYEONGBUK_LAT_MAX
+            && longitude >= GYEONGBUK_LON_MIN
+            && longitude <= GYEONGBUK_LON_MAX;
 
-    URI url = buildUri("/storyBasedList", params);
+    // 대구광역시 범위 (제외)
+    boolean isDaegu =
+        latitude >= DAEGU_LAT_MIN
+            && latitude <= DAEGU_LAT_MAX
+            && longitude >= DAEGU_LON_MIN
+            && longitude <= DAEGU_LON_MAX;
 
-    try {
-      String response = restClient.get().uri(url).retrieve().body(String.class);
-      if (response == null || response.isBlank()) {
-        return null;
+    // 충주 및 충북 북부 지역 (제외)
+    boolean isChungju =
+        latitude >= CHUNGJU_LAT_MIN
+            && latitude <= CHUNGJU_LAT_MAX
+            && longitude >= CHUNGJU_LON_MIN
+            && longitude <= CHUNGJU_LON_MAX;
+
+    return isGyeongbuk && !isDaegu && !isChungju;
+  }
+
+  /**
+   * 초기 데이터 로드 - storyBasedList API를 사용하여 전체 오디오 가이드 데이터를 가져옵니다.
+   *
+   * @return 저장된 데이터 개수
+   */
+  @Transactional
+  public int loadInitialGyeongbukAudioGuides() {
+    log.info("=== 초기 데이터 로드 시작 ===");
+    int totalSavedCount = 0;
+    int pageNo = 1;
+    boolean hasMoreData = true;
+
+    String currentSyncTime =
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+    while (hasMoreData) {
+      Map<String, Object> params = new java.util.HashMap<>();
+      params.put("pageNo", pageNo);
+      params.put("numOfRows", 1000);
+
+      URI url = buildUri("/storyBasedList", params);
+      log.info("API 호출 URL: {}", url);
+
+      try {
+        String response = restClient.get().uri(url).retrieve().body(String.class);
+        log.info("API 응답 받음 (길이: {})", response != null ? response.length() : 0);
+        if (response == null || response.isBlank()) {
+          break;
+        }
+
+        JsonNode root = objectMapper.readTree(response);
+        JsonNode body = root.path("response").path("body");
+
+        if (body.isMissingNode()) {
+          break;
+        }
+
+        int totalCount = body.path("totalCount").asInt(0);
+        int numOfRows = body.path("numOfRows").asInt(0);
+
+        JsonNode items = body.path("items").path("item");
+        log.info("총 개수: {}, 현재 페이지 아이템 수: {}", totalCount, items.isArray() ? items.size() : 0);
+
+        if (items.isArray() && items.size() > 0) {
+          log.info("아이템 처리 시작...");
+          for (JsonNode item : items) {
+            String mapX = item.path("mapX").asText();
+            String mapY = item.path("mapY").asText();
+
+            // 경상북도 지역 좌표 범위 확인
+            if (mapX != null && mapY != null && !mapX.isEmpty() && !mapY.isEmpty()) {
+              try {
+                double longitude = Double.parseDouble(mapX);
+                double latitude = Double.parseDouble(mapY);
+
+                // 경북 지역 확인 (대구, 충주 제외)
+                if (isInGyeongbukRegion(latitude, longitude)) {
+
+                  String spotId = item.path("tid").asText();
+                  String title = item.path("title").asText();
+
+                  // storyBasedList API에서 직접 모든 정보를 가져옴
+                  AudioGuide audioGuide =
+                      AudioGuide.builder()
+                          .spotId(spotId)
+                          .tlid(item.path("tlid").asText())
+                          .title(title)
+                          .longitude(mapX)
+                          .latitude(mapY)
+                          .langCode(item.path("langCode").asText())
+                          .imageUrl(item.path("imageUrl").asText())
+                          .syncStatus("A") // 초기 로드는 모두 신규
+                          .apiCreatedTime(item.path("createdtime").asText())
+                          .apiModifiedTime(item.path("modifiedtime").asText())
+                          .lastSyncedAt(currentSyncTime)
+                          // 오디오 정보 직접 매핑
+                          .audioGuideId(item.path("stid").asText())
+                          .stlid(item.path("stlid").asText())
+                          .audioTitle(item.path("audioTitle").asText())
+                          .script(item.path("script").asText())
+                          .playTime(parsePlayTime(item.path("playTime").asText()))
+                          .audioUrl(item.path("audioUrl").asText())
+                          .build();
+
+                  audioGuideRepository.save(audioGuide);
+                  totalSavedCount++;
+                  log.debug("저장 완료: {} (총 {}개)", title, totalSavedCount);
+                }
+              } catch (NumberFormatException e) {
+                // 좌표 파싱 실패 시 무시
+              }
+            }
+          }
+
+          // 다음 페이지 확인
+          if (pageNo * numOfRows >= totalCount || items.size() < numOfRows) {
+            hasMoreData = false;
+          } else {
+            pageNo++;
+          }
+        } else {
+          hasMoreData = false;
+        }
+      } catch (Exception e) {
+        log.error("오류 발생: {}", e.getMessage(), e);
+        break;
       }
-
-      JsonNode root = objectMapper.readTree(response);
-      JsonNode items = root.path("response").path("body").path("items").path("item");
-
-      if (items.isArray() && items.size() > 0) {
-        return items.get(0);
-      }
-      return null;
-    } catch (Exception e) {
-      return null;
     }
+
+    log.info("=== 초기 데이터 로드 완료. 총 저장: {}개 ===", totalSavedCount);
+    return totalSavedCount;
   }
 
   /** {@inheritDoc} */
   @Override
   @Transactional
   public int syncGyeongbukAudioStories() {
+
+    // DB에 데이터가 있는지 확인
+    long dbRecordCount = audioGuideRepository.count();
+
+    // DB가 비어있으면 초기 데이터 로드
+    if (dbRecordCount == 0) {
+      return loadInitialGyeongbukAudioGuides();
+    }
 
     // 마지막 동기화 시간 조회
     Optional<String> lastModifiedTime = audioGuideRepository.findLatestModifiedTime();
@@ -171,10 +312,8 @@ public class GuideServiceImpl implements GuideService {
                 double longitude = Double.parseDouble(mapX); // mapX는 경도
                 double latitude = Double.parseDouble(mapY); // mapY는 위도
 
-                if (latitude >= 35.5667
-                    && latitude <= 37.55
-                    && longitude >= 127.8
-                    && longitude <= 131.8667) {
+                // 경북 지역 확인 (대구, 충주 제외)
+                if (isInGyeongbukRegion(latitude, longitude)) {
 
                   pageGyeongbukCount++;
                   String spotId = item.path("tid").asText();
@@ -189,10 +328,8 @@ public class GuideServiceImpl implements GuideService {
                     // 신규(A) 또는 수정(U) 처리
                     Optional<AudioGuide> existingGuide = audioGuideRepository.findBySpotId(spotId);
 
-                    // 상세 정보 가져오기 (syncList API에는 상세 정보가 없음)
-                    JsonNode detailInfo = fetchAudioDetail(spotId);
-
-                    AudioGuide.AudioGuideBuilder builder =
+                    // syncList API는 기본 정보만 포함하므로 오디오 정보는 업데이트하지 않음
+                    AudioGuide audioGuide =
                         AudioGuide.builder()
                             .spotId(spotId)
                             .tlid(item.path("tlid").asText())
@@ -204,20 +341,8 @@ public class GuideServiceImpl implements GuideService {
                             .syncStatus(syncStatus)
                             .apiCreatedTime(item.path("createdtime").asText())
                             .apiModifiedTime(item.path("modifiedtime").asText())
-                            .lastSyncedAt(currentSyncTime);
-
-                    // 상세 정보가 있으면 추가
-                    if (detailInfo != null) {
-                      builder
-                          .audioGuideId(detailInfo.path("stid").asText())
-                          .stlid(detailInfo.path("stlid").asText())
-                          .audioTitle(detailInfo.path("audioTitle").asText())
-                          .script(detailInfo.path("script").asText())
-                          .playTime(parsePlayTime(detailInfo.path("playTime").asText()))
-                          .audioUrl(detailInfo.path("audioUrl").asText());
-                    }
-
-                    AudioGuide audioGuide = builder.build();
+                            .lastSyncedAt(currentSyncTime)
+                            .build();
 
                     if (existingGuide.isPresent()) {
                       // 기존 데이터 업데이트
