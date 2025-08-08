@@ -19,11 +19,12 @@ import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.Rarity;
 import com.yfive.gbjs.domain.seal.entity.Seal;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
-import com.yfive.gbjs.domain.user.service.UserServiceImpl;
+import com.yfive.gbjs.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,11 +40,11 @@ public class SealServiceImpl implements SealService {
   private final SealProductConverter sealProductConverter;
   private final SealConverter sealConverter;
   private final UserSealConverter userSealConverter;
-  private final UserServiceImpl userServiceImpl;
+  private final UserService userService;
 
   /** 등록된 모든 띠부씰을 조회하여 반환 */
   @Override
-  public SealResponse.SealListDTO getAllSeals(String sortBy) {
+  public SealResponse.SealListDTO getAllSeals(SortBy sortBy) {
     List<Seal> seals = sealRepository.findAll();
 
     // 정렬 적용
@@ -58,8 +59,8 @@ public class SealServiceImpl implements SealService {
 
   /** 특정 사용자의 띠부씰 수집 현황을 조회 모든 띠부씰에 대해 사용자의 수집 여부와 수집 시간을 포함하여 반환 */
   @Override
-  public UserSealResponse.UserSealListDTO getUserSeals(String sortBy) {
-    Long userId = userServiceImpl.getCurrentUser().getId();
+  public UserSealResponse.UserSealListDTO getUserSeals(SortBy sortBy) {
+    Long userId = userService.getCurrentUser().getId();
     List<Seal> allSeals = sealRepository.findAll();
     List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
 
@@ -94,49 +95,53 @@ public class SealServiceImpl implements SealService {
   }
 
   /** Seal 정렬을 위한 Comparator 생성 */
-  private java.util.Comparator<SealResponse.SealDTO> getSealComparator(String sortBy) {
-    if ("희귀도순".equals(sortBy)) {
-      // 희귀한 순서대로 정렬 (EPIC > RARE > COMMON), 같은 희귀도면 번호순
-      return java.util.Comparator.comparing(
-              (SealResponse.SealDTO s) -> getRarityOrder(s.getRarity()))
-          .thenComparing(SealResponse.SealDTO::getNumber);
-    } else if ("지역순".equals(sortBy)) {
-      // 지역명대로 정렬, 같은 지역명이면 번호순
-      return java.util.Comparator.comparing(SealResponse.SealDTO::getLocationName)
-          .thenComparing(SealResponse.SealDTO::getNumber);
-    } else {
-      // 번호순: 1번부터 정렬 (기본값)
-      return java.util.Comparator.comparing(SealResponse.SealDTO::getNumber);
+  private java.util.Comparator<SealResponse.SealDTO> getSealComparator(SortBy sortBy) {
+    switch (sortBy) {
+      case RARITY:
+        // 희귀한 순서대로 정렬 (RED > GREEN > BLUE), 같은 희귀도면 번호순
+        return java.util.Comparator.comparing(
+                (SealResponse.SealDTO s) -> getRarityOrder(s.getRarity()))
+            .thenComparing(SealResponse.SealDTO::getNumber);
+      case LOCATION:
+        // 지역명대로 정렬, 같은 지역명이면 번호순
+        return java.util.Comparator.comparing(SealResponse.SealDTO::getLocationName)
+            .thenComparing(SealResponse.SealDTO::getNumber);
+      case NUMBER:
+      default:
+        // 번호순: 1번부터 정렬 (기본값)
+        return java.util.Comparator.comparing(SealResponse.SealDTO::getNumber);
     }
   }
 
   /** UserSeal 정렬을 위한 Comparator 생성 */
-  private java.util.Comparator<UserSealResponse.UserSealDTO> getUserSealComparator(String sortBy) {
-    if ("희귀도순".equals(sortBy)) {
-      // 희귀한 순서대로 정렬 (EPIC > RARE > COMMON), 같은 희귀도면 번호순
-      return java.util.Comparator.comparing(
-              (UserSealResponse.UserSealDTO s) -> getRarityOrder(s.getRarity()))
-          .thenComparing(UserSealResponse.UserSealDTO::getNumber);
-    } else if ("수집순".equals(sortBy)) {
-      // 먼저 수집한 상품부터 보여주기 (수집한 것 우선, 수집 시간 오름차순)
-      return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::isCollected)
-          .reversed() // 수집한 것 먼저
-          .thenComparing(
-              (UserSealResponse.UserSealDTO s) -> {
-                // 수집되지 않은 경우 MAX 값으로 처리하여 뒤로 보냄
-                if (s.getCollectedAt() == null) {
-                  return java.time.LocalDateTime.MAX;
-                }
-                return s.getCollectedAt();
-              }) // 수집 시간 오름차순
-          .thenComparing(UserSealResponse.UserSealDTO::getNumber); // 같은 시간이면 번호순
-    } else if ("지역순".equals(sortBy)) {
-      // 지역명대로 정렬, 같은 지역명이면 번호순
-      return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::getLocationName)
-          .thenComparing(UserSealResponse.UserSealDTO::getNumber);
-    } else {
-      // 번호순: 1번부터 정렬 (기본값)
-      return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::getNumber);
+  private java.util.Comparator<UserSealResponse.UserSealDTO> getUserSealComparator(SortBy sortBy) {
+    switch (sortBy) {
+      case RARITY:
+        // 희귀한 순서대로 정렬 (RED > GREEN > BLUE), 같은 희귀도면 번호순
+        return java.util.Comparator.comparing(
+                (UserSealResponse.UserSealDTO s) -> getRarityOrder(s.getRarity()))
+            .thenComparing(UserSealResponse.UserSealDTO::getNumber);
+      case COLLECTED:
+        // 먼저 수집한 상품부터 보여주기 (수집한 것 우선, 수집 시간 오름차순)
+        return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::isCollected)
+            .reversed() // 수집한 것 먼저
+            .thenComparing(
+                (UserSealResponse.UserSealDTO s) -> {
+                  // 수집되지 않은 경우 MAX 값으로 처리하여 뒤로 보냄
+                  if (s.getCollectedAt() == null) {
+                    return java.time.LocalDateTime.MAX;
+                  }
+                  return s.getCollectedAt();
+                }) // 수집 시간 오름차순
+            .thenComparing(UserSealResponse.UserSealDTO::getNumber); // 같은 시간이면 번호순
+      case LOCATION:
+        // 지역명대로 정렬, 같은 지역명이면 번호순
+        return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::getLocationName)
+            .thenComparing(UserSealResponse.UserSealDTO::getNumber);
+      case NUMBER:
+      default:
+        // 번호순: 1번부터 정렬 (기본값)
+        return java.util.Comparator.comparing(UserSealResponse.UserSealDTO::getNumber);
     }
   }
 

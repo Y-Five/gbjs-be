@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.service.SealService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
@@ -25,14 +26,14 @@ public class SealControllerImpl implements SealController {
   private final SealService sealService;
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(String sortBy) {
+  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(SortBy sortBy) {
     SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
-      Authentication authentication, String sortBy) {
+      Authentication authentication, SortBy sortBy) {
     UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
