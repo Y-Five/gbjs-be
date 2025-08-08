@@ -28,7 +28,7 @@ public class Seal extends BaseTimeEntity {
   @Column(name = "spotName", nullable = false, unique = true)
   private String spotName;
 
-  @Column(name = "locationName", nullable = false, unique = true)
+  @Column(name = "locationName", nullable = false)
   private String locationName;
 
   @Column(name = "content", nullable = false)
