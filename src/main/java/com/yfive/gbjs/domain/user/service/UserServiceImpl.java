@@ -92,9 +92,16 @@ public class UserServiceImpl implements UserService {
     String username = "";
 
     if (principal instanceof OAuth2User oauthUser) {
-      Map<String, Object> kakaoAccount = oauthUser.getAttribute("kakao_account");
-      if (kakaoAccount != null && kakaoAccount.containsKey("email")) {
-        username = (String) kakaoAccount.get("email");
+      // JWT에서 생성된 OAuth2User는 email 속성을 직접 가지고 있음
+      Object email = oauthUser.getAttribute("email");
+      if (email != null) {
+        username = (String) email;
+      } else {
+        // 카카오 OAuth2 로그인의 경우
+        Map<String, Object> kakaoAccount = oauthUser.getAttribute("kakao_account");
+        if (kakaoAccount != null && kakaoAccount.containsKey("email")) {
+          username = (String) kakaoAccount.get("email");
+        }
       }
     } else if (principal instanceof String str) {
       username = str;
@@ -108,8 +115,15 @@ public class UserServiceImpl implements UserService {
       throw new CustomException(UserErrorStatus.UNAUTHORIZED);
     }
 
+    log.debug("JWT에서 추출한 email: {}", username);
+
+    final String finalUsername = username; // final 변수로 복사
     return userRepository
-        .findByUsername(username)
-        .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
+        .findByUsername(finalUsername)
+        .orElseThrow(
+            () -> {
+              log.error("사용자를 찾을 수 없음: {}", finalUsername);
+              return new CustomException(UserErrorStatus.USER_NOT_FOUND);
+            });
   }
 }

@@ -20,10 +20,9 @@ public interface SealService {
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
    *
-   * @param userId 사용자 ID
    * @return 사용자의 띠부씰 수집 현황 (수집한 것/수집하지 않은 것 포함)
    */
-  UserSealResponse.UserSealListDTO getUserSeals(Long userId);
+  UserSealResponse.UserSealListDTO getUserSeals();
 
   /**
    * 띠부씰 상품 목록 조회

@@ -3,8 +3,6 @@
  */
 package com.yfive.gbjs.domain.seal.entity.mapper;
 
-import java.io.Serializable;
-
 import jakarta.persistence.*;
 
 import com.yfive.gbjs.domain.seal.entity.Seal;
@@ -14,7 +12,6 @@ import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,15 +22,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "user_seal")
-@IdClass(UserSeal.UserSealId.class)
 public class UserSeal extends BaseTimeEntity {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Id
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "seal_id", nullable = false)
   private Seal seal;
@@ -43,14 +41,4 @@ public class UserSeal extends BaseTimeEntity {
 
   @Column(name = "collected_at", nullable = false)
   private java.time.LocalDateTime collectedAt;
-
-  /** 복합키 클래스 */
-  @Getter
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @EqualsAndHashCode
-  public static class UserSealId implements Serializable {
-    private Long user;
-    private Long seal;
-  }
 }

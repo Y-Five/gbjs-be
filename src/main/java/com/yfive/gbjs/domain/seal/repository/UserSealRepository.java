@@ -14,7 +14,7 @@ import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
 
 /** 사용자 띠부씰 수집 정보 리포지토리 사용자와 띠부씰 간의 매핑 정보를 관리 */
 @Repository
-public interface UserSealRepository extends JpaRepository<UserSeal, UserSeal.UserSealId> {
+public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
 
   /**
    * 특정 사용자가 수집한 모든 띠부씰 조회

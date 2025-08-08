@@ -22,6 +22,7 @@ import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
+import com.yfive.gbjs.domain.user.service.UserServiceImpl;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +38,7 @@ public class SealServiceImpl implements SealService {
   private final SealProductConverter sealProductConverter;
   private final SealConverter sealConverter;
   private final UserSealConverter userSealConverter;
+  private final UserServiceImpl userServiceImpl;
 
   /** 등록된 모든 띠부씰을 조회하여 반환 */
   @Override
@@ -50,14 +52,14 @@ public class SealServiceImpl implements SealService {
 
   /** 특정 사용자의 띠부씰 수집 현황을 조회 모든 띠부씰에 대해 사용자의 수집 여부와 수집 시간을 포함하여 반환 */
   @Override
-  public UserSealResponse.UserSealListDTO getUserSeals(Long userId) {
+  public UserSealResponse.UserSealListDTO getUserSeals() {
+    Long userId = userServiceImpl.getCurrentUser().getId();
     List<Seal> allSeals = sealRepository.findAll();
     List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
 
     // 사용자가 수집한 띠부씰을 Map으로 변환 (빠른 조회를 위해)
     Map<Long, UserSeal> userSealMap =
-        userSeals.stream()
-            .collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
+        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
     // 모든 띠부씰에 대해 사용자의 수집 정보를 합쳐서 반환
     List<UserSealResponse.UserSealDTO> userSealDTOs =

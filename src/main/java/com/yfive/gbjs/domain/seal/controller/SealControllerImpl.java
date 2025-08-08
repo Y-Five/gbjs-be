@@ -12,6 +12,7 @@ import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.service.SealService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,8 +33,7 @@ public class SealControllerImpl implements SealController {
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
       Authentication authentication) {
-    Long userId = Long.valueOf(authentication.getName());
-    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(userId);
+    UserSealResponse.UserSealListDTO response = sealService.getUserSeals();
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
