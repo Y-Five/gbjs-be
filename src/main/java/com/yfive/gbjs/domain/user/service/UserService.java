@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.user.service;
 
+import com.yfive.gbjs.domain.user.entity.User;
+
 public interface UserService {
 
   boolean toggleEmailMarketingConsent();
@@ -14,4 +16,6 @@ public interface UserService {
   String updateNickname(String newNickname);
 
   void deleteUser();
+
+  User getCurrentUser();
 }

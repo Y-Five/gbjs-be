@@ -4,16 +4,16 @@
 package com.yfive.gbjs.domain.seal.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.service.SealService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
-import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,16 +26,15 @@ public class SealControllerImpl implements SealController {
   private final SealService sealService;
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals() {
-    SealResponse.SealListDTO response = sealService.getAllSeals();
+  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(SortBy sortBy) {
+    SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
-  public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getUserSeals(
-      @Parameter(description = "회원 ID", example = "1") @PathVariable Long userId) {
-
-    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(userId);
+  public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
+      Authentication authentication, SortBy sortBy) {
+    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.yfive.gbjs.domain.seal.entity.Location;
+import com.yfive.gbjs.domain.seal.entity.Rarity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -40,8 +41,14 @@ public class UserSealResponse {
     @Schema(description = "설명", example = "안동 하회별신굿탈놀이를 대표하는 전통 탈")
     private String content;
 
-    @Schema(description = "이미지 URL", example = "https://example.com/seal.jpg")
-    private String imageUrl;
+    @Schema(description = "희귀도", example = "BLUE")
+    private Rarity rarity;
+
+    @Schema(description = "앞면 이미지 URL", example = "https://example.com/seal-front.jpg")
+    private String frontImageUrl;
+
+    @Schema(description = "뒷면 이미지 URL", example = "https://example.com/seal-back.jpg")
+    private String backImageUrl;
 
     @Schema(description = "수집 여부", example = "true")
     private boolean collected;
@@ -56,13 +63,13 @@ public class UserSealResponse {
   @AllArgsConstructor
   @Schema(title = "UserSealList : 사용자 띠부씰 수집 현황 목록 DTO")
   public static class UserSealListDTO {
-    @Schema(description = "사용자 띠부씰 수집 현황 목록")
-    private List<UserSealDTO> seals;
-
     @Schema(description = "전체 띠부씰 수", example = "10")
     private int totalCount;
 
     @Schema(description = "수집한 띠부씰 수", example = "3")
     private int collectedCount;
+
+    @Schema(description = "사용자 띠부씰 수집 현황 목록")
+    private List<UserSealDTO> seals;
   }
 }

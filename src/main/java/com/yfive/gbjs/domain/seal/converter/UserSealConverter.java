@@ -23,7 +23,9 @@ public class UserSealConverter {
         .locationName(seal.getLocationName())
         .location(seal.getLocation())
         .content(seal.getContent())
-        .imageUrl(seal.getImageUrl())
+        .rarity(seal.getRarity())
+        .frontImageUrl(seal.getFrontImageUrl())
+        .backImageUrl(seal.getBackImageUrl())
         .collected(collected)
         .collectedAt(collectedAt)
         .build();
@@ -33,9 +35,9 @@ public class UserSealConverter {
     long collectedCount = seals.stream().filter(UserSealResponse.UserSealDTO::isCollected).count();
 
     return UserSealResponse.UserSealListDTO.builder()
-        .seals(seals)
         .totalCount(seals.size())
         .collectedCount((int) collectedCount)
+        .seals(seals)
         .build();
   }
 }

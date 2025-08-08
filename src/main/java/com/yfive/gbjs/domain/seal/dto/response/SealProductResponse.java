@@ -43,8 +43,5 @@ public class SealProductResponse {
   public static class SealProductListDTO {
     @Schema(description = "상품 목록")
     private List<SealProductDTO> products;
-
-    @Schema(description = "전체 상품 수", example = "5")
-    private int totalCount;
   }
 }

@@ -6,6 +6,7 @@ package com.yfive.gbjs.domain.seal.dto.response;
 import java.util.List;
 
 import com.yfive.gbjs.domain.seal.entity.Location;
+import com.yfive.gbjs.domain.seal.entity.Rarity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -39,8 +40,14 @@ public class SealResponse {
     @Schema(description = "설명", example = "안동 하회별신굿탈놀이를 대표하는 전통 탈")
     private String content;
 
-    @Schema(description = "이미지 URL", example = "https://example.com/seal.jpg")
-    private String imageUrl;
+    @Schema(description = "희귀도", example = "BLUE")
+    private Rarity rarity;
+
+    @Schema(description = "앞면 이미지 URL", example = "https://example.com/seal-front.jpg")
+    private String frontImageUrl;
+
+    @Schema(description = "뒷면 이미지 URL", example = "https://example.com/seal-back.jpg")
+    private String backImageUrl;
   }
 
   @Builder
@@ -49,10 +56,10 @@ public class SealResponse {
   @AllArgsConstructor
   @Schema(title = "SealList : 띠부씰 목록 DTO")
   public static class SealListDTO {
-    @Schema(description = "띠부씰 목록")
-    private List<SealDTO> seals;
-
     @Schema(description = "전체 띠부씰 수", example = "10")
     private int totalCount;
+
+    @Schema(description = "띠부씰 목록")
+    private List<SealDTO> seals;
   }
 }

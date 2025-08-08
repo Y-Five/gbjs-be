@@ -25,9 +25,6 @@ public class SealProductConverter {
 
   public SealProductResponse.SealProductListDTO toListDTO(
       List<SealProductResponse.SealProductDTO> products) {
-    return SealProductResponse.SealProductListDTO.builder()
-        .products(products)
-        .totalCount(products.size())
-        .build();
+    return SealProductResponse.SealProductListDTO.builder().products(products).build();
   }
 }
