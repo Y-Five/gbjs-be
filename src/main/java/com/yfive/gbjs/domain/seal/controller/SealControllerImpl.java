@@ -25,15 +25,15 @@ public class SealControllerImpl implements SealController {
   private final SealService sealService;
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals() {
-    SealResponse.SealListDTO response = sealService.getAllSeals();
+  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(String sortBy) {
+    SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
-      Authentication authentication) {
-    UserSealResponse.UserSealListDTO response = sealService.getUserSeals();
+      Authentication authentication, String sortBy) {
+    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

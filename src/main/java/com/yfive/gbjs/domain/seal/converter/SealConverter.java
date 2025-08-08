@@ -28,6 +28,6 @@ public class SealConverter {
   }
 
   public SealResponse.SealListDTO toListDTO(List<SealResponse.SealDTO> seals) {
-    return SealResponse.SealListDTO.builder().seals(seals).totalCount(seals.size()).build();
+    return SealResponse.SealListDTO.builder().totalCount(seals.size()).seals(seals).build();
   }
 }

@@ -39,6 +39,6 @@ public class UserSeal extends BaseTimeEntity {
   @Column(name = "collected", nullable = false)
   private Boolean collected;
 
-  @Column(name = "collected_at", nullable = false)
+  @Column(name = "collected_at")
   private java.time.LocalDateTime collectedAt;
 }

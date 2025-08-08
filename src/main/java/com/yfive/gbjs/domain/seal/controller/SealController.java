@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
@@ -24,12 +25,18 @@ public interface SealController {
 
   @GetMapping
   @Operation(summary = "전체 띠부씰 조회", description = "모든 띠부씰 목록을 조회합니다.")
-  ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals();
+  ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(
+      @RequestParam(required = false, defaultValue = "번호순")
+          @Parameter(description = "정렬 옵션 (번호순, 희귀도순, 지역순)")
+          String sortBy);
 
   @GetMapping("/user")
   @Operation(summary = "회원 띠부씰 조회", description = "로그인된 회원의 띠부씰 수집 현황을 조회합니다. (수집한 것/수집하지 않은 것 포함)")
   ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
-      @Parameter(hidden = true) Authentication authentication);
+      @Parameter(hidden = true) Authentication authentication,
+      @RequestParam(required = false, defaultValue = "번호순")
+          @Parameter(description = "정렬 옵션 (번호순, 희귀도순, 지역순, 수집순)")
+          String sortBy);
 
   @GetMapping("/products")
   @Operation(summary = "띠부씰 상품 조회", description = "구매 가능한 띠부씰 상품 목록을 조회합니다.")

@@ -56,10 +56,10 @@ public class SealResponse {
   @AllArgsConstructor
   @Schema(title = "SealList : 띠부씰 목록 DTO")
   public static class SealListDTO {
-    @Schema(description = "띠부씰 목록")
-    private List<SealDTO> seals;
-
     @Schema(description = "전체 띠부씰 수", example = "10")
     private int totalCount;
+
+    @Schema(description = "띠부씰 목록")
+    private List<SealDTO> seals;
   }
 }

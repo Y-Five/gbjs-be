@@ -63,13 +63,13 @@ public class UserSealResponse {
   @AllArgsConstructor
   @Schema(title = "UserSealList : 사용자 띠부씰 수집 현황 목록 DTO")
   public static class UserSealListDTO {
-    @Schema(description = "사용자 띠부씰 수집 현황 목록")
-    private List<UserSealDTO> seals;
-
     @Schema(description = "전체 띠부씰 수", example = "10")
     private int totalCount;
 
     @Schema(description = "수집한 띠부씰 수", example = "3")
     private int collectedCount;
+
+    @Schema(description = "사용자 띠부씰 수집 현황 목록")
+    private List<UserSealDTO> seals;
   }
 }

@@ -13,16 +13,18 @@ public interface SealService {
   /**
    * 등록된 모든 띠부씰 조회
    *
+   * @param sortBy 정렬 옵션 (희귀도순, 번호순, 지역순)
    * @return 전체 띠부씰 목록
    */
-  SealResponse.SealListDTO getAllSeals();
+  SealResponse.SealListDTO getAllSeals(String sortBy);
 
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
    *
+   * @param sortBy 정렬 옵션 (희귀도순, 번호순, 수집순, 지역순)
    * @return 사용자의 띠부씰 수집 현황 (수집한 것/수집하지 않은 것 포함)
    */
-  UserSealResponse.UserSealListDTO getUserSeals();
+  UserSealResponse.UserSealListDTO getUserSeals(String sortBy);
 
   /**
    * 띠부씰 상품 목록 조회
