@@ -25,6 +25,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.common.response.ResponseCode;
+import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.error.exception.InvalidTokenException;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -167,5 +168,12 @@ public class GlobalExceptionHandler {
     log.error("Exception: {} {}", request.getMethod(), request.getRequestURI(), e);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(ApiResponse.error(ResponseCode.INTERNAL_SERVER_ERROR));
+  }
+
+  // CustomException 처리
+  @ExceptionHandler(CustomException.class)
+  public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
+    return ResponseEntity.status(e.getErrorCode().getStatus())
+        .body(ApiResponse.error(ResponseCode.BAD_REQUEST, e.getErrorCode().getMessage()));
   }
 }

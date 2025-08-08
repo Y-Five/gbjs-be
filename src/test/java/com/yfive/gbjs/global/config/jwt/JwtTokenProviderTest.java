@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +18,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 
@@ -123,9 +125,18 @@ class JwtTokenProviderTest {
    * @param username 사용자 이름
    * @return 인증 객체
    */
-  private Authentication createAuthentication(String username) {
+  private Authentication createAuthentication(String email) {
     SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
-    User principal = new User(username, "", Collections.singleton(authority));
+
+    Map<String, Object> kakaoAccount = Map.of("email", email);
+    Map<String, Object> attributes =
+        Map.of(
+            "email", email,
+            "kakao_account", kakaoAccount);
+
+    OAuth2User principal =
+        new DefaultOAuth2User(Collections.singleton(authority), attributes, "email");
+
     return new UsernamePasswordAuthenticationToken(principal, "", Collections.singleton(authority));
   }
 }

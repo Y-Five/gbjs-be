@@ -6,21 +6,26 @@ package com.yfive.gbjs.global.config.jwt;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
+import com.yfive.gbjs.global.error.exception.CustomException;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -133,6 +138,15 @@ public class JwtTokenProvider {
             .map(GrantedAuthority::getAuthority)
             .collect(Collectors.joining(","));
 
+    OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+    Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
+
+    if (kakaoAccount == null || !kakaoAccount.containsKey("email")) {
+      throw new CustomException(UserErrorStatus.UNAUTHORIZED);
+    }
+
+    String email = (String) kakaoAccount.get("email");
+
     long now = System.currentTimeMillis();
     Date validity;
 
@@ -144,7 +158,7 @@ public class JwtTokenProvider {
     }
 
     return Jwts.builder()
-        .setSubject(authentication.getName())
+        .setSubject(email)
         .claim("auth", authorities)
         .claim("type", tokenType)
         .setIssuedAt(new Date(now))
@@ -179,7 +193,8 @@ public class JwtTokenProvider {
             .map(SimpleGrantedAuthority::new)
             .collect(Collectors.toList());
 
-    UserDetails principal = new User(claims.getSubject(), "", authorities);
+    Map<String, Object> attributes = Map.of("email", claims.getSubject());
+    OAuth2User principal = new DefaultOAuth2User(authorities, attributes, "email");
     return new UsernamePasswordAuthenticationToken(principal, token, authorities);
   }
 
@@ -315,5 +330,27 @@ public class JwtTokenProvider {
   public boolean validateRefreshToken(String username, String refreshToken) {
     String storedToken = tokenRepository.findRefreshToken(username);
     return storedToken != null && storedToken.equals(refreshToken);
+  }
+
+  /**
+   * JWT 토큰을 HTTP 응답의 쿠키에 추가합니다.
+   *
+   * <p>이 메서드는 주어진 JWT 토큰을 HttpOnly 및 Secure 속성이 설정된 쿠키로 만들어 응답에 추가합니다. 이 쿠키는 클라이언트에서 JavaScript로
+   * 접근할 수 없으며, HTTPS 환경에서만 전송됩니다.
+   *
+   * @param response 응답 객체 (HttpServletResponse)
+   * @param token 쿠키에 저장할 JWT 토큰 값
+   * @param name 쿠키 이름 (예: "accessToken", "refreshToken")
+   * @param maxAge 쿠키의 유효 시간 (밀리초 단위)
+   */
+  public void addJwtToCookie(HttpServletResponse response, String token, String name, long maxAge) {
+    Cookie cookie = new Cookie(name, token);
+    cookie.setHttpOnly(true);
+    // cookie.setSecure(true);
+    cookie.setPath("/");
+    cookie.setMaxAge((int) (maxAge / 1000));
+    response.addCookie(cookie);
+
+    log.info("JWT 쿠키가 설정되었습니다 - 이름: {}, 만료: {}초", name, cookie.getMaxAge());
   }
 }

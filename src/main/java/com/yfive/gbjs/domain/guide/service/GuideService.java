@@ -3,22 +3,40 @@
  */
 package com.yfive.gbjs.domain.guide.service;
 
-import com.yfive.gbjs.domain.guide.dto.response.AudioStoryListResponse;
-import com.yfive.gbjs.domain.guide.dto.response.GuideListResponse;
+import java.util.List;
 
+import com.yfive.gbjs.domain.guide.dto.response.AudioDetailResponse;
+
+/**
+ * 가이드 서비스 인터페이스
+ *
+ * <p>오디오 데이터 동기화 기능을 정의합니다.
+ *
+ * @author YFIVE
+ * @since 1.0.0
+ */
 public interface GuideService {
 
-  GuideListResponse getThemeBasedList(Integer pageNo, Integer numOfRows);
+  /**
+   * 경상북도 지역의 모든 오디오 스토리를 외부 API에서 가져와 DB에 저장합니다.
+   *
+   * @return 저장된 오디오 스토리 개수
+   */
+  int syncGyeongbukAudioStories();
 
-  GuideListResponse getThemeLocationBasedList(
-      Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows);
+  /**
+   * 관광지명으로 오디오 가이드를 정확히 조회합니다.
+   *
+   * @param title 관광지명
+   * @return 일치하는 오디오 가이드 목록
+   */
+  List<AudioDetailResponse> searchAudioGuideByTitle(String title);
 
-  GuideListResponse getThemeSearchList(String keyword, Integer pageNo, Integer numOfRows);
-
-  AudioStoryListResponse getAudioStoryBasedList(String themeId, Integer pageNo, Integer numOfRows);
-
-  AudioStoryListResponse getAudioStoryLocationBasedList(
-      Double longitude, Double latitude, Integer radius, Integer pageNo, Integer numOfRows);
-
-  AudioStoryListResponse getAudioStorySearchList(String keyword, Integer pageNo, Integer numOfRows);
+  /**
+   * 키워드로 오디오 가이드를 검색합니다. (부분 일치)
+   *
+   * @param title 검색 키워드
+   * @return 키워드가 포함된 오디오 가이드 목록
+   */
+  List<AudioDetailResponse> searchAudioGuideByTitleLike(String title);
 }
