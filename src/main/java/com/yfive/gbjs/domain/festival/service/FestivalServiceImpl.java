@@ -8,18 +8,23 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yfive.gbjs.domain.festival.dto.response.FestivalListResponse;
+import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.exception.FestivalErrorStatus;
+import com.yfive.gbjs.global.common.exception.PageErrorStatus;
+import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -40,34 +45,133 @@ public class FestivalServiceImpl implements FestivalService {
   private final RestClient restClient;
 
   @Override
-  public FestivalListResponse getFestivalsByRegion(
-      String region, Integer startIndex, Integer pageSize) {
+  public PageResponse<FestivalResponse> getFestivalsByRegion(String region, Pageable pageable) {
+
     List<FestivalResponse> festivalResponses = fetchFestivalListByRegion(region);
 
-    if (startIndex >= festivalResponses.size()) {
-      return FestivalListResponse.builder()
-          .totalCount(festivalResponses.size())
-          .festivalList(List.of())
-          .nextIndex(startIndex)
+    long offset = pageable.getOffset();
+    long totalElements = festivalResponses.size();
+    int pageSize = pageable.getPageSize();
+
+    if (totalElements == 0) {
+      PageImpl<FestivalResponse> emptyPage =
+          new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
+
+      return PageResponse.<FestivalResponse>builder()
+          .content(emptyPage.getContent())
+          .totalElements(emptyPage.getTotalElements())
+          .totalPages(emptyPage.getTotalPages())
+          .pageNum(emptyPage.getNumber())
+          .pageSize(emptyPage.getSize())
+          .last(emptyPage.isLast())
+          .first(emptyPage.isFirst())
           .build();
     }
 
-    int toIndex = Math.min(startIndex + pageSize, festivalResponses.size());
-    List<FestivalResponse> pagedList = festivalResponses.subList(startIndex, toIndex);
+    if (offset > Integer.MAX_VALUE) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
 
-    return FestivalListResponse.builder()
-        .totalCount(festivalResponses.size())
-        .festivalList(pagedList)
-        .nextIndex(toIndex)
+    int start = (int) offset;
+    if (start >= totalElements) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+
+    int end = (int) Math.min(offset + pageSize, totalElements);
+    List<FestivalResponse> pagedList = festivalResponses.subList(start, end);
+    PageImpl<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
+
+    return PageResponse.<FestivalResponse>builder()
+        .content(page.getContent())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .pageNum(page.getNumber())
+        .pageSize(page.getSize())
+        .last(page.isLast())
+        .first(page.isFirst())
         .build();
   }
 
-  @Cacheable(value = "festivals", key = "#region")
-  public List<FestivalResponse> fetchFestivalListByRegion(String region) {
+  @Override
+  public FestivalDetailResponse getFestivalById(String id) {
+    try {
+      JsonNode itemNode1 = fetchFestivalDetail("detailCommon2", id, null);
+      JsonNode itemNode2 = fetchFestivalDetail("detailIntro2", id, 15);
+
+      FestivalDetailResponse detailResponse1 =
+          objectMapper.treeToValue(itemNode1, FestivalDetailResponse.class);
+      FestivalDetailResponse detailResponse2 =
+          objectMapper.treeToValue(itemNode2, FestivalDetailResponse.class);
+
+      String url = extractUrlFromHtml(detailResponse1.getHomepageUrl());
+
+      detailResponse1.setStartDate(detailResponse2.getStartDate());
+      detailResponse1.setEndDate(detailResponse2.getEndDate());
+      detailResponse1.setHomepageUrl(url);
+
+      return detailResponse1;
+    } catch (Exception e) {
+      log.error("축제 목록 파싱 실패", e);
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+    }
+  }
+
+  private JsonNode fetchFestivalDetail(String path, String id, Integer contentTypeId) {
+    UriComponentsBuilder uriBuilder =
+        UriComponentsBuilder.fromUriString(festivalApiUrl + "/" + path)
+            .queryParam("serviceKey", serviceKey)
+            .queryParam("MobileOS", "WEB")
+            .queryParam("MobileApp", "gbjs")
+            .queryParam("_type", "JSON")
+            .queryParam("contentId", id);
+
+    if (contentTypeId != null) {
+      uriBuilder.queryParam("contentTypeId", contentTypeId);
+    }
+
+    String response =
+        restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
+
+    if (response == null || response.isBlank()) {
+      log.error("빈 응답 수신");
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+    }
+
+    if (isXmlOrHtml(response)) {
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+    }
+
+    try {
+      JsonNode root = objectMapper.readTree(response);
+      JsonNode itemNode = root.path("response").path("body").path("items").path("item");
+
+      if (itemNode.isEmpty()) {
+        throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+      }
+      return itemNode.get(0);
+    } catch (Exception e) {
+      log.error("축제 상세 파싱 실패", e);
+      throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
+    }
+  }
+
+  private String extractUrlFromHtml(String html) {
+    if (html == null) {
+      return null;
+    }
+    Pattern pattern = Pattern.compile("<a\\s+href\\s*=\\s*\"([^\"]+)\"");
+    Matcher matcher = pattern.matcher(html);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    return html;
+  }
+
+  private List<FestivalResponse> fetchFestivalListByRegion(String region) {
     LocalDate baseDate = LocalDate.now();
 
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(festivalApiUrl + "/searchFestival2")
+        UriComponentsBuilder.fromUriString(festivalApiUrl + "/searchFestival2")
             .queryParam("serviceKey", serviceKey)
             .queryParam("numOfRows", 1000)
             .queryParam("MobileOS", "WEB")
@@ -76,6 +180,7 @@ public class FestivalServiceImpl implements FestivalService {
             .queryParam("eventStartDate", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
             .queryParam(
                 "eventEndDate", baseDate.plusMonths(6).format(DateTimeFormatter.BASIC_ISO_DATE))
+            .queryParam("areaCode", 35)
             .queryParam("sigunguCode", getSiGunGuCode(region));
 
     String response =
@@ -86,7 +191,7 @@ public class FestivalServiceImpl implements FestivalService {
       throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
     }
 
-    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
+    if (isXmlOrHtml(response)) {
       throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
     }
 
@@ -101,8 +206,8 @@ public class FestivalServiceImpl implements FestivalService {
       }
 
       festivals.sort(Comparator.comparing(FestivalResponse::getEndDate));
-      return festivals;
 
+      return festivals;
     } catch (Exception e) {
       log.error("축제 목록 파싱 실패", e);
       throw new CustomException(FestivalErrorStatus.FESTIVAL_API_ERROR);
@@ -116,8 +221,7 @@ public class FestivalServiceImpl implements FestivalService {
    * @return 시군구 코드
    * @throws CustomException 잘못된 지역명일 경우
    */
-  @Override
-  public Integer getSiGunGuCode(String region) {
+  private Integer getSiGunGuCode(String region) {
     return switch (region) {
       case "경산시" -> 1;
       case "경주시" -> 2;
@@ -143,5 +247,9 @@ public class FestivalServiceImpl implements FestivalService {
       case "포항시" -> 23;
       default -> throw new CustomException(FestivalErrorStatus.INVALID_REGION);
     };
+  }
+
+  private boolean isXmlOrHtml(String response) {
+    return response != null && response.trim().startsWith("<");
   }
 }

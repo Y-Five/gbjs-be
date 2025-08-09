@@ -3,11 +3,15 @@
  */
 package com.yfive.gbjs.domain.festival.service;
 
-import com.yfive.gbjs.domain.festival.dto.response.FestivalListResponse;
+import org.springframework.data.domain.Pageable;
+
+import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
+import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
+import com.yfive.gbjs.global.common.response.PageResponse;
 
 public interface FestivalService {
 
-  FestivalListResponse getFestivalsByRegion(String region, Integer startIndex, Integer pageSize);
+  PageResponse<FestivalResponse> getFestivalsByRegion(String region, Pageable pageable);
 
-  Integer getSiGunGuCode(String region);
+  FestivalDetailResponse getFestivalById(String id);
 }
