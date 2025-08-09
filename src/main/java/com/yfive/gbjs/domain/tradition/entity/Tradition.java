@@ -5,6 +5,8 @@ package com.yfive.gbjs.domain.tradition.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,6 +49,7 @@ public class Tradition {
   private String redirectUrl;
 
   @Column(name = "type", nullable = false)
+  @Enumerated(EnumType.STRING)
   private TraditionType type;
 
   @Column(name = "price", nullable = false)

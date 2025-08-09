@@ -105,19 +105,17 @@ public class TraditionServiceImpl implements TraditionService {
     PathName pathName =
         tradition.getType() == TraditionType.SPECIALTIES ? PathName.SPECIALTIES : PathName.ACTIVITY;
 
-    String imageUrl = tradition.getImageUrl();
-
+    String newImageUrl = tradition.getImageUrl();
     if (image != null && !image.isEmpty()) {
       try {
-        s3Service.deleteFile(s3Service.extractKeyNameFromUrl(imageUrl));
-        imageUrl = s3Service.uploadFile(pathName, image);
+        newImageUrl = s3Service.uploadFile(pathName, image);
       } catch (Exception e) {
-        log.error("S3 파일 교체 실패 - id: {}", id, e);
+        log.error("S3 파일 업로드 실패(교체) - id: {}", id, e);
         throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
       }
     }
 
-    tradition.update(request, imageUrl);
+    tradition.update(request, newImageUrl);
 
     log.info("전통문화 정보 수정 - id: {}, name: {}", tradition.getId(), tradition.getName());
 

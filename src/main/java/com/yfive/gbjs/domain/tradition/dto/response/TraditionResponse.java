@@ -32,7 +32,7 @@ public class TraditionResponse {
   @Schema(description = "관련 사이트 URL")
   private String redirectUrl;
 
-  @Schema(description = "전통문화 분류", example = "SPEICIALTIES")
+  @Schema(description = "전통문화 분류", example = "SPECIALTIES")
   private TraditionType type;
 
   @Schema(description = "특산물 가격", example = "10000")

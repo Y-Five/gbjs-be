@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import org.hibernate.validator.constraints.URL;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,7 +39,8 @@ public class TraditionRequest {
   private String description;
 
   @NotBlank(message = "사이트 URL 항목은 필수입니다.")
-  @Schema(description = "전통문화 관련 사이트 URL")
+  @URL(regexp = "^(http?)://.+", message = "유효한 URL 형식(HTTP/HTTPS)이어야 합니다.")
+  @Schema(description = "전통문화 관련 사이트 URL", example = "https://example.com")
   private String redirectUrl;
 
   @NotNull(message = "가격 항목은 필수입니다.")

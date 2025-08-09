@@ -50,8 +50,8 @@ public interface TraditionController {
   @Operation(summary = "전통문화 리스트 조회", description = "경상북도 전통문화 리스트 반환")
   ResponseEntity<ApiResponse<PageResponse<TraditionResponse>>> getTraditions(
       @Parameter(description = "전통문화 분류", example = "SPECIALTIES") @RequestParam TraditionType type,
-      @Parameter(description = "페이지 번호", example = "0") @RequestParam Integer pageNum,
-      @Parameter(description = "페이지 크기", example = "4") @RequestParam Integer pageSize);
+      @Parameter(description = "페이지 번호", example = "1") @RequestParam Integer pageNum,
+      @Parameter(description = "페이지 크기", example = "3") @RequestParam Integer pageSize);
 
   @PutMapping(value = "/dev/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(summary = "[개발자]전통문화 수정", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 수정")
