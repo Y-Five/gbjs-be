@@ -81,8 +81,6 @@ public class WeatherServiceImpl implements WeatherService {
       String response =
           restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-      log.info("response={}", uriBuilder.toUriString());
-      log.info("response={}, {}", baseTime, baseDate.format(DateTimeFormatter.BASIC_ISO_DATE));
       if (response == null || response.isBlank()) {
         log.warn("날씨 API 응답이 비어있습니다.");
         throw new CustomException(WeatherErrorStatus.EMPTY_RESPONSE);
