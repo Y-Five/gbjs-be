@@ -29,6 +29,9 @@ public class User {
   @Column(name = "id")
   private Long id;
 
+  @Column(name = "profile_image_url", nullable = false)
+  private String profileImageUrl;
+
   @Column(name = "nickname", nullable = false, unique = true)
   private String nickname;
 
@@ -46,14 +49,23 @@ public class User {
   @Column(name = "location_consent", nullable = false)
   private Boolean locationConsent;
 
-  public static User fromOAuth(String email, String nickname) {
+  public static User fromOAuth(String email, String profileImageUrl, String nickname) {
     return User.builder()
         .username(email)
         .nickname(nickname)
+        .profileImageUrl(profileImageUrl)
         .emailMarketingConsent(false)
         .pushNotificationConsent(false)
         .locationConsent(false)
         .build();
+  }
+
+  public void updateNickname(String newNickname) {
+    this.nickname = newNickname;
+  }
+
+  public void updateProfileImageUrl(String profileImageUrl) {
+    this.profileImageUrl = profileImageUrl;
   }
 
   public void toggleEmailMarketingConsent() {
@@ -67,9 +79,5 @@ public class User {
 
   public void toggleLocationConsent() {
     this.locationConsent = this.locationConsent == null || !this.locationConsent;
-  }
-
-  public void updateNickname(String newNickname) {
-    this.nickname = newNickname;
   }
 }

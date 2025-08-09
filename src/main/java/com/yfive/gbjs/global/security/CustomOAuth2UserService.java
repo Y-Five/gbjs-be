@@ -38,12 +38,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     String email = extractEmail(registrationId, attributes);
 
+    String profileImage = extractProfileImage(registrationId, attributes);
+
     String nickname = extractNickname(registrationId, attributes);
 
     User user =
         userRepository
             .findByUsername(email)
-            .orElseGet(() -> userRepository.save(User.fromOAuth(email, nickname)));
+            .orElseGet(() -> userRepository.save(User.fromOAuth(email, profileImage, nickname)));
 
     log.info("사용자 로그인 성공: {}", user.getUsername());
 
@@ -67,6 +69,23 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         throw new OAuth2AuthenticationException("카카오 계정에 이메일이 없습니다.");
       }
       return (String) account.get("email");
+    }
+    throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
+  }
+
+  private String extractProfileImage(String provider, Map<String, Object> attributes) {
+    if ("kakao".equals(provider)) {
+      Map<String, Object> account = (Map<String, Object>) attributes.get("kakao_account");
+      if (account == null) {
+        log.warn("카카오 계정에서 프로필 정보를 찾을 수 없습니다.");
+        return "";
+      }
+      Map<String, Object> profile = (Map<String, Object>) account.get("profile");
+      if (profile == null || profile.get("profile_image_url") == null) {
+        log.warn("카카오 프로필 이미지 URL이 없습니다.");
+        return "";
+      }
+      return (String) profile.get("profile_image_url");
     }
     throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다.");
   }

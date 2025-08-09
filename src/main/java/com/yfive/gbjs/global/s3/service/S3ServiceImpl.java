@@ -68,6 +68,7 @@ public class S3ServiceImpl implements S3Service {
   public String createKeyName(PathName pathName) {
 
     return switch (pathName) {
+          case PROFILE_IMAGE -> s3Config.getProfileImagePath();
           case SEAL -> s3Config.getSealPath();
           case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
           case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
@@ -92,14 +93,7 @@ public class S3ServiceImpl implements S3Service {
 
   @Override
   public List<String> getAllFiles(PathName pathName) {
-
-    String prefix =
-        switch (pathName) {
-          case SEAL -> s3Config.getSealPath();
-          case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
-          case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
-        };
-
+    String prefix = getPrefix(pathName);
     try {
       List<String> urls =
           amazonS3
@@ -121,13 +115,7 @@ public class S3ServiceImpl implements S3Service {
 
   @Override
   public void deleteFile(PathName pathName, String fileName) {
-
-    String prefix =
-        switch (pathName) {
-          case SEAL -> s3Config.getSealPath();
-          case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
-          case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
-        };
+    String prefix = getPrefix(pathName);
     String keyName = prefix + "/" + fileName;
     log.info("파일 삭제 요청 - pathName: {}, fileName: {}", pathName, fileName);
     deleteFile(keyName);
@@ -153,8 +141,7 @@ public class S3ServiceImpl implements S3Service {
     }
   }
 
-  @Override
-  public void validateFile(MultipartFile file) {
+  private void validateFile(MultipartFile file) {
 
     if (file.getSize() > 5 * 1024 * 1024) {
       throw new CustomException(S3ErrorStatus.FILE_SIZE_INVALID);
@@ -164,5 +151,14 @@ public class S3ServiceImpl implements S3Service {
     if (contentType == null || !contentType.startsWith("image/")) {
       throw new CustomException(S3ErrorStatus.FILE_TYPE_INVALID);
     }
+  }
+
+  private String getPrefix(PathName pathName) {
+    return switch (pathName) {
+      case PROFILE_IMAGE -> s3Config.getProfileImagePath();
+      case SEAL -> s3Config.getSealPath();
+      case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
+      case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
+    };
   }
 }
