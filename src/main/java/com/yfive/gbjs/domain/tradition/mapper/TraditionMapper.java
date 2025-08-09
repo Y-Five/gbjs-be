@@ -13,7 +13,7 @@ public class TraditionMapper {
 
   public TraditionResponse toTraditionResponse(Tradition tradition) {
     return TraditionResponse.builder()
-        .id(tradition.getId())
+        .traditionId(tradition.getId())
         .type(tradition.getType())
         .address(tradition.getAddress())
         .name(tradition.getName())
