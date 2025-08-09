@@ -47,20 +47,19 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public List<UserDetailResponse> getAllUsers() {
-
     List<User> allUsers = userRepository.findAll();
+    List<Long> userIds = allUsers.stream().map(User::getId).toList();
 
+    Map<Long, Long> sealCounts = userSealRepository.countSealsByUserIds(userIds);
     List<UserDetailResponse> userDetails =
         allUsers.stream()
             .map(
                 user -> {
-                  Long sealCount = (long) userSealRepository.findByUserId(user.getId()).size();
+                  Long sealCount = sealCounts.getOrDefault(user.getId(), 0L);
                   return userMapper.toUserDetailResponse(user, sealCount);
                 })
             .toList();
-
     log.info("전체 사용자 조회, 총 사용자 수: {}", userDetails.size());
-
     return userDetails;
   }
 

@@ -5,6 +5,7 @@ package com.yfive.gbjs.domain.user.controller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,14 +28,14 @@ public interface UserController {
 
   @PostMapping("/nickname/check")
   @Operation(
-      summary = "닉네임 사용 가능 여부 확인",
+      summary = "닉네임 중복 여부 확인",
       description =
           """
               사용자가 입력한 닉네임이 이미 존재하는지 여부를 반환합니다.
               true -> 이미 존재하는 닉네임, 변경할 수 없음.
               false -> 존재하지 않는 닉네임, 변경 가능.
               """)
-  ResponseEntity<ApiResponse<Boolean>> checkNicknameAvailability(@RequestParam String nickname);
+  ResponseEntity<ApiResponse<Boolean>> checkNicknameDuplicated(@RequestParam String nickname);
 
   @GetMapping("/dev")
   @Operation(summary = "[개발자]사용자 전체 조회", description = "스웨거를 사용해 전체 사용자를 조회합니다.")
@@ -53,7 +54,7 @@ public interface UserController {
   ResponseEntity<ApiResponse<String>> updateNickname(
       @RequestParam("newNickname") String newNickname);
 
-  @PutMapping("/profile-image")
+  @PutMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(summary = "프로필 사진 수정", description = "현재 로그인한 사용자의 프로필 사진을 수정합니다.")
   ResponseEntity<ApiResponse<String>> updateProfileImage(
       @RequestPart("profileImage") MultipartFile profileImage);

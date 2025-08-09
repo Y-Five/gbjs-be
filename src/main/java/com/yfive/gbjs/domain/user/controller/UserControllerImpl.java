@@ -24,7 +24,7 @@ public class UserControllerImpl implements UserController {
   private final UserService userService;
 
   @Override
-  public ResponseEntity<ApiResponse<Boolean>> checkNicknameAvailability(
+  public ResponseEntity<ApiResponse<Boolean>> checkNicknameDuplicated(
       @RequestParam String nickname) {
     return ResponseEntity.ok(ApiResponse.success(userService.checkNicknameAvailability(nickname)));
   }

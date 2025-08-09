@@ -4,6 +4,7 @@
 package com.yfive.gbjs.domain.seal.repository;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +36,14 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
   @Query(
       "SELECT COUNT(us) > 0 FROM UserSeal us WHERE us.user.id = :userId AND us.seal.id = :sealId")
   boolean existsByUserIdAndSealId(@Param("userId") Long userId, @Param("sealId") Long sealId);
+
+  /**
+   * 여러 사용자의 띠부씰 수를 한 번의 쿼리로 조회합니다.
+   *
+   * @param userIds 사용자 ID 리스트
+   * @return 키가 사용자 ID이고 값이 해당 사용자의 띠부씰 수인 Map 객체
+   */
+  @Query(
+      "SELECT us.user.id, COUNT(us) FROM UserSeal us WHERE us.user.id IN :userIds GROUP BY us.user.id")
+  Map<Long, Long> countSealsByUserIds(@Param("userIds") List<Long> userIds);
 }
