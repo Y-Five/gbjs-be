@@ -3,34 +3,33 @@
  */
 package com.yfive.gbjs.domain.weather.service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
 import com.yfive.gbjs.domain.weather.exception.WeatherErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
-  /** 서울 지역 기준의 표준 시간대를 나타냅니다. */
+  /**
+   * 서울 지역 기준의 표준 시간대를 나타냅니다.
+   */
   private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Value("${openapi.secret.key}")
@@ -46,7 +45,7 @@ public class WeatherServiceImpl implements WeatherService {
    * 위도와 경도를 기반으로 기상청 API를 호출하여 날씨 정보를 조회합니다.
    *
    * @param longitude 경도
-   * @param latitude 위도
+   * @param latitude  위도
    * @return 조회된 날씨 정보를 담은 WeatherResponse 객체
    */
   @Override
@@ -67,10 +66,10 @@ public class WeatherServiceImpl implements WeatherService {
 
     // 요청 URL 조합
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
+        UriComponentsBuilder.fromUriString(weatherApiUrl)
             .queryParam("serviceKey", serviceKey)
             .queryParam("pageNo", 1)
-            .queryParam("numOfRows", 100)
+            .queryParam("numOfRows", 1000)
             .queryParam("dataType", "JSON")
             .queryParam("base_date", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
             .queryParam("base_time", baseTime)
@@ -81,6 +80,8 @@ public class WeatherServiceImpl implements WeatherService {
       String response =
           restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
+      log.info("response={}", uriBuilder.toUriString());
+      log.info("response={}, {}", baseTime, baseDate.format(DateTimeFormatter.BASIC_ISO_DATE));
       if (response == null || response.isBlank()) {
         log.warn("날씨 API 응답이 비어있습니다.");
         throw new CustomException(WeatherErrorStatus.EMPTY_RESPONSE);
@@ -89,7 +90,7 @@ public class WeatherServiceImpl implements WeatherService {
       JsonNode root = objectMapper.readTree(response);
       JsonNode items = root.path("response").path("body").path("items").path("item");
 
-      if (items.isMissingNode() || !items.isArray() || items.size() == 0) {
+      if (items.isMissingNode() || !items.isArray() || items.isEmpty()) {
         log.warn("날씨 정보가 존재하지 않습니다.");
         throw new CustomException(WeatherErrorStatus.ITEM_NOT_FOUND);
       }
@@ -125,7 +126,7 @@ public class WeatherServiceImpl implements WeatherService {
    * 위도와 경도를 기상청 격자 좌표로 변환합니다.
    *
    * @param longitude 경도
-   * @param latitude 위도
+   * @param latitude  위도
    * @return 변환된 격자 좌표 (GridCoord)
    */
   @Override
