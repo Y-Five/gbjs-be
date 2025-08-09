@@ -29,7 +29,7 @@ public interface FestivalController {
       @Parameter(description = "페이지 번호", example = "1") @RequestParam Integer pageNum,
       @Parameter(description = "페이지 크기", example = "3") @RequestParam Integer pageSize);
 
-  @GetMapping("{id}")
+  @GetMapping("/{id}")
   @Operation(summary = "축제 단일 조회", description = "식별자를 통해 선택한 축제의 정보  반환")
   ResponseEntity<ApiResponse<FestivalDetailResponse>> getFestivalById(
       @Parameter(description = "축제 식별자", example = "2867141") @PathVariable String id);

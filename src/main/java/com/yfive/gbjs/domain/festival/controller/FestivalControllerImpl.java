@@ -35,6 +35,9 @@ public class FestivalControllerImpl implements FestivalController {
     if (pageNum < 1) {
       throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
     }
+    if (pageSize < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    }
 
     Pageable pageable = PageRequest.of(pageNum - 1, pageSize);
     PageResponse<FestivalResponse> festivalListResponse =
@@ -45,7 +48,7 @@ public class FestivalControllerImpl implements FestivalController {
 
   @Override
   public ResponseEntity<ApiResponse<FestivalDetailResponse>> getFestivalById(
-      @PathVariable(name = "festival-id") String id) {
+      @PathVariable String id) {
 
     FestivalDetailResponse response = festivalService.getFestivalById(id);
 

@@ -49,15 +49,35 @@ public class FestivalServiceImpl implements FestivalService {
 
     List<FestivalResponse> festivalResponses = fetchFestivalListByRegion(region);
 
-    int start = (int) pageable.getOffset();
+    long offset = pageable.getOffset();
     long totalElements = festivalResponses.size();
     int pageSize = pageable.getPageSize();
 
-    if (start >= festivalResponses.size()) {
+    if (totalElements == 0) {
+      PageImpl<FestivalResponse> emptyPage =
+          new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
+
+      return PageResponse.<FestivalResponse>builder()
+          .content(emptyPage.getContent())
+          .totalElements(emptyPage.getTotalElements())
+          .totalPages(emptyPage.getTotalPages())
+          .pageNum(emptyPage.getNumber())
+          .pageSize(emptyPage.getSize())
+          .last(emptyPage.isLast())
+          .first(emptyPage.isFirst())
+          .build();
+    }
+
+    if (offset > Integer.MAX_VALUE) {
       throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
     }
 
-    int end = Math.min(start + pageSize, festivalResponses.size());
+    int start = (int) offset;
+    if (start >= totalElements) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+
+    int end = (int) Math.min(offset + pageSize, totalElements);
     List<FestivalResponse> pagedList = festivalResponses.subList(start, end);
     PageImpl<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
 
