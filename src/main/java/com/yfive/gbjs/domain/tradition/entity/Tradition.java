@@ -5,6 +5,8 @@ package com.yfive.gbjs.domain.tradition.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,8 +33,8 @@ public class Tradition {
   @Column(name = "id")
   private Long id;
 
-  @Column(name = "type", nullable = false)
-  private TraditionType type;
+  @Column(name = "imageUrl", nullable = false)
+  private String imageUrl;
 
   @Column(name = "address", nullable = false)
   private String address;
@@ -43,17 +45,22 @@ public class Tradition {
   @Column(name = "description", nullable = false)
   private String description;
 
+  @Column(name = "redirectUrl", nullable = false)
+  private String redirectUrl;
+
+  @Column(name = "type", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private TraditionType type;
+
   @Column(name = "price", nullable = false)
   private Long price;
 
-  @Column(name = "imageUrl", nullable = false)
-  private String imageUrl;
-
   public void update(TraditionRequest request, String imageUrl) {
+    this.imageUrl = imageUrl;
     this.address = request.getAddress();
     this.name = request.getName();
     this.description = request.getDescription();
+    this.redirectUrl = request.getRedirectUrl();
     this.price = request.getPrice();
-    this.imageUrl = imageUrl;
   }
 }

@@ -13,12 +13,12 @@ import com.yfive.gbjs.global.common.response.PageResponse;
 
 public interface TraditionService {
 
-  PageResponse<TraditionResponse> getTraditions(TraditionType type, Pageable pageable);
-
   TraditionResponse createTradition(
       TraditionType type, TraditionRequest request, MultipartFile image);
 
-  TraditionResponse updateTradition(Long id, TraditionRequest request, String imageUrl);
+  PageResponse<TraditionResponse> getTraditionsByType(TraditionType type, Pageable pageable);
+
+  TraditionResponse updateTradition(Long id, TraditionRequest request, MultipartFile image);
 
   void deleteTradition(Long id);
 }
