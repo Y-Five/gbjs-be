@@ -39,7 +39,7 @@ public class TraditionRequest {
   private String description;
 
   @NotBlank(message = "사이트 URL 항목은 필수입니다.")
-  @URL(regexp = "^(http?)://.+", message = "유효한 URL 형식(HTTP/HTTPS)이어야 합니다.")
+  @URL(regexp = "^(https?)://.+", message = "유효한 URL 형식(HTTP/HTTPS)이어야 합니다.")
   @Schema(description = "전통문화 관련 사이트 URL", example = "https://example.com")
   private String redirectUrl;
 
