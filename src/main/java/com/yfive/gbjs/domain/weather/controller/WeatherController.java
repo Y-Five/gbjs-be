@@ -22,6 +22,10 @@ public interface WeatherController {
   @GetMapping
   @Operation(summary = "좌표 기반 날씨 조회", description = "위도/경도를 기반으로 기상청 단기 예보 응답 반환")
   public ResponseEntity<ApiResponse<WeatherResponse>> getWeather(
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude);
+      @Parameter(description = "경도", example = "128.516667")
+          @RequestParam(defaultValue = "128.516667")
+          Double longitude,
+      @Parameter(description = "위도", example = "36.583333")
+          @RequestParam(defaultValue = "36.583333")
+          Double latitude);
 }
