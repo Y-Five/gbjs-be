@@ -3,13 +3,15 @@
  */
 package com.yfive.gbjs.domain.tradition.entity;
 
-import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,7 +51,6 @@ public class Tradition {
 
   @Column(name = "price", nullable = false)
   private Long price;
-
 
   public void update(TraditionRequest request, String imageUrl) {
     this.imageUrl = imageUrl;

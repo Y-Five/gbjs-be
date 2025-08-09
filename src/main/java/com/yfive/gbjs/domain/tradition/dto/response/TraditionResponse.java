@@ -4,6 +4,7 @@
 package com.yfive.gbjs.domain.tradition.dto.response;
 
 import com.yfive.gbjs.domain.tradition.entity.TraditionType;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;

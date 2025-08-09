@@ -3,6 +3,12 @@
  */
 package com.yfive.gbjs.domain.tradition.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
 import com.yfive.gbjs.domain.tradition.entity.Tradition;
@@ -15,13 +21,9 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.s3.entity.PathName;
 import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
 import com.yfive.gbjs.global.s3.service.S3Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -72,8 +74,8 @@ public class TraditionServiceImpl implements TraditionService {
   }
 
   @Override
-  public PageResponse<TraditionResponse> getTraditionsByType(TraditionType type,
-      Pageable pageable) {
+  public PageResponse<TraditionResponse> getTraditionsByType(
+      TraditionType type, Pageable pageable) {
 
     Page<TraditionResponse> responsePage =
         traditionRepository.findByType(type, pageable).map(traditionMapper::toTraditionResponse);
