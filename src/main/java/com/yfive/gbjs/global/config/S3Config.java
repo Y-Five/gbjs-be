@@ -39,6 +39,9 @@ public class S3Config {
   @Value("${cloud.aws.s3.path.profile-image}")
   private String profileImagePath;
 
+  @Value("${cloud.aws.s3.path.audio}")
+  private String audioPath;
+
   @Value("${cloud.aws.s3.path.seal}")
   private String sealPath;
 

@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public enum PathName {
   @Schema(description = "프로필사진")
   PROFILE_IMAGE,
+  @Schema(description = "오디오")
+  AUDIO,
   @Schema(description = "띠부씰")
   SEAL,
   @Schema(description = "특산품")

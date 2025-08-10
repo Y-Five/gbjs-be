@@ -3,6 +3,7 @@
  */
 package com.yfive.gbjs.global.s3.service;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -65,16 +66,41 @@ public class S3ServiceImpl implements S3Service {
   }
 
   @Override
+  public String uploadFile(
+      PathName pathName,
+      Long guideId,
+      InputStream inputStream,
+      String originalFilename,
+      String contentType) {
+
+    String keyName = createKeyName(pathName, guideId);
+
+    ObjectMetadata metadata = new ObjectMetadata();
+    metadata.setContentType(contentType);
+    try {
+
+      amazonS3.putObject(
+          new PutObjectRequest(s3Config.getBucket(), keyName, inputStream, metadata));
+
+      log.info("파일 업로드 성공 - keyName: {}", keyName);
+
+      return amazonS3.getUrl(s3Config.getBucket(), keyName).toString();
+    } catch (Exception e) {
+      log.error("S3 upload 중 오류 발생", e);
+      throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
+    }
+  }
+
+  @Override
   public String createKeyName(PathName pathName) {
 
-    return switch (pathName) {
-          case PROFILE_IMAGE -> s3Config.getProfileImagePath();
-          case SEAL -> s3Config.getSealPath();
-          case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
-          case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
-        }
-        + '/'
-        + UUID.randomUUID();
+    return getPrefix(pathName) + '/' + UUID.randomUUID();
+  }
+
+  @Override
+  public String createKeyName(PathName pathName, Long id) {
+
+    return getPrefix(pathName) + '/' + id;
   }
 
   @Override
@@ -156,6 +182,7 @@ public class S3ServiceImpl implements S3Service {
   private String getPrefix(PathName pathName) {
     return switch (pathName) {
       case PROFILE_IMAGE -> s3Config.getProfileImagePath();
+      case AUDIO -> s3Config.getAudioPath();
       case SEAL -> s3Config.getSealPath();
       case SPECIALTIES -> s3Config.getTraditionPath() + "/specialties";
       case ACTIVITY -> s3Config.getTraditionPath() + "/activity";
