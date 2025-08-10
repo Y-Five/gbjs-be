@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.tts.controller;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,5 +31,6 @@ public interface TtsController {
       @Parameter(description = "가이드 식별자", example = "1") @RequestParam Long guideId,
       @Parameter(description = "음성 성별", example = "FEMALE") @RequestParam Gender gender,
       @Parameter(description = "음성 타입", example = "A") @RequestParam SpeechType speechType,
-      @Parameter(description = "변환할 스크립트", example = "script") @RequestBody TtsRequest request);
+      @Parameter(description = "변환할 스크립트", example = "script") @RequestBody @Valid
+          TtsRequest request);
 }
