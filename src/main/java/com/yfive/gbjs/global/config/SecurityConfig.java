@@ -82,7 +82,8 @@ public class SecurityConfig {
                         "/api/spots/**",
                         "/api/courses/**",
                         "/api/users/**",
-                        "/api/traditions/**")
+                        "/api/traditions/**",
+                        "/api/tts/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")

@@ -3,6 +3,7 @@
  */
 package com.yfive.gbjs.global.s3.service;
 
+import java.io.InputStream;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +17,16 @@ public interface S3Service {
 
   String uploadFile(PathName pathName, MultipartFile file);
 
+  String uploadFile(
+      PathName pathName,
+      Long guideId,
+      InputStream inputStream,
+      String originalFilename,
+      String contentType);
+
   String createKeyName(PathName pathName);
+
+  String createKeyName(PathName pathName, Long id);
 
   void deleteFile(String keyName);
 
