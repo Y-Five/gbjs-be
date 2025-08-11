@@ -1,0 +1,21 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
+package com.yfive.gbjs.domain.spot.service;
+
+import org.springframework.data.domain.Pageable;
+
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
+import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
+
+public interface SpotService {
+
+  PageResponse<SpotResponse> getSpotsByKeyword(
+      Pageable pageable, String keyword, Double latitude, Double longitude);
+
+  PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
+      Pageable pageable, String keyword, Double latitude, Double longitude);
+
+  SpotDetailResponse getSpotByContentId(String contentId, Double latitude, Double longitude);
+}

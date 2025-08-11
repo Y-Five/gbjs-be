@@ -16,8 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,14 +29,13 @@ import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
 import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.domain.auth.service.AuthService;
-import com.yfive.gbjs.global.config.MockRedisConfig;
-import com.yfive.gbjs.global.config.SecurityConfig;
-import com.yfive.gbjs.global.config.TestJwtPropertiesConfig;
 import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
 import com.yfive.gbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 
-@WebMvcTest(AuthControllerImpl.class)
-@Import({SecurityConfig.class, TestJwtPropertiesConfig.class, MockRedisConfig.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthControllerTest {
 
@@ -47,6 +46,10 @@ class AuthControllerTest {
   @MockitoBean private AuthService authService;
 
   @MockitoBean private JwtTokenProvider jwtTokenProvider;
+
+  @MockitoBean private CustomOAuth2UserService customOAuth2UserService;
+
+  @MockitoBean private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
   @Test
   @DisplayName("로그인 API 테스트")

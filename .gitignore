@@ -47,4 +47,6 @@ logs/
 logback-spring.xml
 
 ### OS specific ###
-.DS_Store 
+.DS_Store
+
+.claude

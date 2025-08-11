@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.yfive.gbjs.global.config.jwt.JwtFilter;
 import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
   private final JwtTokenProvider tokenProvider;
+  private final CustomOAuth2UserService oauth2UserService;
+  private final OAuth2LoginSuccessHandler customSuccessHandler;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -49,7 +54,7 @@ public class SecurityConfig {
         .headers(
             headers ->
                 headers
-                    .frameOptions(frameOptions -> frameOptions.sameOrigin())
+                    .frameOptions(FrameOptionsConfig::sameOrigin)
                     .contentSecurityPolicy(
                         csp ->
                             csp.policyDirectives(
@@ -69,7 +74,17 @@ public class SecurityConfig {
                         "/webjars/**")
                     .permitAll()
                     // 공개 API
-                    .requestMatchers("/api/auth/**")
+                    .requestMatchers(
+                        "/api/auth/**",
+                        "/api/audio-guide/**",
+                        "/api/weathers/**",
+                        "/api/festivals/**",
+                        "/api/seals/**",
+                        "/api/spots/**",
+                        "/api/courses/**",
+                        "/api/users/**",
+                        "/api/traditions/**",
+                        "/api/tts/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
@@ -77,7 +92,15 @@ public class SecurityConfig {
                     // 기타 모든 요청은 인증 필요
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+        .oauth2Login(
+            oauth2 ->
+                oauth2
+                    .userInfoEndpoint(
+                        userInfo -> userInfo.userService(oauth2UserService) // 사용자 정보 처리
+                        )
+                    .successHandler(customSuccessHandler) // 로그인 성공 처리
+            );
 
     return http.build();
   }

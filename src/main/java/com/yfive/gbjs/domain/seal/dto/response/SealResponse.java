@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
+package com.yfive.gbjs.domain.seal.dto.response;
+
+import java.util.List;
+
+import com.yfive.gbjs.domain.seal.entity.Location;
+import com.yfive.gbjs.domain.seal.entity.Rarity;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+public class SealResponse {
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "Seal : 띠부씰 DTO")
+  public static class SealDTO {
+    @Schema(description = "띠부씰 ID", example = "1")
+    private Long id;
+
+    @Schema(description = "띠부씰 번호", example = "1")
+    private Integer number;
+
+    @Schema(description = "명소 이름", example = "하회마을")
+    private String spotName;
+
+    @Schema(description = "지역 이름", example = "안동")
+    private String locationName;
+
+    @Schema(description = "지역 코드", example = "ANDONG")
+    private Location location;
+
+    @Schema(description = "설명", example = "안동 하회별신굿탈놀이를 대표하는 전통 탈")
+    private String content;
+
+    @Schema(description = "희귀도", example = "BLUE")
+    private Rarity rarity;
+
+    @Schema(description = "앞면 이미지 URL", example = "https://example.com/seal-front.jpg")
+    private String frontImageUrl;
+
+    @Schema(description = "뒷면 이미지 URL", example = "https://example.com/seal-back.jpg")
+    private String backImageUrl;
+  }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "SealList : 띠부씰 목록 DTO")
+  public static class SealListDTO {
+    @Schema(description = "전체 띠부씰 수", example = "10")
+    private int totalCount;
+
+    @Schema(description = "띠부씰 목록")
+    private List<SealDTO> seals;
+  }
+}
