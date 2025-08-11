@@ -10,7 +10,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=gbjs1234!!
       - SPRING_REDIS_HOST=redis
     depends_on:
-      - mysql
       - redis
     networks:
       - gbjs-network
