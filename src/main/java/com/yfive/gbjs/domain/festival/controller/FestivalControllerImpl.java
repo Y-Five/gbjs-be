@@ -14,8 +14,8 @@ import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.service.FestivalService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 
 import lombok.RequiredArgsConstructor;

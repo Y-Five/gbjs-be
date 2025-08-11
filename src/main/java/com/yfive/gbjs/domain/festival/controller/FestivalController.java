@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

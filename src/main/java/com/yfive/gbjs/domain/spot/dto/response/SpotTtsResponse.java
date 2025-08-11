@@ -19,7 +19,7 @@ public class SpotTtsResponse {
   private String title;
 
   @Schema(description = "가이드 내용", example = "이 건축물은 바로 첨성대입니다...")
-  private String content;
+  private String script;
 
   @Schema(description = "생성된 오디오 식별자", example = "1")
   private Long fileId;

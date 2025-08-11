@@ -100,7 +100,7 @@ public class S3ServiceImpl implements S3Service {
   @Override
   public String createKeyName(PathName pathName, Long id) {
 
-    return getPrefix(pathName) + "?id=" + id.toString();
+    return getPrefix(pathName) + '/' + id.toString();
   }
 
   @Override
@@ -142,7 +142,7 @@ public class S3ServiceImpl implements S3Service {
   @Override
   public String getFile(PathName pathName, Long id) {
 
-    String keyName = createKeyName(pathName, id);
+    String keyName = getPrefix(pathName) + "/" + id.toString();
 
     fileExists(keyName);
 

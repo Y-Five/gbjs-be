@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,8 +24,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.exception.FestivalErrorStatus;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
 
@@ -56,8 +57,7 @@ public class FestivalServiceImpl implements FestivalService {
     int pageSize = pageable.getPageSize();
 
     if (totalElements == 0) {
-      PageImpl<FestivalResponse> page =
-          new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
+      Page<FestivalResponse> page = new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
 
       return pageMapper.toFestivalPageResponse(page);
     }
@@ -73,7 +73,7 @@ public class FestivalServiceImpl implements FestivalService {
 
     int end = (int) Math.min(offset + pageSize, totalElements);
     List<FestivalResponse> pagedList = festivalResponses.subList(start, end);
-    PageImpl<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
+    Page<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
 
     return pageMapper.toFestivalPageResponse(page);
   }

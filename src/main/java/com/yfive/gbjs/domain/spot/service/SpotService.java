@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
 
 public interface SpotService {
 

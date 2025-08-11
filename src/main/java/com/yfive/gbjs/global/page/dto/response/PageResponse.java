@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.gbjs.global.common.response;
+package com.yfive.gbjs.global.page.dto.response;
 
 import java.util.List;
 

@@ -32,8 +32,8 @@ public class AudioGuide extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @OneToOne
-  @JoinColumn(name = "audio_file_id")
+  @OneToOne(fetch = jakarta.persistence.FetchType.LAZY)
+  @JoinColumn(name = "audio_file_id", unique = true)
   private AudioFile audioFile;
 
   @Column(name = "tid", nullable = false)

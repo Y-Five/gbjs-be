@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,8 +25,8 @@ import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotTtsResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
 
@@ -56,14 +57,15 @@ public class SpotServiceImpl implements SpotService {
         fetchSpotListByKeyword(
             pageable.getPageSize(), pageable.getPageNumber(), keyword, latitude, longitude);
 
-    PageImpl<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
+    Page<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
 
-    for (int i = 0; i < page.getSize(); i++) {
-      SpotDetailResponse spotDetailResponse =
-          getSpotByContentId(page.getContent().get(i).getSpotId(), latitude, longitude);
-
-      page.getContent().get(i).setType(spotDetailResponse.getType());
-    }
+    page.getContent().parallelStream()
+        .forEach(
+            spot -> {
+              SpotDetailResponse spotDetailResponse =
+                  getSpotByContentId(spot.getSpotId(), latitude, longitude);
+              spot.setType(spotDetailResponse.getType());
+            });
 
     return pageMapper.toSpotPageResponse(page);
   }
@@ -96,7 +98,7 @@ public class SpotServiceImpl implements SpotService {
       response.setType(spotDetailResponse.getType());
     }
 
-    PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
+    Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
     return pageMapper.toSpotPageResponse(page);
   }
