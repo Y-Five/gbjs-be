@@ -9,11 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.common.response.PageResponse;
+import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,7 +35,14 @@ public class SpotControllerImpl implements SpotController {
       @RequestParam Double latitude,
       @RequestParam Double longitude) {
 
-    Pageable pageable = PageRequest.of(pageNum, pageSize);
+    if (pageNum < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+    if (pageSize < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    }
+
+    Pageable pageable = PageRequest.of(pageNum - 1, pageSize);
     PageResponse<SpotResponse> spotListResponse;
 
     if (sortBy == SortBy.DISTANCE) {
@@ -46,10 +56,11 @@ public class SpotControllerImpl implements SpotController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<SpotResponse>> getSpotByContentId(
+  public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
       String contentId, @RequestParam Double latitude, @RequestParam Double longitude) {
-    SpotResponse spotResponse = spotService.getSpotByContentId(contentId, latitude, longitude);
+    SpotDetailResponse spotDetailResponse =
+        spotService.getSpotByContentId(contentId, latitude, longitude);
 
-    return ResponseEntity.ok(ApiResponse.success(spotResponse));
+    return ResponseEntity.ok(ApiResponse.success(spotDetailResponse));
   }
 }

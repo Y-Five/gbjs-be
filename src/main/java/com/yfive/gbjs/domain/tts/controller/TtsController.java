@@ -6,15 +6,14 @@ package com.yfive.gbjs.domain.tts.controller;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
-import com.yfive.gbjs.domain.tts.dto.response.TtsResponse;
-import com.yfive.gbjs.domain.tts.entity.Gender;
-import com.yfive.gbjs.domain.tts.entity.SpeechType;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,12 +24,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/tts")
 public interface TtsController {
 
-  @PostMapping("/convert-to-speech")
-  @Operation(summary = "[개발자]음성 가이드 생성", description = "스웨거를 사용해 스크립트를 음성가이드로 변환")
-  ResponseEntity<ApiResponse<TtsResponse>> convertTextToSpeech(
+  @PostMapping
+  @Operation(summary = "음성 가이드 생성", description = "스크립트를 음성 타입에 맞게 변환된 파일 URL로 변환")
+  ResponseEntity<ApiResponse<String>> convertTextToSpeech(
       @Parameter(description = "가이드 식별자", example = "1") @RequestParam Long guideId,
-      @Parameter(description = "음성 성별", example = "FEMALE") @RequestParam Gender gender,
-      @Parameter(description = "음성 타입", example = "A") @RequestParam SpeechType speechType,
+      @Parameter(description = "음성 타입", example = "FEMALE_A") @RequestParam TtsSetting ttsSetting,
       @Parameter(description = "변환할 스크립트", example = "script") @RequestBody @Valid
           TtsRequest request);
+
+  @GetMapping
+  @Operation(summary = "음성 가이드 조회", description = "음성 변환된 파일 URL 조회")
+  ResponseEntity<ApiResponse<String>> getTextToSpeech(
+      @Parameter(description = "가이드 식별자", example = "1") @RequestParam Long guideId);
 }

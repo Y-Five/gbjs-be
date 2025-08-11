@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.user.dto.response.UserDetailResponse;
 import com.yfive.gbjs.domain.user.entity.User;
 
@@ -23,6 +24,8 @@ public interface UserService {
   String updateNickname(String newNickname);
 
   String updateProfileImage(MultipartFile profileImage);
+
+  String updateTtsSetting(TtsSetting ttsSetting);
 
   boolean toggleEmailMarketingConsent();
 

@@ -21,6 +21,10 @@ public interface AudioGuideRepository extends JpaRepository<AudioGuide, Long> {
   // tid로 조회
   Optional<AudioGuide> findByTid(String tid);
 
+  List<AudioGuide> findByContentId(String contentId);
+
+  boolean existsByContentId(String contentId);
+
   // tid로 삭제
   void deleteByTid(String tid);
 

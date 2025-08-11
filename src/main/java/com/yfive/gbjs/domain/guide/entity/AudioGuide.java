@@ -3,8 +3,16 @@
  */
 package com.yfive.gbjs.domain.guide.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
+import com.yfive.gbjs.domain.tts.entity.AudioFile;
 import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
 
 import lombok.AllArgsConstructor;
@@ -23,6 +31,10 @@ public class AudioGuide extends BaseTimeEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @OneToOne
+  @JoinColumn(name = "audio_file_id")
+  private AudioFile audioFile;
 
   @Column(name = "tid", nullable = false)
   private String tid;
@@ -63,6 +75,9 @@ public class AudioGuide extends BaseTimeEntity {
   @Column(name = "image_url")
   private String imageUrl;
 
+  @Column(name = "content_id")
+  private String contentId;
+
   @Column(name = "sync_status", length = 1)
   private String syncStatus; // A: 신규, U: 수정, D: 삭제
 
@@ -94,5 +109,9 @@ public class AudioGuide extends BaseTimeEntity {
     this.audioUrl = updatedData.getAudioUrl();
     this.audioGuideId = updatedData.getAudioGuideId();
     this.stlid = updatedData.getStlid();
+  }
+
+  public void updateFile(AudioFile audioFile) {
+    this.audioFile = audioFile;
   }
 }

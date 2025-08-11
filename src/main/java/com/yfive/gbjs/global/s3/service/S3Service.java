@@ -28,9 +28,11 @@ public interface S3Service {
 
   String createKeyName(PathName pathName, Long id);
 
-  void deleteFile(String keyName);
-
   List<String> getAllFiles(PathName pathName);
+
+  String getFile(PathName pathName, Long id);
+
+  void deleteFile(String keyName);
 
   void deleteFile(PathName pathName, String fileName);
 

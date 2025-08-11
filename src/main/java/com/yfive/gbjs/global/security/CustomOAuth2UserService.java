@@ -45,7 +45,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     User user =
         userRepository
             .findByUsername(email)
-            .orElseGet(() -> userRepository.save(User.fromOAuth(email, profileImage, nickname)));
+            .orElseGet(() -> userRepository.save(User.fromOAuth(profileImage, nickname, email)));
 
     log.info("사용자 로그인 성공: {}", user.getUsername());
 

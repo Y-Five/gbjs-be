@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.user.dto.response.UserDetailResponse;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
@@ -55,7 +56,10 @@ public class UserServiceImpl implements UserService {
         allUsers.stream()
             .map(
                 user -> {
-                  Long sealCount = sealCounts.getOrDefault(user.getId(), 0L);
+                  Long sealCount = sealCounts.get(user.getId());
+                  if (sealCount == null) {
+                    sealCount = 0L;
+                  }
                   return userMapper.toUserDetailResponse(user, sealCount);
                 })
             .toList();
@@ -91,8 +95,8 @@ public class UserServiceImpl implements UserService {
     }
 
     user.updateNickname(newNickname);
-    userRepository.save(user);
     log.info("사용자 닉네임 변경 - userId: {}, newNickname: {}", user.getId(), newNickname);
+
     return newNickname;
   }
 
@@ -116,10 +120,20 @@ public class UserServiceImpl implements UserService {
     }
 
     user.updateProfileImageUrl(newImageUrl);
-
     log.info("사용자 프로필 이미지 변경 - userId: {}, newImageUrl: {}", user.getId(), newImageUrl);
 
     return newImageUrl;
+  }
+
+  @Transactional
+  @Override
+  public String updateTtsSetting(TtsSetting ttsSetting) {
+    User user = getCurrentUser();
+
+    user.updateTtsSetting(ttsSetting);
+    log.info("사용자 음성 타입 변경 - userId: {}, ttsSetting: {}", user.getId(), ttsSetting);
+
+    return ttsSetting.toString();
   }
 
   @Transactional

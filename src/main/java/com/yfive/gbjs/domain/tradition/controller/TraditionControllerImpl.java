@@ -18,10 +18,10 @@ import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
 import com.yfive.gbjs.domain.tradition.entity.TraditionType;
 import com.yfive.gbjs.domain.tradition.service.TraditionService;
-import com.yfive.gbjs.global.common.exception.PageErrorStatus;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 
 import lombok.RequiredArgsConstructor;
 

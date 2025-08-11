@@ -18,10 +18,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yfive.gbjs.domain.guide.entity.AudioGuide;
+import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.dto.response.SpotTtsResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
 import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
+import com.yfive.gbjs.global.page.mapper.PageMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +45,8 @@ public class SpotServiceImpl implements SpotService {
 
   private final ObjectMapper objectMapper;
   private final RestClient restClient;
+  private final PageMapper pageMapper;
+  private final AudioGuideRepository audioGuideRepository;
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeyword(
@@ -51,22 +59,13 @@ public class SpotServiceImpl implements SpotService {
     PageImpl<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
 
     for (int i = 0; i < page.getSize(); i++) {
-      SpotResponse spotResponse =
+      SpotDetailResponse spotDetailResponse =
           getSpotByContentId(page.getContent().get(i).getSpotId(), latitude, longitude);
 
-      page.getContent().get(i).setOverview(spotResponse.getOverview());
-      page.getContent().get(i).setType(spotResponse.getType());
+      page.getContent().get(i).setType(spotDetailResponse.getType());
     }
 
-    return PageResponse.<SpotResponse>builder()
-        .content(page.getContent())
-        .totalElements(page.getTotalElements())
-        .totalPages(page.getTotalPages())
-        .pageNum(page.getNumber())
-        .pageSize(page.getSize())
-        .last(page.isLast())
-        .first(page.isFirst())
-        .build();
+    return pageMapper.toSpotPageResponse(page);
   }
 
   @Override
@@ -78,30 +77,28 @@ public class SpotServiceImpl implements SpotService {
 
     spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
-    int start = (int) pageable.getOffset();
-    int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
+    if (pageable.getOffset() > Integer.MAX_VALUE) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
 
+    int start = (int) pageable.getOffset();
+    if (start >= spotResponses.size()) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+
+    int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
 
-    for (int i = 0; i < pageContent.size(); i++) {
-      SpotResponse spotResponse =
-          getSpotByContentId(pageContent.get(i).getSpotId(), latitude, longitude);
+    for (SpotResponse response : pageContent) {
+      SpotDetailResponse spotDetailResponse =
+          getSpotByContentId(response.getSpotId(), latitude, longitude);
 
-      pageContent.get(i).setOverview(spotResponse.getOverview());
-      pageContent.get(i).setType(spotResponse.getType());
+      response.setType(spotDetailResponse.getType());
     }
 
     PageImpl<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
 
-    return PageResponse.<SpotResponse>builder()
-        .content(page.getContent())
-        .totalElements(page.getTotalElements())
-        .totalPages(page.getTotalPages())
-        .pageNum(page.getNumber())
-        .pageSize(page.getSize())
-        .last(page.isLast())
-        .first(page.isFirst())
-        .build();
+    return pageMapper.toSpotPageResponse(page);
   }
 
   private List<SpotResponse> fetchSpotListByKeyword(
@@ -109,7 +106,7 @@ public class SpotServiceImpl implements SpotService {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/searchKeyword2")
+        UriComponentsBuilder.fromUriString(spotApiUrl + "/searchKeyword2")
             .queryParam("serviceKey", serviceKey)
             .queryParam("numOfRows", pageSize)
             .queryParam("pageNo", pageNum)
@@ -155,7 +152,9 @@ public class SpotServiceImpl implements SpotService {
           spotResponse.setDistance(null);
         }
 
-        spotResponse.setAudio(false);
+        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asText());
+
+        spotResponse.setTtsExist(ttsExist);
       }
 
       return spotResponses;
@@ -166,10 +165,11 @@ public class SpotServiceImpl implements SpotService {
   }
 
   @Override
-  public SpotResponse getSpotByContentId(String contentId, Double latitude, Double longitude) {
+  public SpotDetailResponse getSpotByContentId(
+      String contentId, Double latitude, Double longitude) {
 
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/detailCommon2")
+        UriComponentsBuilder.fromUriString(spotApiUrl + "/detailCommon2")
             .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "WEB")
             .queryParam("MobileApp", "gbjs")
@@ -198,7 +198,8 @@ public class SpotServiceImpl implements SpotService {
         itemNode = itemNode.get(0);
       }
 
-      SpotResponse spotResponse = objectMapper.treeToValue(itemNode, SpotResponse.class);
+      SpotDetailResponse spotDetailResponse =
+          objectMapper.treeToValue(itemNode, SpotDetailResponse.class);
 
       if (latitude != null
           && longitude != null
@@ -210,19 +211,35 @@ public class SpotServiceImpl implements SpotService {
                 longitude,
                 itemNode.get("mapy").asDouble(),
                 itemNode.get("mapx").asDouble());
-        spotResponse.setDistance(distance);
+        spotDetailResponse.setDistance(distance);
       } else {
-        spotResponse.setDistance(null);
+        spotDetailResponse.setDistance(null);
       }
-      spotResponse.setAudio(false);
-      spotResponse.setType(
+      spotDetailResponse.setType(
           fetchSpotType(
               itemNode.get("contenttypeid").asText(),
               itemNode.get("cat1").asText(),
               itemNode.get("cat2").asText(),
               itemNode.get("cat3").asText()));
 
-      return spotResponse;
+      List<AudioGuide> audioGuides = audioGuideRepository.findByContentId(contentId);
+
+      List<SpotTtsResponse> spotTtsResponses =
+          audioGuides.stream()
+              .map(
+                  guide ->
+                      SpotTtsResponse.builder()
+                          .guideId(guide.getId())
+                          .title(guide.getTitle())
+                          .content(guide.getScript())
+                          .fileId(
+                              guide.getAudioFile() == null ? null : guide.getAudioFile().getId())
+                          .build())
+              .toList();
+
+      spotDetailResponse.setTtsResponseList(spotTtsResponses);
+
+      return spotDetailResponse;
     } catch (Exception e) {
       log.error("관광지 정보 파싱 실패", e);
       throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
@@ -232,7 +249,7 @@ public class SpotServiceImpl implements SpotService {
   private String fetchSpotType(String typeId, String cat1, String cat2, String cat3) {
 
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(spotApiUrl + "/categoryCode2")
+        UriComponentsBuilder.fromUriString(spotApiUrl + "/categoryCode2")
             .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "WEB")
             .queryParam("MobileApp", "gbjs")

@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.user.dto.response;
 
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,6 +30,9 @@ public class UserDetailResponse {
 
   @Schema(description = "아이디(이메일)", example = "heritage@example.com")
   private String username;
+
+  @Schema(description = "음성 타입", example = "FEMALE_A")
+  private TtsSetting ttsSetting;
 
   @Schema(description = "이메일 수신 동의 여부", example = "true")
   private Boolean emailMarketingConsent;

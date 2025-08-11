@@ -18,6 +18,7 @@ public class UserMapper {
         .nickname(user.getNickname())
         .sealCount(sealCount)
         .username(user.getUsername())
+        .ttsSetting(user.getTtsSetting())
         .emailMarketingConsent(user.getEmailMarketingConsent())
         .pushNotificationConsent(user.getPushNotificationConsent())
         .locationConsent(user.getLocationConsent())
