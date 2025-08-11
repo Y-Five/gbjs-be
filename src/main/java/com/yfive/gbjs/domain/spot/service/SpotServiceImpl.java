@@ -233,7 +233,7 @@ public class SpotServiceImpl implements SpotService {
                       SpotTtsResponse.builder()
                           .guideId(guide.getId())
                           .title(guide.getTitle())
-                          .content(guide.getScript())
+                          .script(guide.getScript())
                           .fileId(
                               guide.getAudioFile() == null ? null : guide.getAudioFile().getId())
                           .build())
