@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.user.dto.response.UserDetailResponse;
 import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
@@ -46,15 +47,19 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<String>> updateNickname(
-      @RequestParam("newNickname") String newNickname) {
+  public ResponseEntity<ApiResponse<String>> updateNickname(@RequestParam String newNickname) {
     return ResponseEntity.ok(ApiResponse.success(userService.updateNickname(newNickname)));
   }
 
   @Override
   public ResponseEntity<ApiResponse<String>> updateProfileImage(
-      @RequestPart("profileImage") MultipartFile profileImage) {
+      @RequestPart MultipartFile profileImage) {
     return ResponseEntity.ok(ApiResponse.success(userService.updateProfileImage(profileImage)));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<String>> updateTtsSetting(@RequestParam TtsSetting ttsSetting) {
+    return ResponseEntity.ok(ApiResponse.success(userService.updateTtsSetting(ttsSetting)));
   }
 
   @Override

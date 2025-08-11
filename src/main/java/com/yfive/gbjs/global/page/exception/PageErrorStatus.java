@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2025 YFIVE
  */
-package com.yfive.gbjs.global.common.exception;
+package com.yfive.gbjs.global.page.exception;
 
 import org.springframework.http.HttpStatus;
 

@@ -81,7 +81,9 @@ public class GuideServiceImpl implements GuideService {
    * @return 파싱된 재생 시간 (초 단위), 파싱 실패 시 null
    */
   private Integer parsePlayTime(String playTime) {
-    if (playTime == null || playTime.trim().isEmpty()) return null;
+    if (playTime == null || playTime.trim().isEmpty()) {
+      return null;
+    }
     try {
       return Integer.parseInt(playTime.trim());
     } catch (NumberFormatException e) {

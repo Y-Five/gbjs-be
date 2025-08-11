@@ -100,7 +100,7 @@ public class S3ServiceImpl implements S3Service {
   @Override
   public String createKeyName(PathName pathName, Long id) {
 
-    return getPrefix(pathName) + '/' + id;
+    return getPrefix(pathName) + '/' + id.toString();
   }
 
   @Override
@@ -137,6 +137,16 @@ public class S3ServiceImpl implements S3Service {
       log.error("S3 파일 목록 조회 중 오류 발생", e);
       throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
     }
+  }
+
+  @Override
+  public String getFile(PathName pathName, Long id) {
+
+    String keyName = getPrefix(pathName) + "/" + id.toString();
+
+    fileExists(keyName);
+
+    return amazonS3.getUrl(s3Config.getBucket(), keyName).toString();
   }
 
   @Override

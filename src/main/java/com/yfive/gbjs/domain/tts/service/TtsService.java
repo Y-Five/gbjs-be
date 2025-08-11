@@ -4,12 +4,11 @@
 package com.yfive.gbjs.domain.tts.service;
 
 import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
-import com.yfive.gbjs.domain.tts.dto.response.TtsResponse;
-import com.yfive.gbjs.domain.tts.entity.Gender;
-import com.yfive.gbjs.domain.tts.entity.SpeechType;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 
 public interface TtsService {
 
-  TtsResponse convertTextToSpeech(
-      Long guideId, Gender gender, SpeechType speechType, TtsRequest request);
+  String convertTextToSpeech(Long guideId, TtsSetting ttsSetting, TtsRequest request);
+
+  String getTextToSpeech(Long fileId);
 }

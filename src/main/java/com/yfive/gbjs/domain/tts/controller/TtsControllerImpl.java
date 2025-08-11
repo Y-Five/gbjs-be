@@ -3,15 +3,15 @@
  */
 package com.yfive.gbjs.domain.tts.controller;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
-import com.yfive.gbjs.domain.tts.dto.response.TtsResponse;
-import com.yfive.gbjs.domain.tts.entity.Gender;
-import com.yfive.gbjs.domain.tts.entity.SpeechType;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.tts.service.TtsService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
@@ -24,14 +24,18 @@ public class TtsControllerImpl implements TtsController {
   private final TtsService ttsService;
 
   @Override
-  public ResponseEntity<ApiResponse<TtsResponse>> convertTextToSpeech(
+  public ResponseEntity<ApiResponse<String>> convertTextToSpeech(
       @RequestParam Long guideId,
-      @RequestParam Gender gender,
-      @RequestParam SpeechType speechType,
-      @RequestBody TtsRequest request) {
+      @RequestParam TtsSetting ttsSetting,
+      @RequestBody @Valid TtsRequest request) {
 
-    TtsResponse response = ttsService.convertTextToSpeech(guideId, gender, speechType, request);
+    return ResponseEntity.ok(
+        ApiResponse.success(ttsService.convertTextToSpeech(guideId, ttsSetting, request)));
+  }
 
-    return ResponseEntity.ok(ApiResponse.success(response));
+  @Override
+  public ResponseEntity<ApiResponse<String>> getTextToSpeech(@RequestParam Long guideId) {
+
+    return ResponseEntity.ok(ApiResponse.success(ttsService.getTextToSpeech(guideId)));
   }
 }

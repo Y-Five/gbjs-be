@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,9 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.exception.FestivalErrorStatus;
-import com.yfive.gbjs.global.common.exception.PageErrorStatus;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
+import com.yfive.gbjs.global.page.mapper.PageMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,7 @@ public class FestivalServiceImpl implements FestivalService {
 
   private final ObjectMapper objectMapper;
   private final RestClient restClient;
+  private final PageMapper pageMapper;
 
   @Override
   public PageResponse<FestivalResponse> getFestivalsByRegion(String region, Pageable pageable) {
@@ -54,18 +57,9 @@ public class FestivalServiceImpl implements FestivalService {
     int pageSize = pageable.getPageSize();
 
     if (totalElements == 0) {
-      PageImpl<FestivalResponse> emptyPage =
-          new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
+      Page<FestivalResponse> page = new PageImpl<>(java.util.Collections.emptyList(), pageable, 0);
 
-      return PageResponse.<FestivalResponse>builder()
-          .content(emptyPage.getContent())
-          .totalElements(emptyPage.getTotalElements())
-          .totalPages(emptyPage.getTotalPages())
-          .pageNum(emptyPage.getNumber())
-          .pageSize(emptyPage.getSize())
-          .last(emptyPage.isLast())
-          .first(emptyPage.isFirst())
-          .build();
+      return pageMapper.toFestivalPageResponse(page);
     }
 
     if (offset > Integer.MAX_VALUE) {
@@ -79,17 +73,9 @@ public class FestivalServiceImpl implements FestivalService {
 
     int end = (int) Math.min(offset + pageSize, totalElements);
     List<FestivalResponse> pagedList = festivalResponses.subList(start, end);
-    PageImpl<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
+    Page<FestivalResponse> page = new PageImpl<>(pagedList, pageable, totalElements);
 
-    return PageResponse.<FestivalResponse>builder()
-        .content(page.getContent())
-        .totalElements(page.getTotalElements())
-        .totalPages(page.getTotalPages())
-        .pageNum(page.getNumber())
-        .pageSize(page.getSize())
-        .last(page.isLast())
-        .first(page.isFirst())
-        .build();
+    return pageMapper.toFestivalPageResponse(page);
   }
 
   @Override

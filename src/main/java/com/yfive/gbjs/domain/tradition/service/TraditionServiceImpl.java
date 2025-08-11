@@ -16,8 +16,9 @@ import com.yfive.gbjs.domain.tradition.entity.TraditionType;
 import com.yfive.gbjs.domain.tradition.exception.TraditionErrorStatus;
 import com.yfive.gbjs.domain.tradition.mapper.TraditionMapper;
 import com.yfive.gbjs.domain.tradition.repository.TraditionRepository;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
+import com.yfive.gbjs.global.page.mapper.PageMapper;
 import com.yfive.gbjs.global.s3.entity.PathName;
 import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
 import com.yfive.gbjs.global.s3.service.S3Service;
@@ -32,6 +33,7 @@ public class TraditionServiceImpl implements TraditionService {
 
   private final TraditionRepository traditionRepository;
   private final TraditionMapper traditionMapper;
+  private final PageMapper pageMapper;
   private final S3Service s3Service;
 
   @Override
@@ -77,20 +79,12 @@ public class TraditionServiceImpl implements TraditionService {
   public PageResponse<TraditionResponse> getTraditionsByType(
       TraditionType type, Pageable pageable) {
 
-    Page<TraditionResponse> responsePage =
+    Page<TraditionResponse> page =
         traditionRepository.findByType(type, pageable).map(traditionMapper::toTraditionResponse);
 
     log.info("전통문화 리스트 조회 - type: {}", type);
 
-    return PageResponse.<TraditionResponse>builder()
-        .content(responsePage.getContent())
-        .totalElements(responsePage.getTotalElements())
-        .totalPages(responsePage.getTotalPages())
-        .pageNum(responsePage.getNumber())
-        .pageSize(responsePage.getSize())
-        .last(responsePage.isLast())
-        .first(responsePage.isFirst())
-        .build();
+    return pageMapper.toTraditionPageResponse(page);
   }
 
   @Override

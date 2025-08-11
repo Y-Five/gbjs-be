@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalDetailResponse;
 import com.yfive.gbjs.domain.festival.dto.response.FestivalResponse;
 import com.yfive.gbjs.domain.festival.service.FestivalService;
-import com.yfive.gbjs.global.common.exception.PageErrorStatus;
 import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
