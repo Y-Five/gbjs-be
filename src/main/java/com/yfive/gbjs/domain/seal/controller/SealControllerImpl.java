@@ -43,4 +43,24 @@ public class SealControllerImpl implements SealController {
     SealProductResponse.SealProductListDTO response = sealService.getSealProducts();
     return ResponseEntity.ok(ApiResponse.success(response));
   }
+
+  @Override
+  public ResponseEntity<ApiResponse<SealResponse.NearbySealListDTO>> getNearbySeals(
+      Double latitude, Double longitude) {
+    SealResponse.NearbySealListDTO response = sealService.getNearbySeals(latitude, longitude);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<SealResponse.CollectSealResultDTO>> collectSeal(
+      Authentication authentication, Long sealId, Double latitude, Double longitude) {
+    SealResponse.CollectSealResultDTO response =
+        sealService.collectSeal(sealId, latitude, longitude);
+
+    if (response.isSuccess()) {
+      return ResponseEntity.ok(ApiResponse.success(response, "띠부씰을 성공적으로 획득했습니다!"));
+    } else {
+      return ResponseEntity.ok(ApiResponse.success(response, "띠부씰 획득에 실패했습니다. 200m 이내로 가까이 가주세요."));
+    }
+  }
 }

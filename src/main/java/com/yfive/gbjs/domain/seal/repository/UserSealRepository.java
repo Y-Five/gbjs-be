@@ -38,6 +38,15 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
   boolean existsByUserIdAndSealId(@Param("userId") Long userId, @Param("sealId") Long sealId);
 
   /**
+   * 특정 사용자가 특정 띠부씰을 수집했는지 확인 (JPA 명명 규칙)
+   *
+   * @param userId 사용자 ID
+   * @param sealId 띠부씰 ID
+   * @return 수집 여부
+   */
+  boolean existsByUser_IdAndSeal_Id(Long userId, Long sealId);
+
+  /**
    * 여러 사용자의 띠부씰 수를 한 번의 쿼리로 조회합니다.
    *
    * @param userIds 사용자 ID 리스트
