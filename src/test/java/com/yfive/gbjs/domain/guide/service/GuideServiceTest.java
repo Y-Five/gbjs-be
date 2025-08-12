@@ -294,6 +294,6 @@ class GuideServiceTest {
     // Then
     verify(audioGuideRepository, times(1)).deleteByTid(tid);
     verify(audioGuideRepository, never()).save(any(AudioGuide.class));
-    assertEquals(0, result); // 삭제는 카운트에 포함되지 않음
+    assertEquals(1, result); // 삭제도 카운트에 포함됨
   }
 }
