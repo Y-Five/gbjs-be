@@ -362,12 +362,14 @@ public class GuideServiceImpl implements GuideService {
     }
 
     // 정리된 개수 + 신규 개수 + 업데이트 개수를 모두 포함
-    int totalProcessed = cleanedCount + totalNewCount + totalUpdatedCount;
+    int totalProcessed = cleanedCount + totalNewCount + totalUpdatedCount + totalDeletedCount;
+    ;
     log.info(
-        "=== 동기화 완료: 정리 {}개, 신규 {}개, 업데이트 {}개, 총 {}개 처리 ===",
+        "=== 동기화 완료: 정리 {}개, 신규 {}개, 업데이트 {}개,  삭제 {}개 총 {}개 처리 ===",
         cleanedCount,
         totalNewCount,
         totalUpdatedCount,
+        totalDeletedCount,
         totalProcessed);
 
     return totalProcessed;
