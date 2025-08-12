@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.converter.AudioGuideConverter;
 import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
+import com.yfive.gbjs.domain.guide.util.GeoJsonBoundaryChecker;
 
 @ExtendWith(MockitoExtension.class)
 class GuideServiceTest {
@@ -38,6 +39,8 @@ class GuideServiceTest {
   @Mock private AudioGuideRepository audioGuideRepository;
 
   @Mock private AudioGuideConverter audioGuideConverter;
+
+  @Mock private GeoJsonBoundaryChecker geoJsonBoundaryChecker;
 
   @InjectMocks private GuideServiceImpl guideService;
 
@@ -116,6 +119,8 @@ class GuideServiceTest {
     when(audioGuideRepository.count()).thenReturn(1L);
     when(audioGuideRepository.findLatestModifiedTime()).thenReturn(Optional.empty());
     when(audioGuideRepository.findByTid(tid)).thenReturn(Optional.of(existingGuide));
+    when(audioGuideRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+    when(geoJsonBoundaryChecker.isInGyeongbukRegion(anyDouble(), anyDouble())).thenReturn(true);
 
     String mockApiResponse =
         """
@@ -178,6 +183,8 @@ class GuideServiceTest {
     when(audioGuideRepository.count()).thenReturn(1L);
     when(audioGuideRepository.findLatestModifiedTime()).thenReturn(Optional.empty());
     when(audioGuideRepository.findByTid(tid)).thenReturn(Optional.empty());
+    when(audioGuideRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+    when(geoJsonBoundaryChecker.isInGyeongbukRegion(anyDouble(), anyDouble())).thenReturn(true);
 
     String mockApiResponse =
         """
@@ -240,6 +247,8 @@ class GuideServiceTest {
 
     when(audioGuideRepository.count()).thenReturn(1L);
     when(audioGuideRepository.findLatestModifiedTime()).thenReturn(Optional.empty());
+    when(audioGuideRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+    when(geoJsonBoundaryChecker.isInGyeongbukRegion(anyDouble(), anyDouble())).thenReturn(true);
 
     String mockApiResponse =
         """
@@ -285,6 +294,6 @@ class GuideServiceTest {
     // Then
     verify(audioGuideRepository, times(1)).deleteByTid(tid);
     verify(audioGuideRepository, never()).save(any(AudioGuide.class));
-    assertEquals(0, result); // 삭제는 카운트에 포함되지 않음
+    assertEquals(1, result); // 삭제도 카운트에 포함됨
   }
 }
