@@ -6,6 +6,7 @@ package com.yfive.gbjs.domain.guide.service;
 import java.util.List;
 
 import com.yfive.gbjs.domain.guide.dto.response.AudioDetailResponse;
+import com.yfive.gbjs.domain.guide.dto.response.CoordinateValidationResponse;
 
 /**
  * 가이드 서비스 인터페이스
@@ -20,7 +21,7 @@ public interface GuideService {
   /**
    * 경상북도 지역의 모든 오디오 스토리를 외부 API에서 가져와 DB에 저장합니다.
    *
-   * @return 저장된 오디오 스토리 개수
+   * @return 동기화된 데이터 개수
    */
   int syncGyeongbukAudioStories();
 
@@ -39,4 +40,27 @@ public interface GuideService {
    * @return 키워드가 포함된 오디오 가이드 목록
    */
   List<AudioDetailResponse> searchAudioGuideByTitleLike(String title);
+
+  /**
+   * DB에 저장된 모든 오디오 가이드 데이터의 좌표를 검증합니다.
+   *
+   * @return 좌표 검증 결과
+   */
+  CoordinateValidationResponse validateStoredCoordinates();
+
+  /**
+   * 특정 좌표가 경북 지역에 속하는지 테스트합니다.
+   *
+   * @param latitude 위도
+   * @param longitude 경도
+   * @return 경북 지역 포함 여부
+   */
+  boolean testCoordinate(double latitude, double longitude);
+
+  /**
+   * 경북 지역 외부에 있는 모든 오디오 가이드 데이터를 삭제합니다.
+   *
+   * @return 삭제된 데이터 개수
+   */
+  int deleteOutsideGyeongbukData();
 }
