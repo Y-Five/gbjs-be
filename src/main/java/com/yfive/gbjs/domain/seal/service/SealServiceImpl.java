@@ -282,7 +282,10 @@ public class SealServiceImpl implements SealService {
 
       // 5. 지역별 허용 반경 내인지 확인 (울릉도, 독도는 2km, 나머지는 500m)
       // ULLUNG location에는 울릉도와 독도가 모두 포함됨
-      int allowedRadius = seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG ? 2000 : 500;
+      int allowedRadius =
+          seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG
+              ? 2000
+              : 500;
       if (distanceM > allowedRadius) {
         // log.info("띠부씰 획득 실패 - 거리가 너무 멉니다. sealId: {}, 거리: {}m", sealId, distanceM);
         return SealResponse.CollectSealResultDTO.builder()
@@ -333,11 +336,10 @@ public class SealServiceImpl implements SealService {
       if (seal == null || seal.getSealSpot() == null) {
         return "띠부씰 획득에 실패했습니다.";
       }
-      
-      boolean isUllung = seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG;
-      return isUllung 
-          ? "띠부씰 획득에 실패했습니다. 2km 이내로 가까이 가주세요."
-          : "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요.";
+
+      boolean isUllung =
+          seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG;
+      return isUllung ? "띠부씰 획득에 실패했습니다. 2km 이내로 가까이 가주세요." : "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요.";
     } catch (Exception e) {
       return "띠부씰 획득에 실패했습니다.";
     }

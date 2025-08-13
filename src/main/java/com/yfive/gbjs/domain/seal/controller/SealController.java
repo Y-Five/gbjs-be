@@ -54,7 +54,9 @@ public interface SealController {
           Double longitude);
 
   @PostMapping("/collect")
-  @Operation(summary = "띠부씰 획득", description = "위치 인증을 통해 띠부씰을 획득합니다. 일반 지역은 500m, 울릉도는 2km 이내에 있어야 획득 가능합니다.")
+  @Operation(
+      summary = "띠부씰 획득",
+      description = "위치 인증을 통해 띠부씰을 획득합니다. 일반 지역은 500m, 울릉군은 2km 이내에 있어야 획득 가능합니다.")
   ResponseEntity<ApiResponse<SealResponse.CollectSealResultDTO>> collectSeal(
       @Parameter(hidden = true) Authentication authentication,
       @RequestParam @Parameter(description = "띠부씰 ID", required = true, example = "1") Long sealId,
