@@ -33,4 +33,38 @@ public interface SealService {
    * @return 띠부씰 상품 목록
    */
   SealProductResponse.SealProductListDTO getSealProducts();
+
+  /**
+   * 현재 위치 기반 가까운 띠부씰 조회
+   *
+   * @param latitude 현재 위치 위도
+   * @param longitude 현재 위치 경도
+   * @return 가까운 띠부씰 4개 목록
+   */
+  SealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude);
+
+  /**
+   * 위치 인증을 통한 띠부씰 획득
+   *
+   * @param sealId 획득할 띠부씰 ID
+   * @param latitude 현재 위치 위도
+   * @param longitude 현재 위치 경도
+   * @return 띠부씰 획득 결과
+   */
+  SealResponse.CollectSealResultDTO collectSeal(Long sealId, Double latitude, Double longitude);
+
+  /**
+   * 띠부씰 획득 실패 메시지 조회
+   *
+   * @param sealId 띠부씰 ID
+   * @return 지역에 따른 실패 메시지
+   */
+  String getFailureMessage(Long sealId);
+
+  /**
+   * 획득한 띠부씰 삭제
+   *
+   * @param sealId 삭제할 띠부씰 ID
+   */
+  void deleteCollectedSeal(Long sealId);
 }

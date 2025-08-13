@@ -5,6 +5,7 @@ package com.yfive.gbjs.domain.seal.entity;
 
 import jakarta.persistence.*;
 
+import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
 
 import lombok.*;
@@ -36,6 +37,10 @@ public class SealSpot extends BaseTimeEntity {
 
   @Column(name = "image_url")
   private String imageUrl;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "audio_guide_id")
+  private AudioGuide audioGuide;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "category")
