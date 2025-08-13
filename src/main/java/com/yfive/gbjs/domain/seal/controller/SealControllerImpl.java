@@ -35,7 +35,12 @@ public class SealControllerImpl implements SealController {
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
       Authentication authentication, SortBy sortBy) {
     UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
-    return ResponseEntity.ok(ApiResponse.success(response));
+
+    // 획득한 띠부씰이 있는지 확인하여 적절한 메시지 설정
+    boolean hasCollected = response.getSeals().stream().anyMatch(seal -> seal.isCollected());
+    String message = hasCollected ? null : "아직 획득한 띠부씰이 없습니다.";
+
+    return ResponseEntity.ok(ApiResponse.success(response, message));
   }
 
   @Override
@@ -64,5 +69,12 @@ public class SealControllerImpl implements SealController {
       String failMessage = sealService.getFailureMessage(sealId);
       return ResponseEntity.ok(ApiResponse.success(response, failMessage));
     }
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<Void>> deleteCollectedSeal(
+      Authentication authentication, Long sealId) {
+    sealService.deleteCollectedSeal(sealId);
+    return ResponseEntity.ok(ApiResponse.success(null, "띠부씰이 성공적으로 삭제되었습니다."));
   }
 }

@@ -259,8 +259,8 @@ public class SealServiceImpl implements SealService {
 
     // 2. SealSpot과 AudioGuide 확인
     if (seal.getSealSpot() == null || seal.getSealSpot().getAudioGuide() == null) {
-      log.error("띠부씰 {}의 위치 정보가 없습니다", sealId);
-      return SealResponse.CollectSealResultDTO.builder().id(sealId).success(false).build();
+      throw new com.yfive.gbjs.global.error.exception.CustomException(
+          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     // 3. AudioGuide에서 위도/경도 가져오기
@@ -268,8 +268,8 @@ public class SealServiceImpl implements SealService {
     String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
 
     if (guideLatStr == null || guideLonStr == null) {
-      log.error("띠부씰 {}의 좌표 정보가 없습니다", sealId);
-      return SealResponse.CollectSealResultDTO.builder().id(sealId).success(false).build();
+      throw new com.yfive.gbjs.global.error.exception.CustomException(
+          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     try {
@@ -287,12 +287,13 @@ public class SealServiceImpl implements SealService {
               ? 2000
               : 500;
       if (distanceM > allowedRadius) {
-        // log.info("띠부씰 획득 실패 - 거리가 너무 멉니다. sealId: {}, 거리: {}m", sealId, distanceM);
-        return SealResponse.CollectSealResultDTO.builder()
-            .id(sealId)
-            .success(false)
-            .distance(distanceM)
-            .build();
+        // 울릉도/독도는 2km, 나머지는 500m 메시지 구분
+        boolean isUllung =
+            seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG;
+        throw new com.yfive.gbjs.global.error.exception.CustomException(
+            isUllung
+                ? com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_TOO_FAR_ULLUNG
+                : com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_TOO_FAR_GENERAL);
       }
 
       // 6. 현재 사용자 조회
@@ -301,16 +302,18 @@ public class SealServiceImpl implements SealService {
       // 7. 이미 획득했는지 확인
       boolean alreadyCollected = userSealRepository.existsByUser_IdAndSeal_Id(userId, sealId);
       if (alreadyCollected) {
-        log.info("이미 획득한 띠부씰입니다. userId: {}, sealId: {}", userId, sealId);
-        return SealResponse.CollectSealResultDTO.builder()
-            .id(sealId)
-            .success(false)
-            .distance(distanceM)
-            .build();
+        throw new com.yfive.gbjs.global.error.exception.CustomException(
+            com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_ALREADY_COLLECTED);
       }
 
       // 8. UserSeal 생성 및 저장
-      UserSeal userSeal = UserSeal.builder().user(userService.getCurrentUser()).seal(seal).build();
+      UserSeal userSeal =
+          UserSeal.builder()
+              .user(userService.getCurrentUser())
+              .seal(seal)
+              .collected(true)
+              .collectedAt(LocalDateTime.now())
+              .build();
 
       userSealRepository.save(userSeal);
 
@@ -323,8 +326,8 @@ public class SealServiceImpl implements SealService {
           .build();
 
     } catch (NumberFormatException e) {
-      log.error("좌표 파싱 실패: {}, {}", guideLatStr, guideLonStr);
-      return SealResponse.CollectSealResultDTO.builder().id(sealId).success(false).build();
+      throw new com.yfive.gbjs.global.error.exception.CustomException(
+          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
   }
 
@@ -343,5 +346,26 @@ public class SealServiceImpl implements SealService {
     } catch (Exception e) {
       return "띠부씰 획득에 실패했습니다.";
     }
+  }
+
+  /** 획득한 띠부씰 삭제 */
+  @Override
+  @Transactional
+  public void deleteCollectedSeal(Long sealId) {
+    Long userId = userService.getCurrentUser().getId();
+
+    // UserSeal 조회
+    UserSeal userSeal =
+        userSealRepository
+            .findByUser_IdAndSeal_Id(userId, sealId)
+            .orElseThrow(
+                () ->
+                    new com.yfive.gbjs.global.error.exception.CustomException(
+                        com.yfive.gbjs.domain.seal.exception.SealErrorStatus.USER_SEAL_NOT_FOUND));
+
+    // UserSeal 삭제
+    userSealRepository.delete(userSeal);
+
+    // log.info("띠부씰 삭제 성공! userId: {}, sealId: {}", userId, sealId);
   }
 }

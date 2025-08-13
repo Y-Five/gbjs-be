@@ -60,4 +60,11 @@ public interface SealService {
    * @return 지역에 따른 실패 메시지
    */
   String getFailureMessage(Long sealId);
+
+  /**
+   * 획득한 띠부씰 삭제
+   *
+   * @param sealId 삭제할 띠부씰 ID
+   */
+  void deleteCollectedSeal(Long sealId);
 }

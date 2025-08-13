@@ -5,6 +5,7 @@ package com.yfive.gbjs.domain.seal.repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -45,6 +46,15 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
    * @return 수집 여부
    */
   boolean existsByUser_IdAndSeal_Id(Long userId, Long sealId);
+
+  /**
+   * 특정 사용자의 특정 띠부씰 수집 정보 조회(띠부씰 삭제시 사용)
+   *
+   * @param userId 사용자 ID
+   * @param sealId 띠부씰 ID
+   * @return UserSeal 엔티티
+   */
+  Optional<UserSeal> findByUser_IdAndSeal_Id(Long userId, Long sealId);
 
   /**
    * 여러 사용자의 띠부씰 수를 한 번의 쿼리로 조회합니다.
