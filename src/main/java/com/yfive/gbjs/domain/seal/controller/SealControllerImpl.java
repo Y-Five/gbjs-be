@@ -60,7 +60,7 @@ public class SealControllerImpl implements SealController {
     if (response.isSuccess()) {
       return ResponseEntity.ok(ApiResponse.success(response, "띠부씰을 성공적으로 획득했습니다!"));
     } else {
-      return ResponseEntity.ok(ApiResponse.success(response, "띠부씰 획득에 실패했습니다. 200m 이내로 가까이 가주세요."));
+      return ResponseEntity.ok(ApiResponse.success(response, "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요."));
     }
   }
 }

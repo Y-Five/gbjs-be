@@ -23,10 +23,10 @@ public class CollectSealRequest {
   private Long sealId;
 
   @NotNull(message = "현재 위도는 필수입니다")
-  @Schema(description = "현재 위치 위도", example = "35.7901", required = true)
+  @Schema(description = "현재 위치 위도", example = "35.789769", required = true)
   private Double latitude;
 
   @NotNull(message = "현재 경도는 필수입니다")
-  @Schema(description = "현재 위치 경도", example = "129.3320", required = true)
+  @Schema(description = "현재 위치 경도", example = "129.332094", required = true)
   private Double longitude;
 }

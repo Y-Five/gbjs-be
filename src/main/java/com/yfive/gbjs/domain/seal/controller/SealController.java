@@ -48,13 +48,13 @@ public interface SealController {
   @GetMapping("/nearby")
   @Operation(summary = "주변 띠부씰 조회", description = "현재 위치에서 가장 가까운 띠부씰 4개를 조회합니다.")
   ResponseEntity<ApiResponse<SealResponse.NearbySealListDTO>> getNearbySeals(
-      @RequestParam @Parameter(description = "현재 위치 위도", required = true, example = "35.8714")
+      @RequestParam @Parameter(description = "현재 위치 위도", required = true, example = "35.789769")
           Double latitude,
-      @RequestParam @Parameter(description = "현재 위치 경도", required = true, example = "128.6014")
+      @RequestParam @Parameter(description = "현재 위치 경도", required = true, example = "129.332094")
           Double longitude);
 
   @PostMapping("/collect")
-  @Operation(summary = "띠부씰 획득", description = "위치 인증을 통해 띠부씰을 획득합니다. 200m 이내에 있어야 획득 가능합니다.")
+  @Operation(summary = "띠부씰 획득", description = "위치 인증을 통해 띠부씰을 획득합니다. 500m 이내에 있어야 획득 가능합니다.")
   ResponseEntity<ApiResponse<SealResponse.CollectSealResultDTO>> collectSeal(
       @Parameter(hidden = true) Authentication authentication,
       @RequestParam @Parameter(description = "띠부씰 ID", required = true, example = "1") Long sealId,

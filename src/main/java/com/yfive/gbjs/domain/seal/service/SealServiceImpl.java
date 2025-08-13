@@ -280,8 +280,8 @@ public class SealServiceImpl implements SealService {
       double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
       int distanceM = (int) Math.round(distanceKm * 1000);
 
-      // 5. 200m 이내인지 확인
-      if (distanceM > 200) {
+      // 5. 500m 이내인지 확인
+      if (distanceM > 500) {
         // log.info("띠부씰 획득 실패 - 거리가 너무 멉니다. sealId: {}, 거리: {}m", sealId, distanceM);
         return SealResponse.CollectSealResultDTO.builder()
             .id(sealId)
