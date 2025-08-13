@@ -17,18 +17,24 @@ import com.yfive.gbjs.domain.seal.converter.UserSealConverter;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
+import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Rarity;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
+import com.yfive.gbjs.domain.seal.exception.SealErrorStatus;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
+import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.service.UserService;
+import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /** 띠부씰 서비스 구현체 띠부씰 관련 비즈니스 로직을 구현 */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -156,5 +162,202 @@ public class SealServiceImpl implements SealService {
     } else {
       return 4;
     }
+  }
+
+  /** 현재 위치 기반 가까운 띠부씰 조회 */
+  @Override
+  public SealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude) {
+    // 모든 Seal 조회 (SealSpot과 AudioGuide 정보 포함)
+    List<Seal> allSeals = sealRepository.findAll();
+
+    // 각 Seal과의 거리를 계산하여 DTO 리스트 생성
+    List<SealResponse.NearbySealDTO> nearbySealDTOs =
+        allSeals.stream()
+            .filter(
+                seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
+            .map(
+                seal -> {
+                  // AudioGuide에서 위도/경도 가져오기
+                  String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
+                  String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
+
+                  if (guideLatStr == null || guideLonStr == null) {
+                    return null;
+                  }
+
+                  try {
+                    double guideLat = Double.parseDouble(guideLatStr);
+                    double guideLon = Double.parseDouble(guideLonStr);
+
+                    // 거리 계산 (Haversine formula) - km를 m로 변환
+                    double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
+                    int distanceM = (int) Math.round(distanceKm * 1000);
+
+                    return SealResponse.NearbySealDTO.builder()
+                        .sealId(seal.getId())
+                        .number(seal.getNumber())
+                        .rarity(seal.getRarity())
+                        .frontImageUrl(seal.getFrontImageUrl())
+                        .spotName(seal.getSealSpot().getName())
+                        .locationName(seal.getSealSpot().getLocation().name())
+                        .latitude(guideLat)
+                        .longitude(guideLon)
+                        .distance(distanceM)
+                        .build();
+                  } catch (NumberFormatException e) {
+                    return null;
+                  }
+                })
+            .filter(dto -> dto != null)
+            .sorted(
+                java.util.Comparator.comparing(
+                    (SealResponse.NearbySealDTO dto) -> dto.getDistance()))
+            .limit(4) // 가장 가까운 4개만
+            .collect(Collectors.toList());
+
+    return SealResponse.NearbySealListDTO.builder().nearbySeals(nearbySealDTOs).build();
+  }
+
+  /**
+   * Haversine 공식을 사용한 두 지점 간 거리 계산
+   *
+   * @param lat1 위도1
+   * @param lon1 경도1
+   * @param lat2 위도2
+   * @param lon2 경도2
+   * @return 거리 (km)
+   */
+  private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    final double R = 6371; // 지구 반지름 (km)
+
+    double latDistance = Math.toRadians(lat2 - lat1);
+    double lonDistance = Math.toRadians(lon2 - lon1);
+
+    double a =
+        Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+            + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2)
+                * Math.sin(lonDistance / 2);
+
+    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    double distance = R * c;
+
+    // 소수점 2자리까지 반올림
+    return Math.round(distance * 100.0) / 100.0;
+  }
+
+  /** 위치 인증을 통한 띠부씰 획득 */
+  @Override
+  @Transactional
+  public SealResponse.CollectSealResultDTO collectSeal(
+      Long sealId, Double latitude, Double longitude) {
+    // 1. 띠부씰 조회
+    Seal seal =
+        sealRepository
+            .findById(sealId)
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
+
+    // 2. SealSpot과 AudioGuide 확인
+    if (seal.getSealSpot() == null || seal.getSealSpot().getAudioGuide() == null) {
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+    }
+
+    // 3. AudioGuide에서 위도/경도 가져오기
+    String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
+    String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
+
+    if (guideLatStr == null || guideLonStr == null) {
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+    }
+
+    try {
+      double guideLat = Double.parseDouble(guideLatStr);
+      double guideLon = Double.parseDouble(guideLonStr);
+
+      // 4. 거리 계산 (km를 m로 변환)
+      double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
+      int distanceM = (int) Math.round(distanceKm * 1000);
+
+      // 5. 지역별 허용 반경 내인지 확인 (울릉도, 독도는 2km, 나머지는 500m)
+      // ULLUNG location에는 울릉도와 독도가 모두 포함됨
+      boolean isUllung = seal.getSealSpot().getLocation() == Location.ULLUNG;
+      int allowedRadius = isUllung ? 2000 : 500;
+
+      if (distanceM > allowedRadius) {
+        // 울릉도/독도는 2km, 나머지는 500m 메시지 구분
+        throw new CustomException(
+            isUllung ? SealErrorStatus.SEAL_TOO_FAR_ULLUNG : SealErrorStatus.SEAL_TOO_FAR_GENERAL);
+      }
+
+      // 6. 현재 사용자 조회
+      User currentUser = userService.getCurrentUser();
+      Long userId = currentUser.getId();
+
+      // 7. 이미 획득했는지 확인
+      boolean alreadyCollected = userSealRepository.existsByUser_IdAndSeal_Id(userId, sealId);
+      if (alreadyCollected) {
+        throw new CustomException(SealErrorStatus.SEAL_ALREADY_COLLECTED);
+      }
+
+      // 8. UserSeal 생성 및 저장
+      UserSeal userSeal =
+          UserSeal.builder()
+              .user(currentUser)
+              .seal(seal)
+              .collected(true)
+              .collectedAt(LocalDateTime.now())
+              .build();
+
+      userSealRepository.save(userSeal);
+
+      log.info("띠부씰 획득 성공! userId: {}, sealId: {}, 거리: {}m", userId, sealId, distanceM);
+
+      return SealResponse.CollectSealResultDTO.builder()
+          .id(sealId)
+          .success(true)
+          .distance(distanceM)
+          .build();
+
+    } catch (NumberFormatException e) {
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+    }
+  }
+
+  /** 띠부씰 획득 실패 메시지 조회 */
+  @Override
+  public String getFailureMessage(Long sealId) {
+    try {
+      Seal seal = sealRepository.findById(sealId).orElse(null);
+      if (seal == null || seal.getSealSpot() == null) {
+        return "띠부씰 획득에 실패했습니다.";
+      }
+
+      boolean isUllung = seal.getSealSpot().getLocation() == Location.ULLUNG;
+      return isUllung ? "띠부씰 획득에 실패했습니다. 2km 이내로 가까이 가주세요." : "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요.";
+    } catch (Exception e) {
+      return "띠부씰 획득에 실패했습니다.";
+    }
+  }
+
+  /** 획득한 띠부씰 삭제 */
+  @Override
+  @Transactional
+  public void deleteCollectedSeal(Long sealId) {
+    Long userId = userService.getCurrentUser().getId();
+
+    // UserSeal 조회
+    UserSeal userSeal =
+        userSealRepository
+            .findByUser_IdAndSeal_Id(userId, sealId)
+            .orElseThrow(
+                () ->
+                    new com.yfive.gbjs.global.error.exception.CustomException(
+                        SealErrorStatus.USER_SEAL_NOT_FOUND));
+
+    // UserSeal 삭제
+    userSealRepository.delete(userSeal);
+
+    // log.info("띠부씰 삭제 성공! userId: {}, sealId: {}", userId, sealId);
   }
 }

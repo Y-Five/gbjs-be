@@ -79,7 +79,9 @@ public class SecurityConfig {
                         "/api/audio-guide/**",
                         "/api/weathers/**",
                         "/api/festivals/**",
-                        "/api/seals/**",
+                        "/api/seals",
+                        "/api/seals/products",
+                        "/api/seals/nearby",
                         "/api/spots/**",
                         "/api/courses/**",
                         "/api/users/**",
@@ -108,7 +110,8 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:5173", "https://yourfrontend.com"));
+    configuration.setAllowedOrigins(
+        List.of("http://localhost:5173", "https://yourfrontend.com", "https://api.gbjs.co.kr"));
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(
         Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
