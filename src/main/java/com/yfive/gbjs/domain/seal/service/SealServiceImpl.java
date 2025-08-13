@@ -17,14 +17,18 @@ import com.yfive.gbjs.domain.seal.converter.UserSealConverter;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
+import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Rarity;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
+import com.yfive.gbjs.domain.seal.exception.SealErrorStatus;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
+import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.service.UserService;
+import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -254,13 +258,12 @@ public class SealServiceImpl implements SealService {
             .findById(sealId)
             .orElseThrow(
                 () ->
-                    new com.yfive.gbjs.global.error.exception.CustomException(
-                        com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_NOT_FOUND));
+                    new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
 
     // 2. SealSpot과 AudioGuide 확인
     if (seal.getSealSpot() == null || seal.getSealSpot().getAudioGuide() == null) {
-      throw new com.yfive.gbjs.global.error.exception.CustomException(
-          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(
+          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     // 3. AudioGuide에서 위도/경도 가져오기
@@ -268,8 +271,8 @@ public class SealServiceImpl implements SealService {
     String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
 
     if (guideLatStr == null || guideLonStr == null) {
-      throw new com.yfive.gbjs.global.error.exception.CustomException(
-          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(
+          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     try {
@@ -282,34 +285,32 @@ public class SealServiceImpl implements SealService {
 
       // 5. 지역별 허용 반경 내인지 확인 (울릉도, 독도는 2km, 나머지는 500m)
       // ULLUNG location에는 울릉도와 독도가 모두 포함됨
-      int allowedRadius =
-          seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG
-              ? 2000
-              : 500;
+      boolean isUllung = seal.getSealSpot().getLocation() == Location.ULLUNG;
+      int allowedRadius = isUllung ? 2000 : 500;
+      
       if (distanceM > allowedRadius) {
         // 울릉도/독도는 2km, 나머지는 500m 메시지 구분
-        boolean isUllung =
-            seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG;
-        throw new com.yfive.gbjs.global.error.exception.CustomException(
+        throw new CustomException(
             isUllung
-                ? com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_TOO_FAR_ULLUNG
-                : com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_TOO_FAR_GENERAL);
+                ? SealErrorStatus.SEAL_TOO_FAR_ULLUNG
+                : SealErrorStatus.SEAL_TOO_FAR_GENERAL);
       }
 
       // 6. 현재 사용자 조회
-      Long userId = userService.getCurrentUser().getId();
+      User currentUser = userService.getCurrentUser();
+      Long userId = currentUser.getId();
 
       // 7. 이미 획득했는지 확인
       boolean alreadyCollected = userSealRepository.existsByUser_IdAndSeal_Id(userId, sealId);
       if (alreadyCollected) {
-        throw new com.yfive.gbjs.global.error.exception.CustomException(
-            com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_ALREADY_COLLECTED);
+        throw new CustomException(
+            SealErrorStatus.SEAL_ALREADY_COLLECTED);
       }
 
       // 8. UserSeal 생성 및 저장
       UserSeal userSeal =
           UserSeal.builder()
-              .user(userService.getCurrentUser())
+              .user(currentUser)
               .seal(seal)
               .collected(true)
               .collectedAt(LocalDateTime.now())
@@ -326,8 +327,8 @@ public class SealServiceImpl implements SealService {
           .build();
 
     } catch (NumberFormatException e) {
-      throw new com.yfive.gbjs.global.error.exception.CustomException(
-          com.yfive.gbjs.domain.seal.exception.SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(
+          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
   }
 
@@ -341,7 +342,7 @@ public class SealServiceImpl implements SealService {
       }
 
       boolean isUllung =
-          seal.getSealSpot().getLocation() == com.yfive.gbjs.domain.seal.entity.Location.ULLUNG;
+          seal.getSealSpot().getLocation() == Location.ULLUNG;
       return isUllung ? "띠부씰 획득에 실패했습니다. 2km 이내로 가까이 가주세요." : "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요.";
     } catch (Exception e) {
       return "띠부씰 획득에 실패했습니다.";
@@ -361,7 +362,7 @@ public class SealServiceImpl implements SealService {
             .orElseThrow(
                 () ->
                     new com.yfive.gbjs.global.error.exception.CustomException(
-                        com.yfive.gbjs.domain.seal.exception.SealErrorStatus.USER_SEAL_NOT_FOUND));
+                        SealErrorStatus.USER_SEAL_NOT_FOUND));
 
     // UserSeal 삭제
     userSealRepository.delete(userSeal);
