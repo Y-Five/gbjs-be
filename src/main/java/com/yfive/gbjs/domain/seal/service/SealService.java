@@ -52,4 +52,12 @@ public interface SealService {
    * @return 띠부씰 획득 결과
    */
   SealResponse.CollectSealResultDTO collectSeal(Long sealId, Double latitude, Double longitude);
+
+  /**
+   * 띠부씰 획득 실패 메시지 조회
+   *
+   * @param sealId 띠부씰 ID
+   * @return 지역에 따른 실패 메시지
+   */
+  String getFailureMessage(Long sealId);
 }
