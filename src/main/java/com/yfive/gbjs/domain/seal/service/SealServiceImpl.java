@@ -256,14 +256,11 @@ public class SealServiceImpl implements SealService {
     Seal seal =
         sealRepository
             .findById(sealId)
-            .orElseThrow(
-                () ->
-                    new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
 
     // 2. SealSpot과 AudioGuide 확인
     if (seal.getSealSpot() == null || seal.getSealSpot().getAudioGuide() == null) {
-      throw new CustomException(
-          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     // 3. AudioGuide에서 위도/경도 가져오기
@@ -271,8 +268,7 @@ public class SealServiceImpl implements SealService {
     String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
 
     if (guideLatStr == null || guideLonStr == null) {
-      throw new CustomException(
-          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
 
     try {
@@ -287,13 +283,11 @@ public class SealServiceImpl implements SealService {
       // ULLUNG location에는 울릉도와 독도가 모두 포함됨
       boolean isUllung = seal.getSealSpot().getLocation() == Location.ULLUNG;
       int allowedRadius = isUllung ? 2000 : 500;
-      
+
       if (distanceM > allowedRadius) {
         // 울릉도/독도는 2km, 나머지는 500m 메시지 구분
         throw new CustomException(
-            isUllung
-                ? SealErrorStatus.SEAL_TOO_FAR_ULLUNG
-                : SealErrorStatus.SEAL_TOO_FAR_GENERAL);
+            isUllung ? SealErrorStatus.SEAL_TOO_FAR_ULLUNG : SealErrorStatus.SEAL_TOO_FAR_GENERAL);
       }
 
       // 6. 현재 사용자 조회
@@ -303,8 +297,7 @@ public class SealServiceImpl implements SealService {
       // 7. 이미 획득했는지 확인
       boolean alreadyCollected = userSealRepository.existsByUser_IdAndSeal_Id(userId, sealId);
       if (alreadyCollected) {
-        throw new CustomException(
-            SealErrorStatus.SEAL_ALREADY_COLLECTED);
+        throw new CustomException(SealErrorStatus.SEAL_ALREADY_COLLECTED);
       }
 
       // 8. UserSeal 생성 및 저장
@@ -327,8 +320,7 @@ public class SealServiceImpl implements SealService {
           .build();
 
     } catch (NumberFormatException e) {
-      throw new CustomException(
-          SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
+      throw new CustomException(SealErrorStatus.SEAL_LOCATION_INFO_MISSING);
     }
   }
 
@@ -341,8 +333,7 @@ public class SealServiceImpl implements SealService {
         return "띠부씰 획득에 실패했습니다.";
       }
 
-      boolean isUllung =
-          seal.getSealSpot().getLocation() == Location.ULLUNG;
+      boolean isUllung = seal.getSealSpot().getLocation() == Location.ULLUNG;
       return isUllung ? "띠부씰 획득에 실패했습니다. 2km 이내로 가까이 가주세요." : "띠부씰 획득에 실패했습니다. 500m 이내로 가까이 가주세요.";
     } catch (Exception e) {
       return "띠부씰 획득에 실패했습니다.";

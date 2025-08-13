@@ -37,8 +37,9 @@ public class SealControllerImpl implements SealController {
     UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
 
     // 획득한 띠부씰이 있는지 확인하여 적절한 메시지 설정 (NPE 방지)
-    boolean hasCollected = response.getSeals() != null 
-        && response.getSeals().stream().anyMatch(seal -> seal.isCollected());
+    boolean hasCollected =
+        response.getSeals() != null
+            && response.getSeals().stream().anyMatch(seal -> seal.isCollected());
     String message = hasCollected ? null : "아직 획득한 띠부씰이 없습니다.";
 
     return ResponseEntity.ok(ApiResponse.success(response, message));
