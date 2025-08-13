@@ -89,10 +89,10 @@ public class SealResponse {
     @com.fasterxml.jackson.annotation.JsonProperty("location_name")
     private String locationName;
 
-    @Schema(description = "위도", example = "35.7901")
+    @Schema(description = "위도", example = "35.79000")
     private Double latitude;
 
-    @Schema(description = "경도", example = "129.3320")
+    @Schema(description = "경도", example = "129.33222")
     private Double longitude;
 
     @Schema(description = "현재 위치로부터의 거리 (m)", example = "500")
