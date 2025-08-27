@@ -25,6 +25,7 @@ public interface CourseController {
   @Operation(summary = "여행 코스 생성", description = "여행 날짜와 지역을 입력받아 코스를 생성합니다. (저장 X)")
   @PostMapping("/generate")
   ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourse(
+      @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody CreateCourseRequest request);
 
   @Operation(summary = "여행 코스 저장", description = "생성된 코스를 저장합니다.")
