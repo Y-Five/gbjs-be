@@ -58,6 +58,11 @@ dependencies {
 
     // Google TTS
     implementation "com.google.cloud:google-cloud-texttospeech:${ttsVersion}"
+
+    // Qdrant VectorStore
+    implementation 'org.springframework.ai:spring-ai-qdrant-store-spring-boot-starter'
+    // Gemini
+    implementation("org.springframework.ai:spring-ai-google-gemini-starter")
 }
 
 tasks.named('test') {
