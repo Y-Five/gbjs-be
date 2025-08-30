@@ -106,6 +106,7 @@ def springProfile = project.findProperty("spring.profiles.active") ?: ""
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+        mavenBom "io.grpc:grpc-bom:1.61.1"
     }
 }
 
