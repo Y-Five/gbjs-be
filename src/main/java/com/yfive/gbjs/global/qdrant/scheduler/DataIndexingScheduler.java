@@ -9,11 +9,9 @@ import org.springframework.stereotype.Component;
 import com.yfive.gbjs.global.qdrant.service.DataIndexingService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class DataIndexingScheduler {
 
   private final DataIndexingService dataIndexingService;
@@ -29,6 +27,6 @@ public class DataIndexingScheduler {
     dataIndexingService.indexSeals();
     dataIndexingService.indexSealSpots();
     dataIndexingService.indexSealProducts();
-    dataIndexingService.indexSeals();
+    dataIndexingService.indexUsers();
   }
 }

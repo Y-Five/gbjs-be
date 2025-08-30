@@ -30,11 +30,9 @@ import io.qdrant.client.grpc.Collections.CreateCollection;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class DataIndexingService {
 
@@ -96,7 +94,8 @@ public class DataIndexingService {
                           + (seal.getSealSpot() != null ? seal.getSealSpot().getId() : "없음");
 
                   UUID documentId =
-                      UUID.nameUUIDFromBytes(seal.getSpotName().getBytes(StandardCharsets.UTF_8));
+                      UUID.nameUUIDFromBytes(
+                          ("seal-" + seal.getId()).getBytes(StandardCharsets.UTF_8));
                   return new Document(
                       documentId.toString(),
                       searchableContent,
@@ -114,7 +113,7 @@ public class DataIndexingService {
             .map(
                 spot -> {
                   String searchableContent =
-                      "장소 이름: "
+                      "씰 관광지 이름: "
                           + spot.getName()
                           + ", 설명: "
                           + spot.getDescription()
@@ -128,7 +127,8 @@ public class DataIndexingService {
                           + (spot.getAudioGuide() != null ? spot.getAudioGuide().getId() : "없음");
 
                   UUID documentId =
-                      UUID.nameUUIDFromBytes(spot.getName().getBytes(StandardCharsets.UTF_8));
+                      UUID.nameUUIDFromBytes(
+                          ("seal_spot-" + spot.getId()).getBytes(StandardCharsets.UTF_8));
                   return new Document(
                       documentId.toString(),
                       searchableContent,
@@ -146,7 +146,7 @@ public class DataIndexingService {
             .map(
                 product -> {
                   String searchableContent =
-                      "상품 이름: "
+                      "씰 상품 이름: "
                           + product.getName()
                           + ", 설명: "
                           + product.getDescription()
@@ -154,7 +154,8 @@ public class DataIndexingService {
                           + product.getPrice();
 
                   UUID documentId =
-                      UUID.nameUUIDFromBytes(product.getName().getBytes(StandardCharsets.UTF_8));
+                      UUID.nameUUIDFromBytes(
+                          ("seal_product-" + product.getId()).getBytes(StandardCharsets.UTF_8));
                   return new Document(
                       documentId.toString(),
                       searchableContent,
@@ -172,23 +173,11 @@ public class DataIndexingService {
             .map(
                 user -> {
                   String searchableContent =
-                      "사용자 ID: "
-                          + user.getId()
-                          + ", 사용자 이름: "
-                          + user.getUsername()
-                          + ", 닉네임: "
-                          + user.getNickname()
-                          + ", TTS 설정: "
-                          + user.getTtsSetting().name()
-                          + ", 이메일 수신 동의: "
-                          + user.getEmailMarketingConsent()
-                          + ", 푸시 알림 동의: "
-                          + user.getPushNotificationConsent()
-                          + ", 위치 정보 동의: "
-                          + user.getLocationConsent();
+                      "사용자 ID: " + user.getId() + ", 닉네임: " + user.getNickname();
 
                   UUID documentId =
-                      UUID.nameUUIDFromBytes(user.getUsername().getBytes(StandardCharsets.UTF_8));
+                      UUID.nameUUIDFromBytes(
+                          ("user-" + user.getId()).getBytes(StandardCharsets.UTF_8));
                   return new Document(
                       documentId.toString(),
                       searchableContent,
