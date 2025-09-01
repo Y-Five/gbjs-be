@@ -13,8 +13,6 @@ services:
       SPRING_REDIS_HOST: redis
     command: [ "java", "-jar", "app.jar" ]
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
