@@ -58,11 +58,8 @@ public class SpotControllerImpl implements SpotController {
 
   @Override
   public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
-      @PathVariable String contentId,
-      @RequestParam Double latitude,
-      @RequestParam Double longitude) {
-    SpotDetailResponse spotDetailResponse =
-        spotService.getSpotByContentId(contentId, latitude, longitude);
+      @PathVariable String id, @RequestParam Double latitude, @RequestParam Double longitude) {
+    SpotDetailResponse spotDetailResponse = spotService.getSpotByContentId(id, latitude, longitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotDetailResponse));
   }
