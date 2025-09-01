@@ -29,6 +29,7 @@ out/
 /src/main/resources/application*.yml
 /src/test/resources/application*.properties
 /src/test/resources/application*.yml
+.env.*
 
 ### NetBeans ###
 /nbproject/private/
