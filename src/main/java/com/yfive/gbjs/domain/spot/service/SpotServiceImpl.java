@@ -53,65 +53,35 @@ public class SpotServiceImpl implements SpotService {
   public PageResponse<SpotResponse> getSpotsByKeyword(
       Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses =
-        fetchSpotListByKeyword(
-            pageable.getPageSize(), pageable.getPageNumber(), keyword, latitude, longitude);
+    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
 
-    Page<SpotResponse> page = new PageImpl<>(spotResponses, pageable, spotResponses.size());
+    spotResponses.sort(Comparator.comparing(SpotResponse::getTitle));
 
-    page.getContent().parallelStream()
-        .forEach(
-            spot -> {
-              SpotDetailResponse spotDetailResponse =
-                  getSpotByContentId(spot.getSpotId(), latitude, longitude);
-              spot.setType(spotDetailResponse.getType());
-            });
-
-    return pageMapper.toSpotPageResponse(page);
+    log.info("관광지 가나다순 조회 성공 - 키워드: {}", keyword);
+    return paginateSpotResponses(spotResponses, pageable, latitude, longitude);
   }
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
       Pageable pageable, String keyword, Double latitude, Double longitude) {
 
-    List<SpotResponse> spotResponses =
-        fetchSpotListByKeyword(1000, 1, keyword, latitude, longitude);
+    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
 
     spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
 
-    if (pageable.getOffset() > Integer.MAX_VALUE) {
-      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
-    }
-
-    int start = (int) pageable.getOffset();
-    if (start >= spotResponses.size()) {
-      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
-    }
-
-    int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
-    List<SpotResponse> pageContent = spotResponses.subList(start, end);
-
-    for (SpotResponse response : pageContent) {
-      SpotDetailResponse spotDetailResponse =
-          getSpotByContentId(response.getSpotId(), latitude, longitude);
-
-      response.setType(spotDetailResponse.getType());
-    }
-
-    Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
-
-    return pageMapper.toSpotPageResponse(page);
+    log.info("관광지 거리순 조회 성공 - 키워드: {}", keyword);
+    return paginateSpotResponses(spotResponses, pageable, latitude, longitude);
   }
 
   private List<SpotResponse> fetchSpotListByKeyword(
-      Integer pageSize, Integer pageNum, String keyword, Double latitude, Double longitude) {
+      String keyword, Double latitude, Double longitude) {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromUriString(spotApiUrl + "/searchKeyword2")
             .queryParam("serviceKey", serviceKey)
-            .queryParam("numOfRows", pageSize)
-            .queryParam("pageNo", pageNum)
+            .queryParam("numOfRows", 1000)
+            .queryParam("pageNo", 1)
             .queryParam("MobileOS", "WEB")
             .queryParam("MobileApp", "gbjs")
             .queryParam("_type", "JSON")
@@ -122,16 +92,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    log.info("response={}", response);
-
-    if (response == null || response.isBlank()) {
-      log.error("빈 응답 수신");
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
-
-    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
+    validateApiResponse(response, "빈 응답 수신");
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -181,14 +142,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    if (response == null || response.isBlank()) {
-      log.error("빈 응답 수신");
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
-
-    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
+    validateApiResponse(response, "빈 응답 수신");
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -264,14 +218,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    if (response == null || response.isBlank()) {
-      log.error("빈 응답 수신");
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
-
-    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
-    }
+    validateApiResponse(response, "빈 응답 수신");
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -301,5 +248,43 @@ public class SpotServiceImpl implements SpotService {
                 * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  private void validateApiResponse(String response, String logMessage) {
+    if (response == null || response.isBlank()) {
+      log.error(logMessage);
+      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
+    }
+
+    if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
+      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
+    }
+  }
+
+  private PageResponse<SpotResponse> paginateSpotResponses(
+      List<SpotResponse> spotResponses, Pageable pageable, Double latitude, Double longitude) {
+
+    if (pageable.getOffset() > Integer.MAX_VALUE) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+
+    int start = (int) pageable.getOffset();
+    if (start >= spotResponses.size()) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+
+    int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
+    List<SpotResponse> pageContent = spotResponses.subList(start, end);
+
+    pageContent.parallelStream()
+        .forEach(
+            response -> {
+              SpotDetailResponse detail =
+                  getSpotByContentId(response.getSpotId(), latitude, longitude);
+              response.setType(detail.getType());
+            });
+
+    Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
+    return pageMapper.toSpotPageResponse(page);
   }
 }

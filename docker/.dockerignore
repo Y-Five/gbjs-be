@@ -1,6 +1,7 @@
 # Gradle 관련
-.gradle/
+../.gradle/
 build/
+out/
 !gradle/wrapper/gradle-wrapper.jar
 
 # IDE 관련
@@ -17,10 +18,13 @@ build/
 logs/
 *.log
 
-# 기타
+# 버전관리 제외
 .git/
 .gitignore
+
+# 불필요한 문서
 README.md
-docker-compose.yml
-Dockerfile
-.dockerignore 
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db

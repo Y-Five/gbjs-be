@@ -20,10 +20,11 @@ import lombok.RequiredArgsConstructor;
 public class CourseControllerImpl implements CourseController {
 
   private final CourseService courseService;
+  private final com.yfive.gbjs.domain.user.service.UserService userService;
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourse(
-      CreateCourseRequest request) {
+      Authentication authentication, CreateCourseRequest request) {
     CourseResponse.CourseDetailDTO response = courseService.generateCourse(request);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
@@ -31,7 +32,7 @@ public class CourseControllerImpl implements CourseController {
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> saveCourse(
       Authentication authentication, SaveCourseRequest request) {
-    Long userId = Long.valueOf(authentication.getName());
+    Long userId = userService.getCurrentUser().getId();
     CourseResponse.CourseDetailDTO response = courseService.saveCourse(userId, request);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
@@ -39,7 +40,7 @@ public class CourseControllerImpl implements CourseController {
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> getCourse(
       Authentication authentication, Long courseId) {
-    Long userId = Long.valueOf(authentication.getName());
+    Long userId = userService.getCurrentUser().getId();
     CourseResponse.CourseDetailDTO response = courseService.getCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
@@ -47,7 +48,7 @@ public class CourseControllerImpl implements CourseController {
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
       Authentication authentication) {
-    Long userId = Long.valueOf(authentication.getName());
+    Long userId = userService.getCurrentUser().getId();
     CourseResponse.CourseListDTO response = courseService.getUserCourses(userId);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
@@ -55,7 +56,7 @@ public class CourseControllerImpl implements CourseController {
   @Override
   public ResponseEntity<ApiResponse<Void>> deleteCourse(
       Authentication authentication, Long courseId) {
-    Long userId = Long.valueOf(authentication.getName());
+    Long userId = userService.getCurrentUser().getId();
     courseService.deleteCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(null));
   }

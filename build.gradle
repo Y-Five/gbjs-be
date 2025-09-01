@@ -4,6 +4,9 @@ plugins {
     id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
     id 'com.diffplug.spotless' version "${spotlessVersion}"
 }
+ext {
+    springAiVersion = "1.0.1"
+}
 
 group = "${appGroup}"
 version = "${appVersion}"
@@ -35,6 +38,8 @@ dependencies {
 
     // JWT
     implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-qdrant'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
     runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
     runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 
@@ -98,6 +103,12 @@ tasks.register('formatAll') {
 }
 
 def springProfile = project.findProperty("spring.profiles.active") ?: ""
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+        mavenBom "io.grpc:grpc-bom:1.61.1"
+    }
+}
 
 // 빌드 전에 자동으로 포맷팅 적용
 if (springProfile != "test") {
