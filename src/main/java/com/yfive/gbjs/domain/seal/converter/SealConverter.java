@@ -21,11 +21,13 @@ public class SealConverter {
         .locationName(seal.getLocationName())
         .location(seal.getLocation())
         .content(seal.getContent())
-        .imageUrl(seal.getImageUrl())
+        .rarity(seal.getRarity())
+        .frontImageUrl(seal.getFrontImageUrl())
+        .backImageUrl(seal.getBackImageUrl())
         .build();
   }
 
   public SealResponse.SealListDTO toListDTO(List<SealResponse.SealDTO> seals) {
-    return SealResponse.SealListDTO.builder().seals(seals).totalCount(seals.size()).build();
+    return SealResponse.SealListDTO.builder().totalCount(seals.size()).seals(seals).build();
   }
 }

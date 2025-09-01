@@ -5,27 +5,12 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/gbjs_dev
-      - SPRING_DATASOURCE_USERNAME=gbjs
-      - SPRING_DATASOURCE_PASSWORD=gbjs1234
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database-2.c528io8smt7e.ap-northeast-2.rds.amazonaws.com:3306/gbjs
+      - SPRING_DATASOURCE_USERNAME=gbjsuser
+      - SPRING_DATASOURCE_PASSWORD=gbjs1234!!
       - SPRING_REDIS_HOST=redis
     depends_on:
-      - mysql
       - redis
-    networks:
-      - gbjs-network
-
-  mysql:
-    image: mysql:8.0
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_DATABASE=gbjs_dev
-      - MYSQL_USER=gbjs
-      - MYSQL_PASSWORD=gbjs1234
-      - MYSQL_ROOT_PASSWORD=root1234
-    volumes:
-      - mysql-data:/var/lib/mysql
     networks:
       - gbjs-network
 
@@ -43,5 +28,4 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
   redis-data:

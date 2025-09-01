@@ -13,13 +13,14 @@ public class TraditionMapper {
 
   public TraditionResponse toTraditionResponse(Tradition tradition) {
     return TraditionResponse.builder()
-        .id(tradition.getId())
-        .type(tradition.getType())
+        .traditionId(tradition.getId())
+        .imageUrl(tradition.getImageUrl())
         .address(tradition.getAddress())
         .name(tradition.getName())
         .description(tradition.getDescription())
+        .redirectUrl(tradition.getRedirectUrl())
+        .type(tradition.getType())
         .price(tradition.getPrice())
-        .imageUrl(tradition.getImageUrl())
         .build();
   }
 }

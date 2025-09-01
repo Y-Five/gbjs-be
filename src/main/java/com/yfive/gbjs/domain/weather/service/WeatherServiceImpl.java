@@ -67,10 +67,10 @@ public class WeatherServiceImpl implements WeatherService {
 
     // 요청 URL 조합
     UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
+        UriComponentsBuilder.fromUriString(weatherApiUrl)
             .queryParam("serviceKey", serviceKey)
             .queryParam("pageNo", 1)
-            .queryParam("numOfRows", 100)
+            .queryParam("numOfRows", 1000)
             .queryParam("dataType", "JSON")
             .queryParam("base_date", baseDate.format(DateTimeFormatter.BASIC_ISO_DATE))
             .queryParam("base_time", baseTime)
@@ -89,7 +89,7 @@ public class WeatherServiceImpl implements WeatherService {
       JsonNode root = objectMapper.readTree(response);
       JsonNode items = root.path("response").path("body").path("items").path("item");
 
-      if (items.isMissingNode() || !items.isArray() || items.size() == 0) {
+      if (items.isMissingNode() || !items.isArray() || items.isEmpty()) {
         log.warn("날씨 정보가 존재하지 않습니다.");
         throw new CustomException(WeatherErrorStatus.ITEM_NOT_FOUND);
       }

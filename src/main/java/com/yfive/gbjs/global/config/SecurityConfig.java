@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,7 +54,7 @@ public class SecurityConfig {
         .headers(
             headers ->
                 headers
-                    .frameOptions(frameOptions -> frameOptions.sameOrigin())
+                    .frameOptions(FrameOptionsConfig::sameOrigin)
                     .contentSecurityPolicy(
                         csp ->
                             csp.policyDirectives(
@@ -75,14 +76,17 @@ public class SecurityConfig {
                     // 공개 API
                     .requestMatchers(
                         "/api/auth/**",
-                        "/api/guides/**",
+                        "/api/audio-guide/**",
                         "/api/weathers/**",
                         "/api/festivals/**",
-                        "/api/seals/**",
+                        "/api/seals",
+                        "/api/seals/products",
+                        "/api/seals/nearby",
                         "/api/spots/**",
                         "/api/courses/**",
                         "/api/users/**",
-                        "/api/traditions/**")
+                        "/api/traditions/**",
+                        "/api/tts/**")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
@@ -106,11 +110,12 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://yourfrontend.com"));
+    configuration.setAllowedOrigins(
+        List.of("http://localhost:5173", "https://yourfrontend.com", "https://api.gbjs.co.kr"));
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(
         Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
-    configuration.setExposedHeaders(Arrays.asList("Authorization"));
+    configuration.setExposedHeaders(List.of("Authorization"));
     configuration.setAllowCredentials(true);
     configuration.setMaxAge(3600L);
 

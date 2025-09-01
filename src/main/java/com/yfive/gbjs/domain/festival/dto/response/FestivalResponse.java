@@ -14,29 +14,33 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(title = "FestivalResponse DTO", description = "축제 응답 반환")
+@Schema(title = "FestivalResponse DTO", description = "축제 응답 리스트 반환")
 public class FestivalResponse {
 
-  @JsonProperty("firstimage2")
+  @JsonProperty("contentid")
+  @Schema(description = "축제 식별자", example = "2867141")
+  private String festivalId;
+
+  @JsonProperty("firstimage")
   @Schema(
-      description = "포스터 URL",
-      example = "http://tong.visitkorea.or.kr/cms/resource/69/3459169_image2_1.JPG")
+      description = "축제 포스터 URL",
+      example = "http://tong.visitkorea.or.kr/cms/resource/61/3516661_image2_1.jpg")
   private String posterUrl;
 
   @JsonProperty("addr1")
-  @Schema(description = "축제 지역", example = "경상북도 안동시")
-  private String region;
+  @Schema(description = "축제 위치", example = "경상북도 안동시 영가로 16 (동부동)")
+  private String address;
 
-  @Schema(description = "축제명", example = "안동 국제 탈춤 페스티벌")
+  @Schema(description = "축제명", example = "경북 K-스토리 페스티벌")
   private String title;
 
   @JsonProperty("eventstartdate")
   @JsonFormat(pattern = "yyyyMMdd")
-  @Schema(description = "시작일", example = "20250926")
+  @Schema(description = "축제 시작일", example = "20250919")
   private LocalDate startDate;
 
   @JsonProperty("eventenddate")
   @JsonFormat(pattern = "yyyyMMdd")
-  @Schema(description = "종료일", example = "20251005")
+  @Schema(description = "축제 종료일", example = "20250920")
   private LocalDate endDate;
 }

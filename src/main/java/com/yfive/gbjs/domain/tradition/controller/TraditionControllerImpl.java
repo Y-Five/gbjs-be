@@ -9,8 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +19,9 @@ import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
 import com.yfive.gbjs.domain.tradition.entity.TraditionType;
 import com.yfive.gbjs.domain.tradition.service.TraditionService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.common.response.PageResponse;
+import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.page.dto.response.PageResponse;
+import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,8 +34,8 @@ public class TraditionControllerImpl implements TraditionController {
   @Override
   public ResponseEntity<ApiResponse<TraditionResponse>> createTradition(
       @RequestParam TraditionType type,
-      @RequestBody @Valid TraditionRequest request,
-      MultipartFile image) {
+      @RequestPart("tradition") @Valid TraditionRequest request,
+      @RequestPart("image") MultipartFile image) {
 
     TraditionResponse response = traditionService.createTradition(type, request, image);
 
@@ -46,17 +48,27 @@ public class TraditionControllerImpl implements TraditionController {
       @RequestParam Integer pageNum,
       @RequestParam Integer pageSize) {
 
-    Pageable pageable = PageRequest.of(pageNum, pageSize);
-    PageResponse<TraditionResponse> traditions = traditionService.getTraditions(type, pageable);
+    if (pageNum < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_NOT_FOUND);
+    }
+    if (pageSize < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    }
 
-    return ResponseEntity.ok(ApiResponse.success(traditions));
+    Pageable pageable = PageRequest.of(pageNum - 1, pageSize);
+    PageResponse<TraditionResponse> traditionListResponse =
+        traditionService.getTraditionsByType(type, pageable);
+
+    return ResponseEntity.ok(ApiResponse.success(traditionListResponse));
   }
 
   @Override
   public ResponseEntity<ApiResponse<TraditionResponse>> updateTradition(
-      @PathVariable Long id, @RequestBody @Valid TraditionRequest request, String imageUrl) {
+      @PathVariable Long id,
+      @RequestPart("tradition") @Valid TraditionRequest request,
+      @RequestPart("image") MultipartFile image) {
 
-    TraditionResponse traditionResponse = traditionService.updateTradition(id, request, imageUrl);
+    TraditionResponse traditionResponse = traditionService.updateTradition(id, request, image);
 
     return ResponseEntity.ok(ApiResponse.success(traditionResponse));
   }

@@ -5,10 +5,14 @@ package com.yfive.gbjs.domain.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,11 +33,18 @@ public class User {
   @Column(name = "id")
   private Long id;
 
+  @Column(name = "profile_image_url", nullable = false)
+  private String profileImageUrl;
+
   @Column(name = "nickname", nullable = false, unique = true)
   private String nickname;
 
   @Column(name = "username", nullable = false, unique = true)
   private String username;
+
+  @Column(name = "tts_setting", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private TtsSetting ttsSetting;
 
   @Column(name = "email_marketing_consent", nullable = false)
   private Boolean emailMarketingConsent;
@@ -46,14 +57,28 @@ public class User {
   @Column(name = "location_consent", nullable = false)
   private Boolean locationConsent;
 
-  public static User fromOAuth(String email, String nickname) {
+  public static User fromOAuth(String profileImageUrl, String nickname, String email) {
     return User.builder()
-        .username(email)
+        .profileImageUrl(profileImageUrl)
         .nickname(nickname)
+        .username(email)
+        .ttsSetting(TtsSetting.FEMALE_A)
         .emailMarketingConsent(false)
         .pushNotificationConsent(false)
         .locationConsent(false)
         .build();
+  }
+
+  public void updateNickname(String newNickname) {
+    this.nickname = newNickname;
+  }
+
+  public void updateProfileImageUrl(String profileImageUrl) {
+    this.profileImageUrl = profileImageUrl;
+  }
+
+  public void updateTtsSetting(TtsSetting ttsSetting) {
+    this.ttsSetting = ttsSetting;
   }
 
   public void toggleEmailMarketingConsent() {
@@ -67,9 +92,5 @@ public class User {
 
   public void toggleLocationConsent() {
     this.locationConsent = this.locationConsent == null || !this.locationConsent;
-  }
-
-  public void updateNickname(String newNickname) {
-    this.nickname = newNickname;
   }
 }
