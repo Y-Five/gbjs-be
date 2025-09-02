@@ -90,6 +90,19 @@ public class SealServiceImpl implements SealService {
     return userSealConverter.toListDTO(userSealDTOs);
   }
 
+  /** 특정 사용자의 띠부씰 수집 개수를 조회 */
+  @Override
+  public UserSealResponse.SealCountResponseDTO getSealCounts() {
+    Long userId = userService.getCurrentUser().getId();
+    long totalCount = sealRepository.count();
+    long collectedCount = userSealRepository.countByUserId(userId);
+
+    return UserSealResponse.SealCountResponseDTO.builder()
+        .totalCount(totalCount)
+        .collectedCount(collectedCount)
+        .build();
+  }
+
   /** 등록된 모든 띠부씰 상품을 조회하여 반환 */
   @Override
   public SealProductResponse.SealProductListDTO getSealProducts() {

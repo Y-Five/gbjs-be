@@ -28,6 +28,13 @@ public interface SealService {
   UserSealResponse.UserSealListDTO getUserSeals(SortBy sortBy);
 
   /**
+   * 특정 사용자의 띠부씰 수집 개수 조회
+   *
+   * @return 사용자가 수집한 띠부씰 및 전체 띠부씰 개수
+   */
+  UserSealResponse.SealCountResponseDTO getSealCounts();
+
+  /**
    * 띠부씰 상품 목록 조회
    *
    * @return 띠부씰 상품 목록

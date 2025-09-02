@@ -72,4 +72,17 @@ public class UserSealResponse {
     @Schema(description = "사용자 띠부씰 수집 현황 목록")
     private List<UserSealDTO> seals;
   }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "SealCountResponse : 띠부씰 개수 DTO")
+  public static class SealCountResponseDTO {
+    @Schema(description = "전체 띠부씰 수", example = "20")
+    private long totalCount;
+
+    @Schema(description = "수집한 띠부씰 수", example = "5")
+    private long collectedCount;
+  }
 }

@@ -28,6 +28,15 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
   List<UserSeal> findByUserId(@Param("userId") Long userId);
 
   /**
+   * 특정 사용자가 수집한 띠부씰 개수 조회
+   *
+   * @param userId 사용자 ID
+   * @return 사용자가 수집한 띠부씰 개수
+   */
+  @Query("SELECT COUNT(us) FROM UserSeal us WHERE us.user.id = :userId")
+  long countByUserId(@Param("userId") Long userId);
+
+  /**
    * 특정 사용자가 특정 띠부씰을 수집했는지 확인
    *
    * @param userId 사용자 ID

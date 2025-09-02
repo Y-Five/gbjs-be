@@ -43,6 +43,11 @@ public interface SealController {
               description = "정렬 옵션 (NUMBER: 번호순, RARITY: 희귀도순, LOCATION: 지역순, COLLECTED: 수집순)")
           SortBy sortBy);
 
+  @GetMapping("/user/count")
+  @Operation(summary = "회원 띠부씰 수집 개수 조회", description = "로그인된 회원이 수집한 띠부씰의 총 개수를 조회합니다.")
+  ResponseEntity<ApiResponse<UserSealResponse.SealCountResponseDTO>> getMySealsCount(
+      @Parameter(hidden = true) Authentication authentication);
+
   @GetMapping("/products")
   @Operation(summary = "띠부씰 상품 조회", description = "구매 가능한 띠부씰 상품 목록을 조회합니다.")
   ResponseEntity<ApiResponse<SealProductResponse.SealProductListDTO>> getSealProducts();

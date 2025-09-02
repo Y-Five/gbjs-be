@@ -46,6 +46,13 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
+  public ResponseEntity<ApiResponse<UserSealResponse.SealCountResponseDTO>> getMySealsCount(
+      Authentication authentication) {
+    UserSealResponse.SealCountResponseDTO response = sealService.getSealCounts();
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
   public ResponseEntity<ApiResponse<SealProductResponse.SealProductListDTO>> getSealProducts() {
     SealProductResponse.SealProductListDTO response = sealService.getSealProducts();
     return ResponseEntity.ok(ApiResponse.success(response));
