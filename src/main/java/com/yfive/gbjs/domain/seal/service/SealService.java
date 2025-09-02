@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.seal.service;
 
+import com.yfive.gbjs.domain.seal.dto.response.SealResponse.SealDTO;
+
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
@@ -10,6 +12,14 @@ import com.yfive.gbjs.domain.seal.entity.SortBy;
 
 /** 띠부씰 서비스 인터페이스 띠부씰 관련 비즈니스 로직을 정의 */
 public interface SealService {
+
+  /**
+   * ID로 특정 띠부씰 조회
+   *
+   * @param sealId 띠부씰 ID
+   * @return 특정 띠부씰 정보 DTO
+   */
+  com.yfive.gbjs.domain.seal.dto.response.SealResponse.SealDTO getSealById(Long sealId);
 
   /**
    * 등록된 모든 띠부씰 조회

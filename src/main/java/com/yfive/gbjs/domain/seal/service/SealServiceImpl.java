@@ -48,6 +48,16 @@ public class SealServiceImpl implements SealService {
   private final UserSealConverter userSealConverter;
   private final UserService userService;
 
+  /** ID로 특정 띠부씰을 조회하여 반환 */
+  @Override
+  public SealResponse.SealDTO getSealById(Long sealId) {
+    Seal seal =
+        sealRepository
+            .findById(sealId)
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
+    return sealConverter.toDTO(seal);
+  }
+
   /** 등록된 모든 띠부씰을 조회하여 반환 */
   @Override
   public SealResponse.SealListDTO getAllSeals(SortBy sortBy) {
@@ -370,7 +380,5 @@ public class SealServiceImpl implements SealService {
 
     // UserSeal 삭제
     userSealRepository.delete(userSeal);
-
-    // log.info("띠부씰 삭제 성공! userId: {}, sealId: {}", userId, sealId);
   }
 }

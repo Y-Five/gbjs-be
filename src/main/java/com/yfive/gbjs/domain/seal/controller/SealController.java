@@ -27,6 +27,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/seals")
 public interface SealController {
 
+  @GetMapping("/{sealId}")
+  @Operation(summary = "띠부씰 단일 조회", description = "ID로 특정 띠부씰의 정보를 조회합니다.")
+  ResponseEntity<ApiResponse<SealResponse.SealDTO>> getSealById(
+      @PathVariable @Parameter(description = "조회할 띠부씰 ID", required = true) Long sealId);
+
   @GetMapping
   @Operation(summary = "전체 띠부씰 조회", description = "모든 띠부씰 목록을 조회합니다.")
   ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(
