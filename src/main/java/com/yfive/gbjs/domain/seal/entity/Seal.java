@@ -12,6 +12,7 @@ import lombok.*;
 /** 띠부씰 엔티티 */
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

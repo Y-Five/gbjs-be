@@ -5,7 +5,9 @@ package com.yfive.gbjs.domain.seal.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
@@ -26,6 +28,12 @@ public class SealControllerImpl implements SealController {
   private final SealService sealService;
 
   @Override
+  public ResponseEntity<ApiResponse<SealResponse.SealDTO>> getSealById(Long sealId) {
+    SealResponse.SealDTO response = sealService.getSealById(sealId);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
   public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(SortBy sortBy) {
     SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
@@ -43,6 +51,24 @@ public class SealControllerImpl implements SealController {
     String message = hasCollected ? null : "아직 획득한 띠부씰이 없습니다.";
 
     return ResponseEntity.ok(ApiResponse.success(response, message));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<UserSealResponse.SealCountResponseDTO>> getMySealsCount(
+      Authentication authentication) {
+    UserSealResponse.SealCountResponseDTO response = sealService.getSealCounts();
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<SealResponse.SealDTO>> uploadSealImages(
+      @PathVariable Long sealId,
+      @RequestPart(value = "frontImage", required = false) MultipartFile frontImage,
+      @RequestPart(value = "backImage", required = false) MultipartFile backImage,
+      @RequestParam(value = "content", required = false) String content) {
+    SealResponse.SealDTO response =
+        sealService.uploadSealImages(sealId, frontImage, backImage, content);
+    return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
