@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.seal.converter.SealConverter;
 import com.yfive.gbjs.domain.seal.converter.SealProductConverter;
@@ -29,6 +30,8 @@ import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.error.exception.CustomException;
+import com.yfive.gbjs.global.s3.entity.PathName;
+import com.yfive.gbjs.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +50,7 @@ public class SealServiceImpl implements SealService {
   private final SealConverter sealConverter;
   private final UserSealConverter userSealConverter;
   private final UserService userService;
+  private final S3Service s3Service;
 
   /** ID로 특정 띠부씰을 조회하여 반환 */
   @Override
@@ -111,6 +115,33 @@ public class SealServiceImpl implements SealService {
         .totalCount(totalCount)
         .collectedCount(collectedCount)
         .build();
+  }
+
+  /** 띠부씰 이미지, 시 등록(개발용) */
+  @Override
+  @Transactional
+  public SealResponse.SealDTO uploadSealImages(
+      Long sealId, MultipartFile frontImage, MultipartFile backImage, String content) {
+    Seal seal =
+        sealRepository
+            .findById(sealId)
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
+
+    if (frontImage != null && !frontImage.isEmpty()) {
+      String frontImageUrl = s3Service.uploadFile(PathName.SEAL, frontImage);
+      seal.setFrontImageUrl(frontImageUrl);
+    }
+
+    if (backImage != null && !backImage.isEmpty()) {
+      String backImageUrl = s3Service.uploadFile(PathName.SEAL, backImage);
+      seal.setBackImageUrl(backImageUrl);
+    }
+
+    if (content != null && !content.trim().isEmpty()) {
+      seal.setContent(content);
+    }
+
+    return sealConverter.toDTO(seal);
   }
 
   /** 등록된 모든 띠부씰 상품을 조회하여 반환 */
@@ -373,10 +404,7 @@ public class SealServiceImpl implements SealService {
     UserSeal userSeal =
         userSealRepository
             .findByUser_IdAndSeal_Id(userId, sealId)
-            .orElseThrow(
-                () ->
-                    new com.yfive.gbjs.global.error.exception.CustomException(
-                        SealErrorStatus.USER_SEAL_NOT_FOUND));
+            .orElseThrow(() -> new CustomException(SealErrorStatus.USER_SEAL_NOT_FOUND));
 
     // UserSeal 삭제
     userSealRepository.delete(userSeal);

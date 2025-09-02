@@ -3,14 +3,11 @@
  */
 package com.yfive.gbjs.domain.seal.controller;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
@@ -52,6 +49,19 @@ public interface SealController {
   @Operation(summary = "회원 띠부씰 수집 개수 조회", description = "로그인된 회원이 수집한 띠부씰의 총 개수를 조회합니다.")
   ResponseEntity<ApiResponse<UserSealResponse.SealCountResponseDTO>> getMySealsCount(
       @Parameter(hidden = true) Authentication authentication);
+
+  @PostMapping(value = "/{sealId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(
+      summary = "띠부씰 이미지&시 등록",
+      description = "특정 띠부씰의 앞면, 뒷면 이미지와 시를 등록합니다. 모든 항목은 선택사항입니다.")
+  ResponseEntity<ApiResponse<SealResponse.SealDTO>> uploadSealImages(
+      @PathVariable @Parameter(description = "이미지를 등록할 띠부씰 ID") Long sealId,
+      @RequestPart(value = "frontImage", required = false) @Parameter(description = "띠부씰 앞면 이미지 파일")
+          MultipartFile frontImage,
+      @RequestPart(value = "backImage", required = false) @Parameter(description = "띠부씰 뒷면 이미지 파일")
+          MultipartFile backImage,
+      @RequestParam(value = "content", required = false) @Parameter(description = "띠부씰 시")
+          String content);
 
   @GetMapping("/products")
   @Operation(summary = "띠부씰 상품 조회", description = "구매 가능한 띠부씰 상품 목록을 조회합니다.")
