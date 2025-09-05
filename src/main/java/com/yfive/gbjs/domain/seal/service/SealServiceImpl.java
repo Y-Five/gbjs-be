@@ -62,6 +62,17 @@ public class SealServiceImpl implements SealService {
     return sealConverter.toDTO(seal);
   }
 
+  /** ID로 특정 띠부씰을 조회하여 반환 */
+  @Override
+  public SealResponse.SealDTO searchSeals(Long sealSpotId) {
+    Seal seal =
+        sealRepository
+            .findBySealSpotId(sealSpotId)
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
+
+    return sealConverter.toDTO(seal);
+  }
+
   /** 등록된 모든 띠부씰을 조회하여 반환 */
   @Override
   public SealResponse.SealListDTO getAllSeals(SortBy sortBy) {

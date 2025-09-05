@@ -27,7 +27,14 @@ public interface SealController {
   @GetMapping("/{sealId}")
   @Operation(summary = "띠부씰 단일 조회", description = "ID로 특정 띠부씰의 정보를 조회합니다.")
   ResponseEntity<ApiResponse<SealResponse.SealDTO>> getSealById(
-      @PathVariable @Parameter(description = "조회할 띠부씰 ID", required = true) Long sealId);
+      @PathVariable @Parameter(description = "조회할 띠부씰 ID", required = true, example = "1")
+          Long sealId);
+
+  @GetMapping("/spot/{sealSpotId}")
+  @Operation(summary = "관광지로 띠부씰 조회", description = "SealSpotID로 띠부씰을 조회합니다.")
+  ResponseEntity<ApiResponse<SealResponse.SealDTO>> searchSeals(
+      @PathVariable @Parameter(description = "검색할 SealSpotId", required = true, example = "2")
+          Long sealSpotId);
 
   @GetMapping
   @Operation(summary = "전체 띠부씰 조회", description = "모든 띠부씰 목록을 조회합니다.")
