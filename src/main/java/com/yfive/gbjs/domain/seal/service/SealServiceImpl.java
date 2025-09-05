@@ -62,15 +62,21 @@ public class SealServiceImpl implements SealService {
     return sealConverter.toDTO(seal);
   }
 
-  /** ID로 특정 띠부씰을 조회하여 반환 */
+  /** sealSpotID로 특정 띠부씰을 조회하여 반환 */
   @Override
-  public SealResponse.SealDTO searchSeals(Long sealSpotId) {
+  public UserSealResponse.UserSealDTO searchSeals(Long sealSpotId) {
     Seal seal =
         sealRepository
             .findBySealSpotId(sealSpotId)
             .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
 
-    return sealConverter.toDTO(seal);
+    Long userId = userService.getCurrentUser().getId();
+    UserSeal userSeal =
+        userSealRepository.findByUser_IdAndSeal_Id(userId, seal.getId()).orElse(null);
+    boolean collected = userSeal != null && userSeal.getCollected();
+    java.time.LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+
+    return userSealConverter.toDTO(seal, collected, collectedAt);
   }
 
   /** 행적구역 띠부씰을 조회하여 반환 */

@@ -24,12 +24,12 @@ public interface SealService {
   SealResponse.SealDTO getSealById(Long sealId);
 
   /**
-   * ID로 특정 띠부씰 조회
+   * sealSpotID로 특정 띠부씰 조회
    *
    * @param sealSpotId 띠부씰 관광지 ID
    * @return 특정 띠부씰 정보 DTO
    */
-  SealResponse.SealDTO searchSeals(Long sealSpotId);
+  UserSealResponse.UserSealDTO searchSeals(Long sealSpotId);
 
   /**
    * 등록된 모든 띠부씰 조회

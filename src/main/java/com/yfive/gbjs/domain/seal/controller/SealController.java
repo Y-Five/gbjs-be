@@ -34,7 +34,8 @@ public interface SealController {
 
   @GetMapping("/spot/{sealSpotId}")
   @Operation(summary = "관광지로 띠부씰 조회", description = "SealSpotID로 띠부씰을 조회합니다.")
-  ResponseEntity<ApiResponse<SealResponse.SealDTO>> searchSeals(
+  ResponseEntity<ApiResponse<UserSealResponse.UserSealDTO>> searchSeals(
+      @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "검색할 SealSpotId", required = true, example = "2")
           Long sealSpotId);
 
@@ -45,8 +46,7 @@ public interface SealController {
           @Parameter(description = "정렬 옵션 (NUMBER: 번호순, RARITY: 희귀도순, LOCATION: 지역순)")
           SortBy sortBy,
       @RequestParam(required = false)
-          @Parameter(
-              description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
+          @Parameter(description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
           List<String> locationNames);
 
   @GetMapping("/user")

@@ -36,8 +36,9 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealDTO>> searchSeals(Long sealSpotId) {
-    SealResponse.SealDTO response = sealService.searchSeals(sealSpotId);
+  public ResponseEntity<ApiResponse<UserSealResponse.UserSealDTO>> searchSeals(
+      Authentication authentication, Long sealSpotId) {
+    UserSealResponse.UserSealDTO response = sealService.searchSeals(sealSpotId);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
