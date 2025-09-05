@@ -73,10 +73,17 @@ public class SealServiceImpl implements SealService {
     return sealConverter.toDTO(seal);
   }
 
-  /** 등록된 모든 띠부씰을 조회하여 반환 */
+  /** 행적구역 띠부씰을 조회하여 반환 */
   @Override
-  public SealResponse.SealListDTO getAllSeals(SortBy sortBy) {
-    List<Seal> seals = sealRepository.findAll();
+  public SealResponse.SealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
+    List<Seal> seals;
+
+    // 지역명 필터링 적용
+    if (locationNames != null && !locationNames.isEmpty()) {
+      seals = sealRepository.findAllByLocationNameIn(locationNames);
+    } else {
+      seals = sealRepository.findAll();
+    }
 
     // 정렬 적용
     List<SealResponse.SealDTO> sealDTOs =

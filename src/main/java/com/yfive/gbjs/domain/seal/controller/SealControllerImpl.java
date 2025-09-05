@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.seal.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -40,8 +42,9 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(SortBy sortBy) {
-    SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
+  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(
+      SortBy sortBy, List<String> locationNames) {
+    SealResponse.SealListDTO response = sealService.getAllSeals(sortBy, locationNames);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

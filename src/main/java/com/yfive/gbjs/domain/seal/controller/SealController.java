@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.seal.controller;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -36,12 +38,16 @@ public interface SealController {
       @PathVariable @Parameter(description = "검색할 SealSpotId", required = true, example = "2")
           Long sealSpotId);
 
-  @GetMapping
-  @Operation(summary = "전체 띠부씰 조회", description = "모든 띠부씰 목록을 조회합니다.")
+  @GetMapping("location")
+  @Operation(summary = "행정구역 띠부씰 조회", description = "행정구역 띠부씰 목록을 조회합니다.")
   ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(
       @RequestParam(required = false, defaultValue = "NUMBER")
           @Parameter(description = "정렬 옵션 (NUMBER: 번호순, RARITY: 희귀도순, LOCATION: 지역순)")
-          SortBy sortBy);
+          SortBy sortBy,
+      @RequestParam(required = false)
+          @Parameter(
+              description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
+          List<String> locationNames);
 
   @GetMapping("/user")
   @Operation(summary = "회원 띠부씰 조회", description = "로그인된 회원의 띠부씰 수집 현황을 조회합니다. (수집한 것/수집하지 않은 것 포함)")

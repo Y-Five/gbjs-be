@@ -3,6 +3,7 @@
  */
 package com.yfive.gbjs.domain.seal.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ import com.yfive.gbjs.domain.seal.entity.Seal;
 @Repository
 public interface SealRepository extends JpaRepository<Seal, Long> {
   Optional<Seal> findBySealSpotId(Long sealSpotId);
+
+  List<Seal> findAllByLocationNameIn(List<String> locationNames);
 }
