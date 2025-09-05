@@ -60,4 +60,12 @@ public class CourseControllerImpl implements CourseController {
     courseService.deleteCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
+
+  @Override
+  public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourseByAI(
+      Authentication authentication, CreateCourseRequest request) {
+    CourseResponse.CourseDetailDTO courseDetail = courseService.generateCourseByAI(request);
+    return ResponseEntity.ok(ApiResponse.success(courseDetail));
+  }
 }
+

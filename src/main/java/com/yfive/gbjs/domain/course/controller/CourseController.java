@@ -45,7 +45,22 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication, @PathVariable Long courseId);
 
   @Operation(summary = "여행 코스 삭제", description = "코스 ID로 코스를 삭제합니다.")
-  @DeleteMapping("/{courseId}")
+    @DeleteMapping("/{courseId}")
   ResponseEntity<ApiResponse<Void>> deleteCourse(
       @Parameter(hidden = true) Authentication authentication, @PathVariable Long courseId);
+
+//  @Operation(summary = "AI 기반 여행 코스 생성", description = "AI가 여행 코스를 생성합니다.")
+//  @PostMapping("/generate-ai-by-criteria")
+//  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourseByAI(
+//      @Parameter(hidden = true) Authentication authentication,
+//      @Valid @RequestBody CreateCourseRequest request);
+
+
+  @Operation(summary = "AI 기반 여행 코스 생성", description = "AI가 여행 코스를 생성합니다.")
+  @PostMapping("/generate-ai-by-criteria")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourseByAI(
+          @Parameter(hidden = true) Authentication authentication,
+          @Valid @RequestBody CreateCourseRequest request);
+
 }
+

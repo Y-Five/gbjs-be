@@ -54,4 +54,11 @@ public interface CourseService {
    * @throws CustomException 코스를 찾을 수 없거나 권한이 없는 경우
    */
   void deleteCourse(Long userId, Long courseId);
+
+  /**
+   * AI를 사용하여 사용자 쿼리 기반으로 여행 코스를 생성합니다.
+   *
+   * @return AI가 생성한 코스 제안 (Markdown 형식의 텍스트)
+   */
+  CourseResponse.CourseDetailDTO generateCourseByAI(CreateCourseRequest request);
 }
