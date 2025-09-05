@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
 package com.yfive.gbjs.global.config;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -7,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SpringAiConfig {
 
-    @Bean
-    public ChatClient chatClient(ChatClient.Builder builder) {
-        return builder.build();
-    }
+  @Bean
+  public ChatClient chatClient(ChatClient.Builder builder) {
+    return builder.build();
+  }
 }
