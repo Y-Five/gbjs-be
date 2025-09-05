@@ -3,6 +3,21 @@
  */
 package com.yfive.gbjs.domain.course.service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.course.converter.CourseConverter;
@@ -23,21 +38,9 @@ import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
 import com.yfive.gbjs.global.error.exception.CustomException;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** 여행 코스 서비스 구현체 코스 생성, 저장, 조회, 삭제 등의 비즈니스 로직을 처리합니다. */
 @Service
@@ -89,8 +92,7 @@ public class CourseServiceImpl implements CourseService {
         int spotsPerDay = Math.min(sealSpots.size(), 5);
 
         for (int i = 0; i < spotsPerDay; i++) {
-          SealSpot sealSpot =
-              sealSpots.get(i);
+          SealSpot sealSpot = sealSpots.get(i);
           spotDTOs.add(
               CourseResponse.SimpleSpotDTO.builder()
                   .spotId(sealSpot.getId())
@@ -299,7 +301,9 @@ public class CourseServiceImpl implements CourseService {
     String locationsString = String.join(",", request.getLocations());
 
     // 1. 제목은 백엔드에서 직접, 확정적으로 생성
-    String finalTitle = String.format("%d월 %d일 %s 코스",
+    String finalTitle =
+        String.format(
+            "%d월 %d일 %s 코스",
             request.getStartDate().getMonthValue(),
             request.getStartDate().getDayOfMonth(),
             locationsString);
@@ -307,9 +311,19 @@ public class CourseServiceImpl implements CourseService {
     String query = String.format("%s 지역의 %d일간의 여행", locationsString, totalDays);
 
     // 2. Qdrant에서 후보 정보 '한 번만' 검색하고, Map에 보관
-    List<Document> documents = vectorStore.similaritySearch(
-            SearchRequest.builder().query(query).topK(15).build() // 후보군을 넉넉하게 검색
-    );
+    // Construct filter expression for Qdrant
+    String filterExpression =
+        request.getLocations().stream()
+            .map(location -> "location == '" + location + "'")
+            .collect(Collectors.joining(" or "));
+
+    List<Document> documents =
+        vectorStore.similaritySearch(
+            SearchRequest.builder()
+                .query(query)
+                .topK(15) // 후보군을 넉넉하게 검색
+                .filterExpression(filterExpression) // 지역 필터 추가
+                .build());
 
     if (documents.isEmpty()) {
       log.warn("Qdrant에서 관련 문서를 찾을 수 없음: {}", query);
@@ -317,30 +331,34 @@ public class CourseServiceImpl implements CourseService {
     }
 
     // AI 답변과 매칭할 원본 데이터 지도(Map) 생성
-    Map<String, Document> spotLookupMap = documents.stream()
-            .collect(Collectors.toMap(
+    Map<String, Document> spotLookupMap =
+        documents.stream()
+            .collect(
+                Collectors.toMap(
                     doc -> (String) doc.getMetadata().get("name"),
                     doc -> doc,
                     (doc1, doc2) -> doc1 // 중복 이름이 있을 경우 첫 번째 문서 사용
-            ));
+                    ));
 
     // 3. AI에게 전달할 관광지 이름 목록만 간단히 준비
     String spotNamesForAI = String.join(", ", spotLookupMap.keySet());
 
     // --- AI 호출 ---
-    String systemMessageContent = String.format("""
+    String systemMessageContent =
+        String.format(
+            """
             당신은 주어진 관광지 목록을 %d일 동안 방문할 최적의 순서로 나누는 여행 스케줄러입니다.
             - 각 날짜에 방문할 관광지 이름을 순서대로 배열에 담아주세요.
             - 다른 설명 없이 JSON 객체만 반환해주세요. key는 일차(day number)입니다.
             - 예시 형식: { "1": ["장소A", "장소B"], "2": ["장소C", "장소D"] }
-            """, totalDays);
+            """,
+            totalDays);
 
     String userMessageContent = String.format("[관광지 목록]\n%s", spotNamesForAI);
 
-    Prompt prompt = new Prompt(List.of(
-            new SystemMessage(systemMessageContent),
-            new UserMessage(userMessageContent)
-    ));
+    Prompt prompt =
+        new Prompt(
+            List.of(new SystemMessage(systemMessageContent), new UserMessage(userMessageContent)));
 
     try {
       String aiResponseJson = chatClient.prompt(prompt).call().content();
@@ -373,7 +391,8 @@ public class CourseServiceImpl implements CourseService {
             boolean isSealSpot = "seal_spot".equals(metadata.get("entity_type"));
             Long sealSpotId = isSealSpot ? (Long) metadata.get("sealSpotId") : null;
 
-            spots.add(SimpleSpotDTO.builder()
+            spots.add(
+                SimpleSpotDTO.builder()
                     .spotId(spotId)
                     .name(spotNameFromAI)
                     // .description() // 설명이 필요 없으므로 최종 DTO에서도 제거
@@ -388,10 +407,16 @@ public class CourseServiceImpl implements CourseService {
         }
 
         if (!spots.isEmpty()) {
-          dailyCourses.add(DailyCourseDTO.builder()
+          dailyCourses.add(
+              DailyCourseDTO.builder()
                   .dayNumber(dayNumber)
                   .date(date)
-                  .location( (String) spotLookupMap.get(spots.get(0).getName()).getMetadata().get("location")) // 첫 장소의 지역명을 대표로 사용
+                  .location(
+                      (String)
+                          spotLookupMap
+                              .get(spots.get(0).getName())
+                              .getMetadata()
+                              .get("location")) // 첫 장소의 지역명을 대표로 사용
                   .spots(spots)
                   .build());
         }
@@ -401,11 +426,11 @@ public class CourseServiceImpl implements CourseService {
       dailyCourses.sort(Comparator.comparingInt(DailyCourseDTO::getDayNumber));
 
       return CourseDetailDTO.builder()
-              .title(finalTitle) // 직접 만든 제목 사용
-              .startDate(request.getStartDate())
-              .endDate(request.getEndDate())
-              .dailyCourses(dailyCourses)
-              .build();
+          .title(finalTitle) // 직접 만든 제목 사용
+          .startDate(request.getStartDate())
+          .endDate(request.getEndDate())
+          .dailyCourses(dailyCourses)
+          .build();
 
     } catch (Exception e) {
       log.error("AI 코스 생성 및 파싱 중 오류 발생", e);

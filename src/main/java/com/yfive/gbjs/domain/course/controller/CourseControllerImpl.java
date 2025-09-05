@@ -68,4 +68,3 @@ public class CourseControllerImpl implements CourseController {
     return ResponseEntity.ok(ApiResponse.success(courseDetail));
   }
 }
-

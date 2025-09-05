@@ -105,7 +105,6 @@ public class CourseResponse {
     private Long sealSpotId;
   }
 
-
   @Builder
   @Getter
   @NoArgsConstructor
