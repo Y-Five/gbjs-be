@@ -84,6 +84,14 @@ public class CourseConverter {
             .distinct()
             .collect(Collectors.toList());
 
+    List<Long> sealSpotIds =
+        course.getDailyCourses().stream()
+            .flatMap(dailyCourse -> dailyCourse.getSpots().stream())
+            .filter(dailyCourseSpot -> dailyCourseSpot.getSealSpot() != null)
+            .map(dailyCourseSpot -> dailyCourseSpot.getSealSpot().getId())
+            .distinct()
+            .collect(Collectors.toList());
+
     return CourseResponse.CourseSummaryDTO.builder()
         .id(course.getId())
         .title(course.getTitle())
@@ -91,6 +99,7 @@ public class CourseConverter {
         .endDate(course.getEndDate())
         .totalDays((int) totalDays)
         .locations(locations)
+        .sealSpotIds(sealSpotIds)
         .build();
   }
 

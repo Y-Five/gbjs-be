@@ -37,7 +37,7 @@ public interface CourseController {
       @Valid @RequestBody SaveCourseRequest request);
 
   @Operation(summary = "내 여행 코스 목록 조회", description = "사용자가 저장한 코스 목록을 조회합니다.")
-  @GetMapping("/my")
+  @GetMapping("/users")
   ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
       @Parameter(hidden = true) Authentication authentication,
       @RequestParam(required = false)
