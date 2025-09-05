@@ -65,7 +65,7 @@ public interface SealController {
 
   @PostMapping(value = "/{sealId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(
-      summary = "띠부씰 이미지&시 등록",
+      summary = "[개발자]띠부씰 이미지&시 등록",
       description = "특정 띠부씰의 앞면, 뒷면 이미지와 시를 등록합니다. 모든 항목은 선택사항입니다.")
   ResponseEntity<ApiResponse<SealResponse.SealDTO>> uploadSealImages(
       @PathVariable @Parameter(description = "이미지를 등록할 띠부씰 ID") Long sealId,

@@ -84,14 +84,12 @@ public class SealServiceImpl implements SealService {
   public SealResponse.SealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
     List<Seal> seals;
 
-    // 지역명 필터링 적용
     if (locationNames != null && !locationNames.isEmpty()) {
       seals = sealRepository.findAllByLocationNameIn(locationNames);
     } else {
       seals = sealRepository.findAll();
     }
 
-    // 정렬 적용
     List<SealResponse.SealDTO> sealDTOs =
         seals.stream()
             .map(sealConverter::toDTO)

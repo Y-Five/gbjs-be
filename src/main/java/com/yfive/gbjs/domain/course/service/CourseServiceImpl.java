@@ -197,13 +197,28 @@ public class CourseServiceImpl implements CourseService {
 
   /** 사용자의 모든 코스 목록을 조회합니다. - 시작일 기준 내림차순 정렬 - 코스 요약 정보만 반환 (상세 정보 제외) */
   @Override
-  public CourseResponse.CourseListDTO getUserCourses(Long userId) {
+  public CourseResponse.CourseListDTO getUserCourses(Long userId, List<String> locationNames) {
     User user =
         userRepository
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
     List<Course> courses = courseRepository.findByUserOrderByStartDateDesc(user);
+
+    // 지역명 필터링 적용
+    if (locationNames != null && !locationNames.isEmpty()) {
+      courses =
+          courses.stream()
+              .filter(
+                  course ->
+                      course.getDailyCourses().stream()
+                          .anyMatch(
+                              dailyCourse ->
+                                  locationNames.contains(
+                                      courseConverter.getLocationKoreanName(
+                                          dailyCourse.getLocation()))))
+              .collect(Collectors.toList());
+    }
 
     List<CourseResponse.CourseSummaryDTO> summaries =
         courses.stream().map(courseConverter::toCourseSummaryDTO).collect(Collectors.toList());

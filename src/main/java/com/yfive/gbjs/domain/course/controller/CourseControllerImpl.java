@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.course.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,9 +49,9 @@ public class CourseControllerImpl implements CourseController {
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
-      Authentication authentication) {
+      Authentication authentication, List<String> locationNames) {
     Long userId = userService.getCurrentUser().getId();
-    CourseResponse.CourseListDTO response = courseService.getUserCourses(userId);
+    CourseResponse.CourseListDTO response = courseService.getUserCourses(userId, locationNames);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

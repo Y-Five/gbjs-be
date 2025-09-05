@@ -101,7 +101,7 @@ public class CourseResponse {
     @Schema(description = "씰 관광지 여부", example = "true")
     private Boolean isSealSpot;
 
-    @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "987")
+    @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "2")
     private Long sealSpotId;
   }
 

@@ -99,6 +99,12 @@ public class CourseRequest {
 
       @Schema(description = "카테고리", example = "유명 관광지")
       private String category;
+
+      @Schema(description = "씰 관광지 여부", example = "true")
+      private Boolean isSealSpot;
+
+      @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "2")
+      private Long sealSpotId;
     }
   }
 }
