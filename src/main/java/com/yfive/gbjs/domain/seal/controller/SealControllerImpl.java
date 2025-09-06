@@ -3,12 +3,15 @@
  */
 package com.yfive.gbjs.domain.seal.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
@@ -34,8 +37,16 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(SortBy sortBy) {
-    SealResponse.SealListDTO response = sealService.getAllSeals(sortBy);
+  public ResponseEntity<ApiResponse<UserSealResponse.UserSealDTO>> searchSeals(
+      Authentication authentication, Long sealSpotId) {
+    UserSealResponse.UserSealDTO response = sealService.searchSeals(sealSpotId);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getAllSeals(
+      SortBy sortBy, List<String> locationNames) {
+    UserSealResponse.UserSealListDTO response = sealService.getAllSeals(sortBy, locationNames);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
@@ -104,5 +115,11 @@ public class SealControllerImpl implements SealController {
       Authentication authentication, Long sealId) {
     sealService.deleteCollectedSeal(sealId);
     return ResponseEntity.ok(ApiResponse.success(null, "띠부씰이 성공적으로 삭제되었습니다."));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<List<PopularSealSpotResponse>>> getPopularSealSpots() {
+    List<PopularSealSpotResponse> popularSpots = sealService.getPopularSealSpots();
+    return ResponseEntity.ok(ApiResponse.success(popularSpots));
   }
 }

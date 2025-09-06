@@ -32,11 +32,14 @@ public class SealSpot extends BaseTimeEntity {
   @Column(name = "location", nullable = false)
   private Location location;
 
-  @Column(name = "address")
-  private String address;
+  @Column(name = "addr1")
+  private String addr1;
 
   @Column(name = "image_url")
   private String imageUrl;
+
+  @Column(name = "spot_id")
+  private Long spotId;
 
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "audio_guide_id")
@@ -45,4 +48,7 @@ public class SealSpot extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "category")
   private SealSpotCategory category;
+
+  @Column(name = "hashtag")
+  private String hashtag;
 }

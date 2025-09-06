@@ -3,8 +3,11 @@
  */
 package com.yfive.gbjs.domain.seal.service;
 
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
@@ -22,12 +25,20 @@ public interface SealService {
   SealResponse.SealDTO getSealById(Long sealId);
 
   /**
+   * sealSpotID로 특정 띠부씰 조회
+   *
+   * @param sealSpotId 띠부씰 관광지 ID
+   * @return 특정 띠부씰 정보 DTO
+   */
+  UserSealResponse.UserSealDTO searchSeals(Long sealSpotId);
+
+  /**
    * 등록된 모든 띠부씰 조회
    *
    * @param sortBy 정렬 옵션
    * @return 전체 띠부씰 목록
    */
-  SealResponse.SealListDTO getAllSeals(SortBy sortBy);
+  UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames);
 
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
@@ -96,4 +107,6 @@ public interface SealService {
    * @param sealId 삭제할 띠부씰 ID
    */
   void deleteCollectedSeal(Long sealId);
+
+  List<PopularSealSpotResponse> getPopularSealSpots();
 }

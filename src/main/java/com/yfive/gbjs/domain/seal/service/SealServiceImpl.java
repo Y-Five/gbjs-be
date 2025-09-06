@@ -4,6 +4,7 @@
 package com.yfive.gbjs.domain.seal.service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,17 +16,16 @@ import org.springframework.web.multipart.MultipartFile;
 import com.yfive.gbjs.domain.seal.converter.SealConverter;
 import com.yfive.gbjs.domain.seal.converter.SealProductConverter;
 import com.yfive.gbjs.domain.seal.converter.UserSealConverter;
+import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
-import com.yfive.gbjs.domain.seal.entity.Location;
-import com.yfive.gbjs.domain.seal.entity.Rarity;
-import com.yfive.gbjs.domain.seal.entity.Seal;
-import com.yfive.gbjs.domain.seal.entity.SortBy;
+import com.yfive.gbjs.domain.seal.entity.*;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
 import com.yfive.gbjs.domain.seal.exception.SealErrorStatus;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
+import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.service.UserService;
@@ -52,6 +52,8 @@ public class SealServiceImpl implements SealService {
   private final UserService userService;
   private final S3Service s3Service;
 
+  private final SealSpotRepository sealSpotRepository;
+
   /** ID로 특정 띠부씰을 조회하여 반환 */
   @Override
   public SealResponse.SealDTO getSealById(Long sealId) {
@@ -62,19 +64,52 @@ public class SealServiceImpl implements SealService {
     return sealConverter.toDTO(seal);
   }
 
-  /** 등록된 모든 띠부씰을 조회하여 반환 */
+  /** sealSpotID로 특정 띠부씰을 조회하여 반환 */
   @Override
-  public SealResponse.SealListDTO getAllSeals(SortBy sortBy) {
-    List<Seal> seals = sealRepository.findAll();
+  public UserSealResponse.UserSealDTO searchSeals(Long sealSpotId) {
+    Seal seal =
+        sealRepository
+            .findBySealSpotId(sealSpotId)
+            .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
 
-    // 정렬 적용
-    List<SealResponse.SealDTO> sealDTOs =
+    Long userId = userService.getCurrentUser().getId();
+    UserSeal userSeal =
+        userSealRepository.findByUser_IdAndSeal_Id(userId, seal.getId()).orElse(null);
+    boolean collected = userSeal != null && userSeal.getCollected();
+    java.time.LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+
+    return userSealConverter.toDTO(seal, collected, collectedAt);
+  }
+
+  /** 행정구역 띠부씰을 조회하여 반환 */
+  @Override
+  public UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
+    Long userId = userService.getCurrentUser().getId();
+    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+    Map<Long, UserSeal> userSealMap =
+        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
+
+    List<Seal> seals;
+    if (locationNames != null && !locationNames.isEmpty()) {
+      seals = sealRepository.findAllByLocationNameIn(locationNames);
+    } else {
+      seals = sealRepository.findAll();
+    }
+
+    // 필터링된 띠부씰에 사용자 수집 정보 매핑
+    List<UserSealResponse.UserSealDTO> userSealDTOs =
         seals.stream()
-            .map(sealConverter::toDTO)
-            .sorted(getSealComparator(sortBy))
+            .map(
+                seal -> {
+                  UserSeal userSeal = userSealMap.get(seal.getId());
+                  boolean collected = userSeal != null && userSeal.getCollected();
+                  LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+                  return userSealConverter.toDTO(seal, collected, collectedAt);
+                })
+            .sorted(getUserSealComparator(sortBy)) // 정렬
             .collect(Collectors.toList());
 
-    return sealConverter.toListDTO(sealDTOs);
+    return userSealConverter.toListDTO(userSealDTOs);
   }
 
   /** 특정 사용자의 띠부씰 수집 현황을 조회 모든 띠부씰에 대해 사용자의 수집 여부와 수집 시간을 포함하여 반환 */
@@ -408,5 +443,17 @@ public class SealServiceImpl implements SealService {
 
     // UserSeal 삭제
     userSealRepository.delete(userSeal);
+  }
+
+  /** 인기 띠부실 관광지 조회 */
+  @Override
+  public List<PopularSealSpotResponse> getPopularSealSpots() {
+    List<Long> popularSealSpotIds = Arrays.asList(1L, 2L, 3L, 4L);
+
+    List<SealSpot> popularSealSpots = sealSpotRepository.findAllById(popularSealSpotIds);
+
+    return popularSealSpots.stream()
+        .map(sealConverter::toPopularSealSpotDTO)
+        .collect(Collectors.toList());
   }
 }

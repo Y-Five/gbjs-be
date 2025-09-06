@@ -55,7 +55,7 @@ public class CourseConverter {
         .visitOrder(dailyCourseSpot.getVisitOrder())
         .name(sealSpot.getName())
         .description(sealSpot.getDescription())
-        .address(sealSpot.getAddress())
+        .address(sealSpot.getAddr1())
         .category(
             sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
         .imageUrl(sealSpot.getImageUrl())
@@ -66,16 +66,20 @@ public class CourseConverter {
   public CourseResponse.SimpleSpotDTO toSimpleSpotDTO(DailyCourseSpot dailyCourseSpot) {
     SealSpot sealSpot = dailyCourseSpot.getSealSpot();
     return CourseResponse.SimpleSpotDTO.builder()
-        .spotId(sealSpot.getId())
+        .spotId(dailyCourseSpot.getSealSpot().getSpotId())
         .visitOrder(dailyCourseSpot.getVisitOrder())
         .name(sealSpot.getName())
         .category(
             sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
+        .addr1(sealSpot.getAddr1())
+        .isSealSpot(true)
+        .sealSpotId(sealSpot.getId())
         .build();
   }
 
   /** Course 엔티티를 요약 응답 DTO로 변환합니다. 목록 조회 시 사용 (상세 정보 제외) */
-  public CourseResponse.CourseSummaryDTO toCourseSummaryDTO(Course course) {
+  public CourseResponse.CourseSummaryDTO toCourseSummaryDTO(
+      Course course, int totalCollectableSeals, int userCollectedSeals) {
     long totalDays = ChronoUnit.DAYS.between(course.getStartDate(), course.getEndDate()) + 1;
 
     List<String> locations =
@@ -91,6 +95,8 @@ public class CourseConverter {
         .endDate(course.getEndDate())
         .totalDays((int) totalDays)
         .locations(locations)
+        .totalCollectableSeals(totalCollectableSeals)
+        .userCollectedSeals(userCollectedSeals)
         .build();
   }
 

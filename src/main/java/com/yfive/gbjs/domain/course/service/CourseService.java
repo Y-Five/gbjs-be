@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.course.service;
 
+import java.util.List;
+
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
@@ -44,7 +46,7 @@ public interface CourseService {
    * @param userId 사용자 ID
    * @return 코스 목록 (요약 정보)
    */
-  CourseResponse.CourseListDTO getUserCourses(Long userId);
+  CourseResponse.CourseListDTO getUserCourses(Long userId, List<String> locationNames);
 
   /**
    * 코스를 삭제합니다.

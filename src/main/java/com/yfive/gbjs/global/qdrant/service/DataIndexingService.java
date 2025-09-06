@@ -140,7 +140,7 @@ public class DataIndexingService {
                           + ", 위치: "
                           + spot.getLocation().name()
                           + ", 주소: "
-                          + spot.getAddress()
+                          + spot.getAddr1()
                           + ", 카테고리: "
                           + (spot.getCategory() != null ? spot.getCategory().name() : "없음")
                           + ", 오디오 가이드 ID: "
