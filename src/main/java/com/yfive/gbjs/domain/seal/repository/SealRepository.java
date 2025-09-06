@@ -17,4 +17,6 @@ public interface SealRepository extends JpaRepository<Seal, Long> {
   Optional<Seal> findBySealSpotId(Long sealSpotId);
 
   List<Seal> findAllByLocationNameIn(List<String> locationNames);
+
+  List<Seal> findBySealSpot_Id(Long sealSpotId);
 }

@@ -78,7 +78,8 @@ public class CourseConverter {
   }
 
   /** Course 엔티티를 요약 응답 DTO로 변환합니다. 목록 조회 시 사용 (상세 정보 제외) */
-  public CourseResponse.CourseSummaryDTO toCourseSummaryDTO(Course course) {
+  public CourseResponse.CourseSummaryDTO toCourseSummaryDTO(
+      Course course, int totalCollectableSeals, int userCollectedSeals) {
     long totalDays = ChronoUnit.DAYS.between(course.getStartDate(), course.getEndDate()) + 1;
 
     List<String> locations =
@@ -103,6 +104,8 @@ public class CourseConverter {
         .totalDays((int) totalDays)
         .locations(locations)
         .sealSpotIds(sealSpotIds)
+        .totalCollectableSeals(totalCollectableSeals)
+        .userCollectedSeals(userCollectedSeals)
         .build();
   }
 

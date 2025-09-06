@@ -20,8 +20,11 @@ import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
 import com.yfive.gbjs.domain.seal.entity.Location;
+import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
+import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
+import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
@@ -39,6 +42,8 @@ public class CourseServiceImpl implements CourseService {
   private final SealSpotRepository sealSpotRepository;
   private final UserRepository userRepository;
   private final CourseConverter courseConverter;
+  private final UserSealRepository userSealRepository;
+  private final SealRepository sealRepository;
 
   /**
    * 여행 코스를 생성합니다. (DB 저장하지 않음) - 날짜 유효성 검증 - 자동으로 제목 생성 (예: "경주, 포항 2일 여행") - 각 일차별로 지역 분배 - 지역별
@@ -224,7 +229,31 @@ public class CourseServiceImpl implements CourseService {
     }
 
     List<CourseResponse.CourseSummaryDTO> summaries =
-        courses.stream().map(courseConverter::toCourseSummaryDTO).collect(Collectors.toList());
+        courses.stream()
+            .map(
+                course -> {
+                  int totalCollectableSealsForCourse = 0;
+                  int userCollectedSealsForCourse = 0;
+
+                  List<Long> sealSpotIds =
+                      course.getDailyCourses().stream()
+                          .flatMap(dailyCourse -> dailyCourse.getSpots().stream())
+                          .filter(dailyCourseSpot -> dailyCourseSpot.getSealSpot() != null)
+                          .map(dailyCourseSpot -> dailyCourseSpot.getSealSpot().getId())
+                          .distinct()
+                          .collect(Collectors.toList());
+
+                  for (Long sealSpotId : sealSpotIds) {
+                    List<Seal> sealsFromSpot = sealRepository.findBySealSpot_Id(sealSpotId);
+                    totalCollectableSealsForCourse += sealsFromSpot.size();
+                    userCollectedSealsForCourse +=
+                        userSealRepository.countByUserAndSealIn(user, sealsFromSpot);
+                  }
+
+                  return courseConverter.toCourseSummaryDTO(
+                      course, totalCollectableSealsForCourse, userCollectedSealsForCourse);
+                })
+            .collect(Collectors.toList());
 
     return CourseResponse.CourseListDTO.builder()
         .courses(summaries)
