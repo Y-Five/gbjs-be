@@ -145,9 +145,6 @@ public class CourseResponse {
     @Schema(description = "방문 지역", example = "[\"경주시\", \"포항시\", \"안동시\"]")
     private List<String> locations;
 
-    @Schema(description = "코스 내 띠부씰 관광지 ID 목록", example = "[1, 2, 3]")
-    private List<Long> sealSpotIds;
-
     @Schema(description = "코스 내 총 띠부씰 수", example = "5")
     private int totalCollectableSeals;
 
