@@ -105,6 +105,11 @@ public class CourseRequest {
 
       @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "2")
       private Long sealSpotId;
+
+      @AssertTrue(message = "isSealSpot이 true이면 sealSpotId가 필요합니다.")
+      private boolean isSealSpotIdConsistent() {
+        return !Boolean.TRUE.equals(isSealSpot) || sealSpotId != null;
+      }
     }
   }
 }

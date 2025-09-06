@@ -78,13 +78,15 @@ public class CourseServiceImpl implements CourseService {
           SealSpot sealSpot = sealSpots.get(i);
           spotDTOs.add(
               CourseResponse.SimpleSpotDTO.builder()
-                  .spotId(sealSpot.getId())
+                  .spotId(sealSpot.getSpotId())
                   .visitOrder(i + 1)
                   .name(sealSpot.getName())
                   .category(
                       sealSpot.getCategory() != null
                           ? courseConverter.getCategoryKoreanName(sealSpot.getCategory())
                           : null)
+                  .isSealSpot(true)
+                  .sealSpotId(sealSpot.getId())
                   .build());
         }
       }
@@ -160,7 +162,7 @@ public class CourseServiceImpl implements CourseService {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
           SealSpot sealSpot =
               sealSpotRepository
-                  .findById(spotRequest.getSpotId())
+                  .findById(spotRequest.getSealSpotId())
                   .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
 
           DailyCourseSpot dailyCourseSpot =

@@ -38,6 +38,9 @@ public class SealSpot extends BaseTimeEntity {
   @Column(name = "image_url")
   private String imageUrl;
 
+  @Column(name = "spot_id")
+  private Long spotId;
+
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "audio_guide_id")
   private AudioGuide audioGuide;
