@@ -85,6 +85,7 @@ public class CourseServiceImpl implements CourseService {
                       sealSpot.getCategory() != null
                           ? courseConverter.getCategoryKoreanName(sealSpot.getCategory())
                           : null)
+                  .addr1(sealSpot.getAddr1())
                   .isSealSpot(true)
                   .sealSpotId(sealSpot.getId())
                   .build());

@@ -55,7 +55,7 @@ public class CourseConverter {
         .visitOrder(dailyCourseSpot.getVisitOrder())
         .name(sealSpot.getName())
         .description(sealSpot.getDescription())
-        .address(sealSpot.getAddress())
+        .address(sealSpot.getAddr1())
         .category(
             sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
         .imageUrl(sealSpot.getImageUrl())
@@ -71,6 +71,7 @@ public class CourseConverter {
         .name(sealSpot.getName())
         .category(
             sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
+        .addr1(sealSpot.getAddr1())
         .isSealSpot(true)
         .sealSpotId(sealSpot.getId())
         .build();

@@ -98,6 +98,9 @@ public class CourseResponse {
     @Schema(description = "카테고리", example = "자연환경")
     private String category;
 
+    @Schema(description = "주소", example = "경상북도 경주시 첨성로 140-25")
+    private String addr1;
+
     @Schema(description = "씰 관광지 여부", example = "true")
     private Boolean isSealSpot;
 
