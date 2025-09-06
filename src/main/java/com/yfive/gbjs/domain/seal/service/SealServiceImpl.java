@@ -83,22 +83,35 @@ public class SealServiceImpl implements SealService {
 
   /** 행적구역 띠부씰을 조회하여 반환 */
   @Override
-  public SealResponse.SealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
-    List<Seal> seals;
+  public UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
+    // 1. 사용자 정보 가져오기
+    Long userId = userService.getCurrentUser().getId();
+    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+    Map<Long, UserSeal> userSealMap =
+        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
+    // 2. 지역 이름으로 띠부씰 필터링
+    List<Seal> seals;
     if (locationNames != null && !locationNames.isEmpty()) {
       seals = sealRepository.findAllByLocationNameIn(locationNames);
     } else {
       seals = sealRepository.findAll();
     }
 
-    List<SealResponse.SealDTO> sealDTOs =
+    // 3. 필터링된 띠부씰에 사용자 수집 정보 매핑
+    List<UserSealResponse.UserSealDTO> userSealDTOs =
         seals.stream()
-            .map(sealConverter::toDTO)
-            .sorted(getSealComparator(sortBy))
+            .map(
+                seal -> {
+                  UserSeal userSeal = userSealMap.get(seal.getId());
+                  boolean collected = userSeal != null && userSeal.getCollected();
+                  LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+                  return userSealConverter.toDTO(seal, collected, collectedAt);
+                })
+            .sorted(getUserSealComparator(sortBy)) // 정렬
             .collect(Collectors.toList());
 
-    return sealConverter.toListDTO(sealDTOs);
+    return userSealConverter.toListDTO(userSealDTOs);
   }
 
   /** 특정 사용자의 띠부씰 수집 현황을 조회 모든 띠부씰에 대해 사용자의 수집 여부와 수집 시간을 포함하여 반환 */

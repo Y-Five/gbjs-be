@@ -42,12 +42,11 @@ public interface SealController {
 
   @GetMapping("location")
   @Operation(summary = "행정구역 띠부씰 조회", description = "행정구역 띠부씰 목록을 조회합니다.")
-  ResponseEntity<ApiResponse<SealResponse.SealListDTO>> getAllSeals(
+  ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getAllSeals(
       @RequestParam(required = false, defaultValue = "NUMBER")
           @Parameter(description = "정렬 옵션 (NUMBER: 번호순, RARITY: 희귀도순, LOCATION: 지역순)")
           SortBy sortBy,
-      @RequestParam(required = false)
-          @Parameter(description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
+      @RequestParam(required = false) @Parameter(description = "지역 이름 (안동시,경주시 형태로 여러 개 가능)")
           List<String> locationNames);
 
   @GetMapping("/user")

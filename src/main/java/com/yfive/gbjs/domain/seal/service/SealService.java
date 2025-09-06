@@ -38,7 +38,7 @@ public interface SealService {
    * @param sortBy 정렬 옵션
    * @return 전체 띠부씰 목록
    */
-  SealResponse.SealListDTO getAllSeals(SortBy sortBy, List<String> locationNames);
+  UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames);
 
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
