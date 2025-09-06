@@ -12,7 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
+import com.yfive.gbjs.domain.user.entity.User;
 
 /** 사용자 띠부씰 수집 정보 리포지토리 사용자와 띠부씰 간의 매핑 정보를 관리 */
 @Repository
@@ -74,4 +76,6 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
   @Query(
       "SELECT us.user.id, COUNT(us) FROM UserSeal us WHERE us.user.id IN :userIds GROUP BY us.user.id")
   Map<Long, Long> countSealsByUserIds(@Param("userIds") List<Long> userIds);
+
+  long countByUserAndSealIn(User user, List<Seal> seals);
 }

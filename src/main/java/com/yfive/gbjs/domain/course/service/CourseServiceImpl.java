@@ -20,8 +20,11 @@ import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
 import com.yfive.gbjs.domain.seal.entity.Location;
+import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
+import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
+import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
@@ -39,6 +42,8 @@ public class CourseServiceImpl implements CourseService {
   private final SealSpotRepository sealSpotRepository;
   private final UserRepository userRepository;
   private final CourseConverter courseConverter;
+  private final UserSealRepository userSealRepository;
+  private final SealRepository sealRepository;
 
   /**
    * 여행 코스를 생성합니다. (DB 저장하지 않음) - 날짜 유효성 검증 - 자동으로 제목 생성 (예: "경주, 포항 2일 여행") - 각 일차별로 지역 분배 - 지역별
@@ -78,13 +83,16 @@ public class CourseServiceImpl implements CourseService {
           SealSpot sealSpot = sealSpots.get(i);
           spotDTOs.add(
               CourseResponse.SimpleSpotDTO.builder()
-                  .spotId(sealSpot.getId())
+                  .spotId(sealSpot.getSpotId())
                   .visitOrder(i + 1)
                   .name(sealSpot.getName())
                   .category(
                       sealSpot.getCategory() != null
                           ? courseConverter.getCategoryKoreanName(sealSpot.getCategory())
                           : null)
+                  .addr1(sealSpot.getAddr1())
+                  .isSealSpot(true)
+                  .sealSpotId(sealSpot.getId())
                   .build());
         }
       }
@@ -160,12 +168,13 @@ public class CourseServiceImpl implements CourseService {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
           SealSpot sealSpot =
               sealSpotRepository
-                  .findById(spotRequest.getSpotId())
+                  .findById(spotRequest.getSealSpotId())
                   .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
 
           DailyCourseSpot dailyCourseSpot =
               DailyCourseSpot.builder()
                   .sealSpot(sealSpot)
+                  .spotId(spotRequest.getSpotId())
                   .visitOrder(spotRequest.getVisitOrder())
                   .build();
           dailyCourse.addSpot(dailyCourseSpot);
@@ -197,7 +206,7 @@ public class CourseServiceImpl implements CourseService {
 
   /** 사용자의 모든 코스 목록을 조회합니다. - 시작일 기준 내림차순 정렬 - 코스 요약 정보만 반환 (상세 정보 제외) */
   @Override
-  public CourseResponse.CourseListDTO getUserCourses(Long userId) {
+  public CourseResponse.CourseListDTO getUserCourses(Long userId, List<String> locationNames) {
     User user =
         userRepository
             .findById(userId)
@@ -205,8 +214,47 @@ public class CourseServiceImpl implements CourseService {
 
     List<Course> courses = courseRepository.findByUserOrderByStartDateDesc(user);
 
+    // 지역명 필터링 적용
+    if (locationNames != null && !locationNames.isEmpty()) {
+      courses =
+          courses.stream()
+              .filter(
+                  course ->
+                      course.getDailyCourses().stream()
+                          .anyMatch(
+                              dailyCourse ->
+                                  locationNames.contains(
+                                      courseConverter.getLocationKoreanName(
+                                          dailyCourse.getLocation()))))
+              .collect(Collectors.toList());
+    }
+
     List<CourseResponse.CourseSummaryDTO> summaries =
-        courses.stream().map(courseConverter::toCourseSummaryDTO).collect(Collectors.toList());
+        courses.stream()
+            .map(
+                course -> {
+                  int totalCollectableSealsForCourse = 0;
+                  int userCollectedSealsForCourse = 0;
+
+                  List<Long> sealSpotIds =
+                      course.getDailyCourses().stream()
+                          .flatMap(dailyCourse -> dailyCourse.getSpots().stream())
+                          .filter(dailyCourseSpot -> dailyCourseSpot.getSealSpot() != null)
+                          .map(dailyCourseSpot -> dailyCourseSpot.getSealSpot().getId())
+                          .distinct()
+                          .collect(Collectors.toList());
+
+                  for (Long sealSpotId : sealSpotIds) {
+                    List<Seal> sealsFromSpot = sealRepository.findBySealSpot_Id(sealSpotId);
+                    totalCollectableSealsForCourse += sealsFromSpot.size();
+                    userCollectedSealsForCourse +=
+                        userSealRepository.countByUserAndSealIn(user, sealsFromSpot);
+                  }
+
+                  return courseConverter.toCourseSummaryDTO(
+                      course, totalCollectableSealsForCourse, userCollectedSealsForCourse);
+                })
+            .collect(Collectors.toList());
 
     return CourseResponse.CourseListDTO.builder()
         .courses(summaries)

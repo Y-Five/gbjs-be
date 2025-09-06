@@ -49,7 +49,7 @@ public class CourseResponse {
     private String location;
 
     @Schema(description = "방문 장소 목록")
-    private List<SimpleSpotDTO> spots; // SpotDTO 또는 SimpleSpotDTO를 받을 수 있도록
+    private List<SimpleSpotDTO> spots;
   }
 
   @Builder
@@ -86,7 +86,7 @@ public class CourseResponse {
   @AllArgsConstructor
   @Schema(title = "SimpleSpot : 간략한 방문 장소 정보")
   public static class SimpleSpotDTO {
-    @Schema(description = "장소 ID", example = "1")
+    @Schema(description = "관광지 ID", example = "1")
     private Long spotId;
 
     @Schema(description = "방문 순서", example = "1")
@@ -97,6 +97,15 @@ public class CourseResponse {
 
     @Schema(description = "카테고리", example = "자연환경")
     private String category;
+
+    @Schema(description = "주소", example = "경상북도 경주시 첨성로 140-25")
+    private String addr1;
+
+    @Schema(description = "씰 관광지 여부", example = "true")
+    private Boolean isSealSpot;
+
+    @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "2")
+    private Long sealSpotId;
   }
 
   @Builder
@@ -135,5 +144,11 @@ public class CourseResponse {
 
     @Schema(description = "방문 지역", example = "[\"경주시\", \"포항시\", \"안동시\"]")
     private List<String> locations;
+
+    @Schema(description = "코스 내 총 띠부씰 수", example = "5")
+    private int totalCollectableSeals;
+
+    @Schema(description = "코스 내 수집한 띠부씰 수", example = "2")
+    private int userCollectedSeals;
   }
 }
