@@ -15,6 +15,7 @@ import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -106,4 +107,12 @@ public interface SealController {
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "삭제할 띠부씰 ID", required = true, example = "2")
           Long sealId);
+
+  @GetMapping("/popular-spots")
+  @Operation(summary = "인기 띠부씰 관광지 조회", description = "인기 띠부씰 관광지 4개를 조회합니다.")
+  ResponseEntity<ApiResponse<List<SpotDetailResponse>>> getPopularSealSpots(
+      @RequestParam @Parameter(description = "위도", required = true, example = "36.5759985")
+          Double latitude,
+      @RequestParam @Parameter(description = "경도", required = true, example = "128.505832")
+          Double longitude);
 }

@@ -16,6 +16,7 @@ import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.service.SealService;
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -114,5 +115,12 @@ public class SealControllerImpl implements SealController {
       Authentication authentication, Long sealId) {
     sealService.deleteCollectedSeal(sealId);
     return ResponseEntity.ok(ApiResponse.success(null, "띠부씰이 성공적으로 삭제되었습니다."));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<List<SpotDetailResponse>>> getPopularSealSpots(
+      Double latitude, Double longitude) {
+    List<SpotDetailResponse> popularSpots = sealService.getPopularSealSpots(latitude, longitude);
+    return ResponseEntity.ok(ApiResponse.success(popularSpots));
   }
 }

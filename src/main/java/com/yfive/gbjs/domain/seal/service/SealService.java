@@ -11,6 +11,7 @@ import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 
 /** 띠부씰 서비스 인터페이스 띠부씰 관련 비즈니스 로직을 정의 */
 public interface SealService {
@@ -106,4 +107,6 @@ public interface SealService {
    * @param sealId 삭제할 띠부씰 ID
    */
   void deleteCollectedSeal(Long sealId);
+
+  List<SpotDetailResponse> getPopularSealSpots(Double latitude, Double longitude);
 }

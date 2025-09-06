@@ -4,6 +4,8 @@
 package com.yfive.gbjs.domain.seal.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,15 +20,15 @@ import com.yfive.gbjs.domain.seal.converter.UserSealConverter;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
-import com.yfive.gbjs.domain.seal.entity.Location;
-import com.yfive.gbjs.domain.seal.entity.Rarity;
-import com.yfive.gbjs.domain.seal.entity.Seal;
-import com.yfive.gbjs.domain.seal.entity.SortBy;
+import com.yfive.gbjs.domain.seal.entity.*;
 import com.yfive.gbjs.domain.seal.entity.mapper.UserSeal;
 import com.yfive.gbjs.domain.seal.exception.SealErrorStatus;
 import com.yfive.gbjs.domain.seal.repository.SealProductRepository;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
+import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
+import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
+import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.error.exception.CustomException;
@@ -51,6 +53,8 @@ public class SealServiceImpl implements SealService {
   private final UserSealConverter userSealConverter;
   private final UserService userService;
   private final S3Service s3Service;
+  private final SpotService spotService; // Inject SpotService
+  private final SealSpotRepository sealSpotRepository;
 
   /** ID로 특정 띠부씰을 조회하여 반환 */
   @Override
@@ -430,5 +434,38 @@ public class SealServiceImpl implements SealService {
 
     // UserSeal 삭제
     userSealRepository.delete(userSeal);
+  }
+
+  /** 인기 띠부실 관광지 조회 */
+  @Override
+  public List<SpotDetailResponse> getPopularSealSpots(Double latitude, Double longitude) {
+    List<Long> popularSealSpotIds = Arrays.asList(1L, 2L, 3L, 4L);
+
+    List<SealSpot> popularSealSpots = sealSpotRepository.findAllById(popularSealSpotIds);
+
+    List<SpotDetailResponse> spotDetails = new ArrayList<>();
+    for (SealSpot sealSpot : popularSealSpots) {
+      if (sealSpot.getAudioGuide() != null
+          && sealSpot.getAudioGuide().getLatitude() != null
+          && sealSpot.getAudioGuide().getLongitude() != null) {
+        try {
+          String contentId = String.valueOf(sealSpot.getSpotId());
+          SpotDetailResponse detail =
+              spotService.getSpotByContentId(contentId, latitude, longitude);
+          spotDetails.add(detail);
+        } catch (NumberFormatException e) {
+          log.error("SealSpot ID: {}에 대한 위도/경도 형식 오류: {}", sealSpot.getId(), e);
+        } catch (CustomException e) {
+          log.warn(
+              "SpotService가 SealSpot ID: {} (contentId: {})에 대한 세부 정보를 찾을 수 없습니다: {}",
+              sealSpot.getId(),
+              sealSpot.getSpotId(),
+              e);
+        }
+      } else {
+        log.warn("SealSpot ID: {}에 AudioGuide 또는 좌표가 누락되었습니다.", sealSpot.getId());
+      }
+    }
+    return spotDetails;
   }
 }
