@@ -48,4 +48,7 @@ public class SealSpot extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "category")
   private SealSpotCategory category;
+
+  @Column(name = "hashtag")
+  private String hashtag;
 }

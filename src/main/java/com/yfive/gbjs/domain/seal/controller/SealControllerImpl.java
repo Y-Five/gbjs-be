@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.service.SealService;
-import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -118,9 +118,8 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<List<SpotDetailResponse>>> getPopularSealSpots(
-      Double latitude, Double longitude) {
-    List<SpotDetailResponse> popularSpots = sealService.getPopularSealSpots(latitude, longitude);
+  public ResponseEntity<ApiResponse<List<PopularSealSpotResponse>>> getPopularSealSpots() {
+    List<PopularSealSpotResponse> popularSpots = sealService.getPopularSealSpots();
     return ResponseEntity.ok(ApiResponse.success(popularSpots));
   }
 }

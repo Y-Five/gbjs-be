@@ -7,11 +7,11 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealProductResponse;
 import com.yfive.gbjs.domain.seal.dto.response.SealResponse;
 import com.yfive.gbjs.domain.seal.dto.response.UserSealResponse;
 import com.yfive.gbjs.domain.seal.entity.SortBy;
-import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 
 /** 띠부씰 서비스 인터페이스 띠부씰 관련 비즈니스 로직을 정의 */
 public interface SealService {
@@ -108,5 +108,5 @@ public interface SealService {
    */
   void deleteCollectedSeal(Long sealId);
 
-  List<SpotDetailResponse> getPopularSealSpots(Double latitude, Double longitude);
+  List<PopularSealSpotResponse> getPopularSealSpots();
 }
