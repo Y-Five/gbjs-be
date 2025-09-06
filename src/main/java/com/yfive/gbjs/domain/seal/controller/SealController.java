@@ -40,7 +40,7 @@ public interface SealController {
       @PathVariable @Parameter(description = "검색할 SealSpotId", required = true, example = "2")
           Long sealSpotId);
 
-  @GetMapping("location")
+  @GetMapping("/location")
   @Operation(summary = "행정구역 띠부씰 조회", description = "행정구역 띠부씰 목록을 조회합니다.")
   ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getAllSeals(
       @RequestParam(required = false, defaultValue = "NUMBER")

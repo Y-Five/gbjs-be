@@ -81,16 +81,14 @@ public class SealServiceImpl implements SealService {
     return userSealConverter.toDTO(seal, collected, collectedAt);
   }
 
-  /** 행적구역 띠부씰을 조회하여 반환 */
+  /** 행정구역 띠부씰을 조회하여 반환 */
   @Override
   public UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
-    // 1. 사용자 정보 가져오기
     Long userId = userService.getCurrentUser().getId();
     List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
     Map<Long, UserSeal> userSealMap =
         userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
-    // 2. 지역 이름으로 띠부씰 필터링
     List<Seal> seals;
     if (locationNames != null && !locationNames.isEmpty()) {
       seals = sealRepository.findAllByLocationNameIn(locationNames);
@@ -98,7 +96,7 @@ public class SealServiceImpl implements SealService {
       seals = sealRepository.findAll();
     }
 
-    // 3. 필터링된 띠부씰에 사용자 수집 정보 매핑
+    // 필터링된 띠부씰에 사용자 수집 정보 매핑
     List<UserSealResponse.UserSealDTO> userSealDTOs =
         seals.stream()
             .map(
