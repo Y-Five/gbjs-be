@@ -85,7 +85,6 @@ public class CourseRequest {
     @Builder
     @Schema(title = "SpotRequest : 방문 장소 정보")
     public static class SpotRequest {
-      @NotNull(message = "장소 ID는 필수입니다.")
       @Schema(description = "장소 ID", example = "5")
       private Long spotId;
 

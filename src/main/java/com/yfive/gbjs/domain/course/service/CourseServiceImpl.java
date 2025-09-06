@@ -174,6 +174,7 @@ public class CourseServiceImpl implements CourseService {
           DailyCourseSpot dailyCourseSpot =
               DailyCourseSpot.builder()
                   .sealSpot(sealSpot)
+                  .spotId(spotRequest.getSpotId())
                   .visitOrder(spotRequest.getVisitOrder())
                   .build();
           dailyCourse.addSpot(dailyCourseSpot);

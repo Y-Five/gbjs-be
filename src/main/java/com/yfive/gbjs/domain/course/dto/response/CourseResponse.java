@@ -86,7 +86,7 @@ public class CourseResponse {
   @AllArgsConstructor
   @Schema(title = "SimpleSpot : 간략한 방문 장소 정보")
   public static class SimpleSpotDTO {
-    @Schema(description = "장소 ID", example = "1")
+    @Schema(description = "관광지 ID", example = "1")
     private Long spotId;
 
     @Schema(description = "방문 순서", example = "1")

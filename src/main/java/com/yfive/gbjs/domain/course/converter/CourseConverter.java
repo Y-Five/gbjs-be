@@ -66,7 +66,7 @@ public class CourseConverter {
   public CourseResponse.SimpleSpotDTO toSimpleSpotDTO(DailyCourseSpot dailyCourseSpot) {
     SealSpot sealSpot = dailyCourseSpot.getSealSpot();
     return CourseResponse.SimpleSpotDTO.builder()
-        .spotId(sealSpot.getId())
+        .spotId(dailyCourseSpot.getSealSpot().getSpotId())
         .visitOrder(dailyCourseSpot.getVisitOrder())
         .name(sealSpot.getName())
         .category(
