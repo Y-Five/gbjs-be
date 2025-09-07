@@ -103,15 +103,20 @@ public class TtsServiceImpl implements TtsService {
         String s3Url =
             s3Service.uploadFile(PathName.AUDIO, guideId, inputStream, "tts.mp3", "audio/mpeg");
 
-        AudioFile audioFile = AudioFile.builder().fileUrl(s3Url).build();
-        ttsRepository.save(audioFile);
-
         AudioGuide audioGuide =
             audioGuideRepository
                 .findById(guideId)
                 .orElseThrow(() -> new CustomException(GuideErrorStatus.AUDIO_GUIDE_NOT_FOUND));
 
-        audioGuide.updateFile(audioFile);
+        AudioFile audioFile =
+            AudioFile.builder()
+                .type(type.substring(type.lastIndexOf("-") + 1))
+                .fileUrl(s3Url)
+                .audioGuide(audioGuide)
+                .build();
+
+        audioGuide.addAudioFile(audioFile);
+        ttsRepository.save(audioFile);
 
         log.info("TTS 오디오 생성 완료, S3 URL: {}", s3Url);
         return s3Url;

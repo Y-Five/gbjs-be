@@ -21,6 +21,8 @@ public class SpotTtsResponse {
   @Schema(description = "가이드 내용", example = "이 건축물은 바로 첨성대입니다...")
   private String script;
 
-  @Schema(description = "생성된 오디오 식별자", example = "1")
-  private Long fileId;
+  @Schema(
+      description = "생성된 오디오 URL",
+      example = "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/audio%3Fid%3D126143")
+  private String audioURL;
 }

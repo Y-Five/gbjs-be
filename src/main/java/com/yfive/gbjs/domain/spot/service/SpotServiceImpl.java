@@ -3,20 +3,6 @@
  */
 package com.yfive.gbjs.domain.spot.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.entity.AudioGuide;
@@ -25,18 +11,39 @@ import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotTtsResponse;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
+import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
+import com.yfive.gbjs.domain.tts.entity.AudioFile;
+import com.yfive.gbjs.domain.tts.repository.TtsRepository;
+import com.yfive.gbjs.domain.tts.service.TtsService;
+import com.yfive.gbjs.domain.user.entity.User;
+import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
-
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SpotServiceImpl implements SpotService {
+
+  private final TtsService ttsService;
+  private final UserService userService;
 
   @Value("${openapi.secret.key}")
   private String serviceKey;
@@ -48,6 +55,7 @@ public class SpotServiceImpl implements SpotService {
   private final RestClient restClient;
   private final PageMapper pageMapper;
   private final AudioGuideRepository audioGuideRepository;
+  private final TtsRepository ttsRepository;
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeyword(
@@ -92,7 +100,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    validateApiResponse(response, "빈 응답 수신");
+    validateApiResponse(response);
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -115,7 +123,7 @@ public class SpotServiceImpl implements SpotService {
           spotResponse.setDistance(null);
         }
 
-        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asText());
+        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
 
         spotResponse.setTtsExist(ttsExist);
       }
@@ -128,8 +136,10 @@ public class SpotServiceImpl implements SpotService {
   }
 
   @Override
-  public SpotDetailResponse getSpotByContentId(
-      String contentId, Double latitude, Double longitude) {
+  @Transactional
+  public SpotDetailResponse getSpotByContentId(Long contentId, Double latitude, Double longitude) {
+
+    User user = userService.getCurrentUser();
 
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromUriString(spotApiUrl + "/detailCommon2")
@@ -142,7 +152,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    validateApiResponse(response, "빈 응답 수신");
+    validateApiResponse(response);
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -180,20 +190,38 @@ public class SpotServiceImpl implements SpotService {
 
       List<AudioGuide> audioGuides = audioGuideRepository.findByContentId(contentId);
 
+      String type;
+      switch (user.getTtsSetting()) {
+        case FEMALE_B -> type = "B";
+        case MALE_C -> type = "C";
+        case MALE_D -> type = "D";
+        default -> type = "A";
+      }
+
       List<SpotTtsResponse> spotTtsResponses =
           audioGuides.stream()
               .map(
-                  guide ->
-                      SpotTtsResponse.builder()
-                          .guideId(guide.getId())
-                          .title(guide.getTitle())
-                          .script(guide.getScript())
-                          .fileId(
-                              guide.getAudioFile() == null ? null : guide.getAudioFile().getId())
-                          .build())
+                  guide -> {
+                    AudioFile audioFile =
+                        ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+
+                    if (audioFile == null) {
+                      ttsService.convertTextToSpeech(
+                          guide.getId(), user.getTtsSetting(), new TtsRequest(guide.getScript()));
+                      audioFile = ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+                    }
+
+                    return SpotTtsResponse.builder()
+                        .guideId(guide.getId())
+                        .title(guide.getTitle())
+                        .script(guide.getScript())
+                        .audioURL(audioFile.getFileUrl())
+                        .build();
+                  })
               .toList();
 
       spotDetailResponse.setTtsResponseList(spotTtsResponses);
+      spotDetailResponse.setTotalTts(spotTtsResponses.size());
 
       return spotDetailResponse;
     } catch (Exception e) {
@@ -218,7 +246,7 @@ public class SpotServiceImpl implements SpotService {
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    validateApiResponse(response, "빈 응답 수신");
+    validateApiResponse(response);
 
     try {
       JsonNode root = objectMapper.readTree(response);
@@ -243,16 +271,16 @@ public class SpotServiceImpl implements SpotService {
     double a =
         Math.sin(latDist / 2) * Math.sin(latDist / 2)
             + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDist / 2)
-                * Math.sin(lonDist / 2);
+            * Math.cos(Math.toRadians(lat2))
+            * Math.sin(lonDist / 2)
+            * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
-  private void validateApiResponse(String response, String logMessage) {
+  private void validateApiResponse(String response) {
     if (response == null || response.isBlank()) {
-      log.error(logMessage);
+      log.error("빈 응답 수신");
       throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
     }
 

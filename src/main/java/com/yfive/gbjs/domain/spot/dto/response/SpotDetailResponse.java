@@ -50,6 +50,10 @@ public class SpotDetailResponse {
   private Double distance;
 
   @Setter
+  @Schema(description = "음성 가이드 총 개수", example = "16")
+  private Integer totalTts;
+
+  @Setter
   @Schema(description = "음성 가이드 리스트")
   private List<SpotTtsResponse> ttsResponseList;
 }

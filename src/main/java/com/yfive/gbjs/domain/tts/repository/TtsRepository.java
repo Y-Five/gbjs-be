@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
 import com.yfive.gbjs.domain.tts.entity.AudioFile;
 
 @Repository
-public interface TtsRepository extends JpaRepository<AudioFile, Long> {}
+public interface TtsRepository extends JpaRepository<AudioFile, Long> {
+
+  AudioFile findByTypeAndAudioGuideId(String type, Long id);
+}

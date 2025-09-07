@@ -36,7 +36,7 @@ public interface SpotController {
   @GetMapping("{id}")
   @Operation(summary = "관광지 단일 조회", description = "관광지 식별자를 통한 단일 조회")
   ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
-      @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") String id,
+      @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") Long id,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
 }

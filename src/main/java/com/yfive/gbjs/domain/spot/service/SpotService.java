@@ -17,5 +17,5 @@ public interface SpotService {
   PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
       Pageable pageable, String keyword, Double latitude, Double longitude);
 
-  SpotDetailResponse getSpotByContentId(String contentId, Double latitude, Double longitude);
+  SpotDetailResponse getSpotByContentId(Long contentId, Double latitude, Double longitude);
 }
