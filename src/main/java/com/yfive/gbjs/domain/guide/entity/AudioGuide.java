@@ -3,8 +3,9 @@
  */
 package com.yfive.gbjs.domain.guide.entity;
 
-import com.yfive.gbjs.domain.tts.entity.AudioFile;
-import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,8 +15,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
+
+import com.yfive.gbjs.domain.tts.entity.AudioFile;
+import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
