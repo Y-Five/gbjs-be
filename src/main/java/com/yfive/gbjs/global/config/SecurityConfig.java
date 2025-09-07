@@ -79,14 +79,13 @@ public class SecurityConfig {
                         "/api/audio-guide/**",
                         "/api/weathers/**",
                         "/api/festivals/**",
-                        "/api/seals",
-                        "/api/seals/products",
-                        "/api/seals/nearby",
+                        "/api/seals/**",
                         "/api/spots/**",
                         "/api/courses/**",
                         "/api/users/**",
                         "/api/traditions/**",
-                        "/api/tts/**")
+                        "/api/tts/**",
+                        "/api/chat")
                     .permitAll()
                     // H2 콘솔
                     .requestMatchers("/h2-console/**")
