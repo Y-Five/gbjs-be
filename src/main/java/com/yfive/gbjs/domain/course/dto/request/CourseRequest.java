@@ -85,7 +85,6 @@ public class CourseRequest {
     @Builder
     @Schema(title = "SpotRequest : 방문 장소 정보")
     public static class SpotRequest {
-      @NotNull(message = "장소 ID는 필수입니다.")
       @Schema(description = "장소 ID", example = "5")
       private Long spotId;
 
@@ -99,6 +98,17 @@ public class CourseRequest {
 
       @Schema(description = "카테고리", example = "유명 관광지")
       private String category;
+
+      @Schema(description = "씰 관광지 여부", example = "true")
+      private Boolean isSealSpot;
+
+      @Schema(description = "씰 관광지 ID (씰 관광지인 경우)", example = "2")
+      private Long sealSpotId;
+
+      @AssertTrue(message = "isSealSpot이 true이면 sealSpotId가 필요합니다.")
+      private boolean isSealSpotIdConsistent() {
+        return !Boolean.TRUE.equals(isSealSpot) || sealSpotId != null;
+      }
     }
   }
 }

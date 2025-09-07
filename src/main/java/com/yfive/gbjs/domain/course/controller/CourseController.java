@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.course.controller;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -35,17 +37,22 @@ public interface CourseController {
       @Valid @RequestBody SaveCourseRequest request);
 
   @Operation(summary = "내 여행 코스 목록 조회", description = "사용자가 저장한 코스 목록을 조회합니다.")
-  @GetMapping("/my")
+  @GetMapping("/users")
   ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
-      @Parameter(hidden = true) Authentication authentication);
+      @Parameter(hidden = true) Authentication authentication,
+      @RequestParam(required = false)
+          @Parameter(description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
+          List<String> locationNames);
 
   @Operation(summary = "여행 코스 상세 조회", description = "코스 ID로 상세 정보를 조회합니다.")
   @GetMapping("/{courseId}")
   ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> getCourse(
-      @Parameter(hidden = true) Authentication authentication, @PathVariable Long courseId);
+      @Parameter(hidden = true) Authentication authentication,
+      @PathVariable @Parameter(description = "코스 ID", example = "1") Long courseId);
 
   @Operation(summary = "여행 코스 삭제", description = "코스 ID로 코스를 삭제합니다.")
   @DeleteMapping("/{courseId}")
   ResponseEntity<ApiResponse<Void>> deleteCourse(
-      @Parameter(hidden = true) Authentication authentication, @PathVariable Long courseId);
+      @Parameter(hidden = true) Authentication authentication,
+      @PathVariable @Parameter(description = "삭제할 코스 ID", example = "1") Long courseId);
 }

@@ -63,6 +63,9 @@ dependencies {
 
     // Google TTS
     implementation "com.google.cloud:google-cloud-texttospeech:${ttsVersion}"
+
+    // Spring AI
+    implementation "org.springframework.ai:spring-ai-starter-model-openai:${springAiVersion}"
 }
 
 tasks.named('test') {
