@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2025 YFIVE
+ */
+package com.yfive.gbjs.domain.chat.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.stereotype.Service;
+
+import com.yfive.gbjs.domain.chat.dto.request.ChatRequest;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class ChatServiceImpl implements ChatService {
+
+  private final VectorStore vectorStore;
+  private final ChatClient chatClient;
+
+  @Override
+  public String ask(ChatRequest request) {
+    try {
+      // 유사도 검색
+      List<Document> docs = vectorStore.similaritySearch(request.getQuestion());
+
+      // 검색 결과가 없거나 점수가 낮을 때 fallback
+      if (docs.isEmpty() || docs.get(0).getScore() < 0.75) {
+        return "관련된 데이터를 찾을 수 없습니다.";
+      }
+
+      String context = docs.stream().map(Document::getText).collect(Collectors.joining("\n"));
+
+      String prompt =
+          """
+              당신은 gbjs 서비스 전용 답변 시스템입니다.
+              반드시 아래 제공된 참고 데이터만을 근거로 답변하세요.
+              참고 데이터에 없는 내용은 '관련된 데이터를 찾을 수 없습니다.'라고 답하세요.
+
+              사용자 질문: %s
+
+              참고 데이터:
+              %s
+              """
+              .formatted(request.getQuestion(), context);
+
+      return chatClient
+          .prompt()
+          .system("너는 gbjs 데이터만 기반으로 답해야 한다. 데이터 밖 지식은 절대 사용하지 마라.")
+          .user(prompt)
+          .call()
+          .content();
+
+    } catch (Exception e) {
+      log.error("챗봇 응답 생성 중 오류 발생", e);
+      return "현재 답변을 생성할 수 없습니다. 나중에 다시 시도해주세요.";
+    }
+  }
+}
