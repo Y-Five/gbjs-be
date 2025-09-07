@@ -23,11 +23,11 @@ public class DataIndexingScheduler {
     dataIndexingService.createCollectionIfNotExists();
 
     // 각 타입의 데이터 색인
-    dataIndexingService.indexSeals();
-    dataIndexingService.indexSealSpots();
-    dataIndexingService.indexSealProducts();
-    dataIndexingService.indexUsers();
-    dataIndexingService.indexSpotsFromApi();
-    dataIndexingService.indexFestivalsFromApi();
+    //    dataIndexingService.indexSeals();
+    //    dataIndexingService.indexSealSpots();
+    //    dataIndexingService.indexSealProducts();
+    //    dataIndexingService.indexUsers();
+    //    dataIndexingService.indexSpotsFromApi();
+    //    dataIndexingService.indexFestivalsFromApi();
   }
 }
