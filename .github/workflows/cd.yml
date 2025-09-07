@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
   build:
@@ -73,6 +74,3 @@ jobs:
               echo "Starting $COLOR deployment"
               docker compose -f docker-compose.yml -f docker-compose-${COLOR}.yml pull
               docker compose -f docker-compose.yml -f docker-compose-${COLOR}.yml up -d --build
-
-              echo "Stopping previous $PREV_COLOR app container"
-              docker compose -f docker-compose.yml -f docker-compose-${PREV_COLOR}.yml stop app-${PREV_COLOR} || true
