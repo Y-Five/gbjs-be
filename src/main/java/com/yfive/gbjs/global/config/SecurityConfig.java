@@ -80,7 +80,6 @@ public class SecurityConfig {
                         "/api/weathers/**",
                         "/api/festivals/**",
                         "/api/seals/**",
-                        "/api/spots/**",
                         "/api/courses/**",
                         "/api/users/**",
                         "/api/traditions/**",

@@ -25,6 +25,8 @@ import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotTtsResponse;
+import com.yfive.gbjs.domain.spot.entity.SearchBy;
+import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
 import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
 import com.yfive.gbjs.domain.tts.entity.AudioFile;
@@ -61,31 +63,40 @@ public class SpotServiceImpl implements SpotService {
   private final TtsRepository ttsRepository;
 
   @Override
-  public PageResponse<SpotResponse> getSpotsByKeyword(
-      Pageable pageable, String keyword, Double latitude, Double longitude) {
+  public PageResponse<SpotResponse> getSpotsByKeywordAndCategorySortedByDistance(
+      Pageable pageable,
+      String keyword,
+      SortBy sortBy,
+      SearchBy searchBy,
+      Double latitude,
+      Double longitude) {
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
+    String cat1 = "", cat2 = "", cat3 = "";
 
-    spotResponses.sort(Comparator.comparing(SpotResponse::getTitle));
+    if (searchBy != null) {
+      String[] categories = mapSearchByToCategoryCodes(searchBy);
+      cat1 = categories[0];
+      cat2 = categories[1];
+      cat3 = categories[2];
+    }
 
-    log.info("관광지 가나다순 조회 성공 - 키워드: {}", keyword);
-    return paginateSpotResponses(spotResponses, pageable, latitude, longitude);
-  }
+    List<SpotResponse> spotResponses =
+        fetchSpotListByKeyword(keyword, cat1, cat2, cat3, latitude, longitude);
 
-  @Override
-  public PageResponse<SpotResponse> getSpotsByKeywordSortedByDistance(
-      Pageable pageable, String keyword, Double latitude, Double longitude) {
+    if (sortBy == SortBy.DISTANCE) {
+      spotResponses.sort(
+          Comparator.comparing(SpotResponse::getDistance, Comparator.nullsLast(Double::compareTo)));
+    } else {
+      spotResponses.sort(
+          Comparator.comparing(SpotResponse::getTitle, Comparator.nullsLast(String::compareTo)));
+    }
 
-    List<SpotResponse> spotResponses = fetchSpotListByKeyword(keyword, latitude, longitude);
-
-    spotResponses.sort(Comparator.comparing(SpotResponse::getDistance));
-
-    log.info("관광지 거리순 조회 성공 - 키워드: {}", keyword);
+    log.info("관광지 조회 성공 - 키워드: {}, 정렬: {}, 검색유형: {}", keyword, sortBy, searchBy);
     return paginateSpotResponses(spotResponses, pageable, latitude, longitude);
   }
 
   private List<SpotResponse> fetchSpotListByKeyword(
-      String keyword, Double latitude, Double longitude) {
+      String keyword, String cat1, String cat2, String cat3, Double latitude, Double longitude) {
 
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     UriComponentsBuilder uriBuilder =
@@ -98,7 +109,10 @@ public class SpotServiceImpl implements SpotService {
             .queryParam("_type", "JSON")
             .queryParam("arrange", "O")
             .queryParam("keyword", encodedKeyword)
-            .queryParam("areaCode", "35");
+            .queryParam("areaCode", "35")
+            .queryParam("cat1", cat1)
+            .queryParam("cat2", cat2)
+            .queryParam("cat3", cat3);
 
     String response =
         restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
@@ -140,9 +154,8 @@ public class SpotServiceImpl implements SpotService {
 
   @Override
   @Transactional
-  public SpotDetailResponse getSpotByContentId(Long contentId, Double latitude, Double longitude) {
-
-    User user = userService.getCurrentUser();
+  public SpotDetailResponse getSpotByContentId(
+      Long contentId, Double latitude, Double longitude, Boolean isDetail) {
 
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromUriString(spotApiUrl + "/detailCommon2")
@@ -193,38 +206,48 @@ public class SpotServiceImpl implements SpotService {
 
       List<AudioGuide> audioGuides = audioGuideRepository.findByContentId(contentId);
 
-      String type;
-      switch (user.getTtsSetting()) {
-        case FEMALE_B -> type = "B";
-        case MALE_C -> type = "C";
-        case MALE_D -> type = "D";
-        default -> type = "A";
+      if (isDetail) {
+        User user = userService.getCurrentUser();
+        String type;
+        switch (user.getTtsSetting()) {
+          case FEMALE_B -> type = "B";
+          case MALE_C -> type = "C";
+          case MALE_D -> type = "D";
+          default -> type = "A";
+        }
+
+        List<SpotTtsResponse> spotTtsResponses =
+            audioGuides.stream()
+                .map(
+                    guide -> {
+                      AudioFile audioFile =
+                          ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+
+                      if (audioFile == null) {
+                        ttsService.convertTextToSpeech(
+                            guide.getId(), user.getTtsSetting(), new TtsRequest(guide.getScript()));
+                        audioFile = ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+                      }
+
+                      String audioUrl = (audioFile != null) ? audioFile.getFileUrl() : null;
+                      return SpotTtsResponse.builder()
+                          .guideId(guide.getId())
+                          .title(guide.getTitle())
+                          .script(guide.getScript())
+                          .audioURL(audioUrl)
+                          .build();
+                    })
+                .toList();
+
+        spotDetailResponse.setTtsResponseList(spotTtsResponses);
+        spotDetailResponse.setTotalTts(spotTtsResponses.size());
+
+        log.info(
+            "관광지 단일 조회 성공 - userId: {}, contentId: {}, category: {}",
+            user.getId(),
+            contentId,
+            spotDetailResponse.getType());
       }
-
-      List<SpotTtsResponse> spotTtsResponses =
-          audioGuides.stream()
-              .map(
-                  guide -> {
-                    AudioFile audioFile =
-                        ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
-
-                    if (audioFile == null) {
-                      ttsService.convertTextToSpeech(
-                          guide.getId(), user.getTtsSetting(), new TtsRequest(guide.getScript()));
-                      audioFile = ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
-                    }
-
-                    return SpotTtsResponse.builder()
-                        .guideId(guide.getId())
-                        .title(guide.getTitle())
-                        .script(guide.getScript())
-                        .audioURL(audioFile.getFileUrl())
-                        .build();
-                  })
-              .toList();
-
-      spotDetailResponse.setTtsResponseList(spotTtsResponses);
-      spotDetailResponse.setTotalTts(spotTtsResponses.size());
 
       return spotDetailResponse;
     } catch (Exception e) {
@@ -307,15 +330,72 @@ public class SpotServiceImpl implements SpotService {
     int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
 
-    pageContent.parallelStream()
-        .forEach(
-            response -> {
-              SpotDetailResponse detail =
-                  getSpotByContentId(response.getSpotId(), latitude, longitude);
-              response.setType(detail.getType());
-            });
-
+    pageContent.forEach(
+        response -> {
+          SpotDetailResponse detail =
+              getSpotByContentId(response.getSpotId(), latitude, longitude, false);
+          response.setType(detail.getType());
+        });
     Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
     return pageMapper.toSpotPageResponse(page);
+  }
+
+  private String[] mapSearchByToCategoryCodes(SearchBy searchBy) {
+    String cat1 = "";
+    String cat2 = "";
+    String cat3 = "";
+    switch (searchBy) {
+      case MONUMENT_VIEWPOINT -> {
+        cat1 = "A02";
+        cat2 = "A0205";
+        cat3 = "A02050200";
+      }
+      case TOURIST_COMPLEX -> {
+        cat1 = "A02";
+        cat2 = "A0202";
+        cat3 = "A02020200";
+      }
+      case HISTORIC_SITE -> {
+        cat1 = "A02";
+        cat2 = "A0201";
+        cat3 = "A02010700";
+      }
+      case HANOK -> {
+        cat1 = "B02";
+        cat2 = "B0201";
+        cat3 = "B02011600";
+      }
+      case PARK -> {
+        cat1 = "A01";
+        cat2 = "A0101";
+        cat3 = "A01010100";
+      }
+      case FOLK_VILLAGE -> {
+        cat1 = "A02";
+        cat2 = "A0201";
+        cat3 = "A02010600";
+      }
+      case CAMPING_SITE -> {
+        cat1 = "A03";
+        cat2 = "A0302";
+        cat3 = "A03021700";
+      }
+      case EXHIBITION_HALL -> {
+        cat1 = "A02";
+        cat2 = "A0206";
+        cat3 = "A02060300";
+      }
+      case TEMPLE -> {
+        cat1 = "A02";
+        cat2 = "A0201";
+        cat3 = "A02010800";
+      }
+      case MUSEUM -> {
+        cat1 = "A02";
+        cat2 = "A0206";
+        cat3 = "A02060100";
+      }
+    }
+    return new String[] {cat1, cat2, cat3};
   }
 }
