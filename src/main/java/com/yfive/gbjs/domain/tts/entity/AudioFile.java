@@ -43,4 +43,8 @@ public class AudioFile {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "audio_guide_id")
   private AudioGuide audioGuide;
+
+  public void updateUrl(String fileUrl) {
+    this.fileUrl = fileUrl;
+  }
 }
