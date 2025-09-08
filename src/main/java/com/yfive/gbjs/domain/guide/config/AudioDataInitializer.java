@@ -30,16 +30,12 @@ public class AudioDataInitializer {
   public void init() {
     log.info("오디오 가이드 데이터 초기화를 확인합니다.");
     // DB에 데이터가 없을 때만 실행
-    if (audioGuideRepository.count() == 0) {
-      log.info("DB가 비어있어 초기 데이터 동기화를 시작합니다.");
-      try {
-        int savedCount = guideService.syncGyeongbukAudioStories();
-        log.info("초기 데이터 동기화 완료. 저장된 개수: {}", savedCount);
-      } catch (Exception e) {
-        log.error("초기 데이터 동기화 중 오류가 발생했습니다.", e);
-      }
-    } else {
-      log.info("DB에 데이터가 이미 존재하여 초기화를 건너뜁니다.");
+    log.info("DB가 비어있어 초기 데이터 동기화를 시작합니다.");
+    try {
+      int savedCount = guideService.syncGyeongbukAudioStories();
+      log.info("초기 데이터 동기화 완료. 저장된 개수: {}", savedCount);
+    } catch (Exception e) {
+      log.error("초기 데이터 동기화 중 오류가 발생했습니다.", e);
     }
   }
 }
