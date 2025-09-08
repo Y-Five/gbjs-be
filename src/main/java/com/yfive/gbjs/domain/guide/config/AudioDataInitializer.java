@@ -3,15 +3,12 @@
  */
 package com.yfive.gbjs.domain.guide.config;
 
-import jakarta.annotation.PostConstruct;
-
-import org.springframework.stereotype.Component;
-
 import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 import com.yfive.gbjs.domain.guide.service.GuideService;
-
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * 오디오 데이터 초기화 클래스

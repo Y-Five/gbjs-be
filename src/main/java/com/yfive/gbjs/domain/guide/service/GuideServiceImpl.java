@@ -3,20 +3,6 @@
  */
 package com.yfive.gbjs.domain.guide.service;
 
-import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.converter.AudioGuideConverter;
@@ -27,9 +13,20 @@ import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 import com.yfive.gbjs.domain.guide.util.GeoJsonBoundaryChecker;
 import com.yfive.gbjs.domain.tts.entity.AudioFile;
 import com.yfive.gbjs.domain.tts.repository.TtsRepository;
-
+import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Service
@@ -83,7 +80,7 @@ public class GuideServiceImpl implements GuideService {
   /**
    * 주어진 좌표가 경상북도 지역에 속하는지 확인합니다. GeoJSON 파일이 있으면 정확한 경계 검사를 수행하고, 없으면 기존 좌표 범위 방식으로 폴백합니다.
    *
-   * @param latitude 위도
+   * @param latitude  위도
    * @param longitude 경도
    * @return 경북 지역 포함 여부
    */
@@ -221,7 +218,9 @@ public class GuideServiceImpl implements GuideService {
     return totalSavedCount;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   @Transactional
   public int syncGyeongbukAudioStories() {
@@ -230,7 +229,7 @@ public class GuideServiceImpl implements GuideService {
     long dbRecordCount = audioGuideRepository.count();
 
     // DB가 비어있으면 초기 데이터 로드
-    if (dbRecordCount == 0) {
+    if (dbRecordCount != 0) {
       return loadInitialGyeongbukAudioGuides();
     }
 
@@ -395,7 +394,9 @@ public class GuideServiceImpl implements GuideService {
     return totalProcessed;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public List<AudioDetailResponse> searchAudioGuideByTitle(String title) {
     List<AudioGuide> audioGuides = audioGuideRepository.findByTitle(title);
@@ -406,7 +407,9 @@ public class GuideServiceImpl implements GuideService {
     return audioGuideConverter.toAudioDetailResponseList(audioGuides);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public List<AudioDetailResponse> searchAudioGuideByTitleLike(String title) {
     List<AudioGuide> audioGuides = audioGuideRepository.findByTitleLike(title);
@@ -417,7 +420,9 @@ public class GuideServiceImpl implements GuideService {
     return audioGuideConverter.toAudioDetailResponseList(audioGuides);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public CoordinateValidationResponse validateStoredCoordinates() {
     log.info("=== DB 저장 데이터 좌표 검증 시작 ===");
@@ -479,7 +484,9 @@ public class GuideServiceImpl implements GuideService {
         .build();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean testCoordinate(double latitude, double longitude) {
     log.info("좌표 테스트: 위도={}, 경도={}", latitude, longitude);
@@ -488,7 +495,9 @@ public class GuideServiceImpl implements GuideService {
     return result;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
   @Transactional
   public int deleteOutsideGyeongbukData() {
