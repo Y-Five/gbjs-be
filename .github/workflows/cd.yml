@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
   build:
@@ -50,29 +51,25 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/actions-runner/_work/gbjs-be/gbjs-be/docker
-              echo "$ENV" > ./.env
+            echo "$ENV" > ./.env
 
-              # 블루/그린 현재 활성 컨테이너 확인
-              if docker ps --filter "name=app-blue" --filter "status=running" | grep app-blue > /dev/null; then
-                ACTIVE_COLOR="blue"
-              elif docker ps --filter "name=app-green" --filter "status=running" | grep app-green > /dev/null; then
-                ACTIVE_COLOR="green"
-              else
-                ACTIVE_COLOR="green"
-              fi
+            # 블루/그린 현재 활성 컨테이너 확인
+            if docker ps --filter "name=gbjs-app-blue" --filter "status=running" | grep gbjs-app-blue > /dev/null; then
+              ACTIVE_COLOR="blue"
+            elif docker ps --filter "name=gbjs-app-green" --filter "status=running" | grep gbjs-app-green > /dev/null; then
+              ACTIVE_COLOR="green"
+            else
+              ACTIVE_COLOR=""
+            fi
 
-              # 배포할 색상 결정
-              if [ "$ACTIVE_COLOR" = "blue" ]; then
-                COLOR="green"
-                PREV_COLOR="blue"
-              else
-                COLOR="blue"
-                PREV_COLOR="green"
-              fi
+            # 배포할 색상 결정
+            if [ "$ACTIVE_COLOR" = "blue" ]; then
+              NEW_COLOR="green"
+            elif [ "$ACTIVE_COLOR" = "green" ]; then
+              NEW_COLOR="blue"
+            else
+              NEW_COLOR="blue"
+            fi
 
-              echo "Starting $COLOR deployment"
-              docker compose -f docker-compose.yml -f docker-compose-${COLOR}.yml pull
-              docker compose -f docker-compose.yml -f docker-compose-${COLOR}.yml up -d --build
-
-              echo "Stopping previous $PREV_COLOR app container"
-              docker compose -f docker-compose.yml -f docker-compose-${PREV_COLOR}.yml stop app-${PREV_COLOR} || true
+            docker compose -f docker-compose.yml -f docker-compose-${NEW_COLOR}.yml pull
+            docker compose -f docker-compose.yml -f docker-compose-${NEW_COLOR}.yml up -d --build

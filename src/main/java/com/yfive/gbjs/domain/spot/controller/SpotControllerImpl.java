@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
+import com.yfive.gbjs.domain.spot.entity.SearchBy;
 import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
@@ -33,6 +34,7 @@ public class SpotControllerImpl implements SpotController {
       @RequestParam Integer pageSize,
       @RequestParam String keyword,
       @RequestParam SortBy sortBy,
+      @RequestParam(required = false) SearchBy searchBy,
       @RequestParam Double latitude,
       @RequestParam Double longitude) {
 
@@ -46,20 +48,18 @@ public class SpotControllerImpl implements SpotController {
     Pageable pageable = PageRequest.of(pageNum - 1, pageSize);
     PageResponse<SpotResponse> spotListResponse;
 
-    if (sortBy == SortBy.DISTANCE) {
-      spotListResponse =
-          spotService.getSpotsByKeywordSortedByDistance(pageable, keyword, latitude, longitude);
-    } else {
-      spotListResponse = spotService.getSpotsByKeyword(pageable, keyword, latitude, longitude);
-    }
+    spotListResponse =
+        spotService.getSpotsByKeywordAndCategorySortedByDistance(
+            pageable, keyword, sortBy, searchBy, latitude, longitude);
 
     return ResponseEntity.ok(ApiResponse.success(spotListResponse));
   }
 
   @Override
   public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
-      @PathVariable String id, @RequestParam Double latitude, @RequestParam Double longitude) {
-    SpotDetailResponse spotDetailResponse = spotService.getSpotByContentId(id, latitude, longitude);
+      @PathVariable Long id, @RequestParam Double latitude, @RequestParam Double longitude) {
+    SpotDetailResponse spotDetailResponse =
+        spotService.getSpotByContentId(id, latitude, longitude, true);
 
     return ResponseEntity.ok(ApiResponse.success(spotDetailResponse));
   }

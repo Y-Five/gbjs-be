@@ -25,6 +25,8 @@ import com.yfive.gbjs.domain.guide.dto.response.CoordinateValidationResponse;
 import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
 import com.yfive.gbjs.domain.guide.util.GeoJsonBoundaryChecker;
+import com.yfive.gbjs.domain.tts.entity.AudioFile;
+import com.yfive.gbjs.domain.tts.repository.TtsRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class GuideServiceImpl implements GuideService {
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
   private final AudioGuideRepository audioGuideRepository;
+  private final TtsRepository ttsRepository;
   private final AudioGuideConverter audioGuideConverter;
   private final GeoJsonBoundaryChecker geoJsonBoundaryChecker;
 
@@ -173,6 +176,23 @@ public class GuideServiceImpl implements GuideService {
                           .build();
 
                   audioGuideRepository.save(audioGuide);
+
+                  if (audioGuide.getAudioUrl() != null) {
+                    AudioFile audioFile =
+                        ttsRepository.findByTypeAndAudioGuideId("B", audioGuide.getId());
+                    if (audioFile == null) {
+                      audioFile =
+                          AudioFile.builder()
+                              .type("B")
+                              .fileUrl(audioGuide.getAudioUrl())
+                              .audioGuide(audioGuide)
+                              .build();
+                    } else {
+                      audioFile.updateUrl(audioGuide.getAudioUrl());
+                    }
+                    ttsRepository.save(audioFile);
+                  }
+
                   totalSavedCount++;
                   log.debug("저장 완료: {} (총 {}개)", title, totalSavedCount);
                 }
@@ -363,7 +383,7 @@ public class GuideServiceImpl implements GuideService {
 
     // 정리된 개수 + 신규 개수 + 업데이트 개수를 모두 포함
     int totalProcessed = cleanedCount + totalNewCount + totalUpdatedCount + totalDeletedCount;
-    ;
+
     log.info(
         "=== 동기화 완료: 정리 {}개, 신규 {}개, 업데이트 {}개,  삭제 {}개 총 {}개 처리 ===",
         cleanedCount,

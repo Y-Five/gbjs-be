@@ -1,6 +1,6 @@
 # Green 환경용 앱 컨테이너 Compose 파일
 services:
-  app-blue:
+  app-green:
     image: unijuni/gbjs:latest
     container_name: gbjs-app-green
     ports:

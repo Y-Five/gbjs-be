@@ -17,7 +17,7 @@ public class SpotResponse {
 
   @JsonProperty("contentid")
   @Schema(description = "관광지 식별자", example = "126207")
-  private String spotId;
+  private Long spotId;
 
   @JsonProperty("firstimage")
   @Schema(
