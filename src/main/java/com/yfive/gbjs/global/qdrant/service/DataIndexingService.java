@@ -374,12 +374,14 @@ public class DataIndexingService {
                                   ));
                         } catch (Exception e) {
                           log.error(
-                              "관광지 상세 정보 조회 또는 Document 생성 실패 - contentId: {}", spot.getSpotId(), e);
+                              "관광지 상세 정보 조회 또는 Document 생성 실패 - contentId: {}",
+                              spot.getSpotId(),
+                              e);
                           return null;
                         }
                       })
                   .filter(Objects::nonNull)
-                  .collect(Collectors.toList());
+                  .toList();
 
           allDocuments.addAll(documentsOnPage);
 

@@ -257,6 +257,7 @@ public class SpotServiceImpl implements SpotService {
     }
 
     if (response.trim().startsWith("<?xml") || response.trim().startsWith("<")) {
+      log.error(response);
       throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
     }
   }
@@ -276,28 +277,18 @@ public class SpotServiceImpl implements SpotService {
     int end = Math.min(start + pageable.getPageSize(), spotResponses.size());
     List<SpotResponse> pageContent = spotResponses.subList(start, end);
 
-        pageContent.parallelStream()
-            .forEach(
-                response -> {
-                  SpotDetailResponse detail =
-                      getSpotByContentId(response.getSpotId(), latitude, longitude);
-                  response.setType(detail.getType());
-                });
-
-    // ==================================================================
-//    pageContent.stream()
-//        .forEach(
-//            response -> {
-//              try {
-//                SpotDetailResponse detail =
-//                    getSpotByContentId(response.getSpotId(), latitude, longitude);
-//                response.setType(detail.getType());
-//              } catch (Exception e) {
-//                // 에러가 발생하면 로그만 남기고 다음 항목으로 넘어갑니다.
-//                log.warn("상세 정보 조회/타입 설정 실패 - spotId: {}. 이 항목은 건너뜁니다.", response.getSpotId());
-//              }
-//            });
-    // ==================================================================
+    pageContent.stream()
+        .forEach(
+            response -> {
+              try {
+                SpotDetailResponse detail =
+                    getSpotByContentId(response.getSpotId(), latitude, longitude);
+                response.setType(detail.getType());
+              } catch (Exception e) {
+                // 에러가 발생하면 로그만 남기고 다음 항목으로 넘어갑니다.
+                log.warn("상세 정보 조회/타입 설정 실패 - spotId: {}. 이 항목은 건너뜁니다.", response.getSpotId());
+              }
+            });
 
     Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());
     return pageMapper.toSpotPageResponse(page);
