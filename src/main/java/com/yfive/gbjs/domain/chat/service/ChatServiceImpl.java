@@ -24,8 +24,8 @@ public class ChatServiceImpl implements ChatService {
 
   private final VectorStore vectorStore;
   private final ChatClient chatClient;
-  private static final double SIMILARITY_THRESHOLD = 0.3;
-  private static final int TOP_K = 5;
+  private static final double SIMILARITY_THRESHOLD = 0.2;
+  private static final int TOP_K = 50;
 
   @Override
   public String ask(ChatRequest request) {
