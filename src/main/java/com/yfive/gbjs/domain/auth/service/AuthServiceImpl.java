@@ -3,21 +3,24 @@
  */
 package com.yfive.gbjs.domain.auth.service;
 
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
-import com.yfive.gbjs.global.error.exception.InvalidTokenException;
+import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
+import com.yfive.gbjs.domain.user.entity.User;
+import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
+import com.yfive.gbjs.domain.user.repository.UserRepository;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
+import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,92 +38,89 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-  /** JWT 토큰 제공자 */
-  private final JwtTokenProvider jwtTokenProvider;
+  @Value("${gbjs.test.username}")
+  private String testUsername;
 
-  private final RedisTemplate<String, String> redisTemplate;
+  @Value("${gbjs.test.password}")
+  private String testPassword;
 
-  /** {@inheritDoc} */
+  private final AuthenticationManager authenticationManager;
+  private final JwtProvider jwtProvider;
+  private final UserRepository userRepository;
+  @Autowired private PasswordEncoder passwordEncoder;
+
   @Override
+  @Transactional
   public TokenResponse login(LoginRequest loginRequest) {
-    // 실제 개발에서는 사용자 인증 로직 구현 필요
-    log.info("로그인 시도: {}", loginRequest.username());
+    User user =
+        userRepository
+            .findByUsername(loginRequest.getUsername())
+            .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
-    // 테스트용 인증 객체 생성
-    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
-    User principal = new User(loginRequest.username(), "", Collections.singleton(authority));
-    Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, "", Collections.singleton(authority));
+    UsernamePasswordAuthenticationToken authenticationToken =
+        new UsernamePasswordAuthenticationToken(
+            loginRequest.getUsername(), loginRequest.getPassword());
 
-    // Access Token과 Refresh Token 생성 (Redis에 저장됨)
-    return jwtTokenProvider.createTokens(authentication);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public TokenResponse refreshToken(TokenRefreshRequest refreshRequest) {
-    String refreshToken = refreshRequest.refreshToken();
-
-    // Refresh Token 유효성 검증
-    if (!jwtTokenProvider.validateToken(refreshToken)) {
-      throw new InvalidTokenException("유효하지 않은 Refresh Token입니다.");
-    }
-
-    // Refresh Token 타입 검증
-    if (!jwtTokenProvider.validateTokenType(refreshToken, JwtTokenProvider.TOKEN_TYPE_REFRESH)) {
-      throw new InvalidTokenException("유효한 Refresh Token이 아닙니다.");
-    }
-
-    // 토큰에서 사용자 정보 추출
-    String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
-
-    // Redis에 저장된 Refresh Token과 비교
-    if (!jwtTokenProvider.validateRefreshToken(username, refreshToken)) {
-      throw new InvalidTokenException("저장된 Refresh Token과 일치하지 않습니다.");
-    }
-
-    // 테스트용 인증 객체 생성 (실제 개발에서는 사용자 정보를 DB에서 조회해야 함)
-    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
-    User principal = new User(username, "", Collections.singleton(authority));
-    Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, "", Collections.singleton(authority));
-
-    // 새로운 Access Token 생성 (Refresh Token은 재사용)
-    String newAccessToken =
-        jwtTokenProvider.createToken(authentication, JwtTokenProvider.TOKEN_TYPE_ACCESS);
-
-    // TokenResponse 객체로 변환하여 반환
-    return TokenResponse.builder()
-        .accessToken(newAccessToken)
-        .refreshToken(refreshToken) // 기존 Refresh Token 유지
-        .username(username)
-        .build();
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public void logout(String accessToken) {
     try {
-      String username = jwtTokenProvider.getUsernameFromToken(accessToken);
-      String redisKey = "RT:" + username;
-      Boolean result = redisTemplate.delete(redisKey);
+      // 인증 시도
+      authenticationManager.authenticate(authenticationToken);
 
-      if (result) {
-        log.info("Logout success: refresh token for '{}' deleted from Redis.", username);
-      } else {
-        log.warn("Logout attempted, but no refresh token found for '{}'.", username);
-      }
+      // JWT 발급
+      TokenResponse tokenResponse = jwtProvider.createTokens(authenticationToken);
+      log.info("로그인 성공: {}", user.getUsername());
+      return tokenResponse;
 
-      // 액세스 토큰 블랙리스트 처리
-      long expiration = jwtTokenProvider.getExpirationTime(accessToken);
-      redisTemplate
-          .opsForValue()
-          .set("BL:" + accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
-
-      log.info("Access token for '{}' blacklisted until expiration.", username);
     } catch (Exception e) {
-      log.error("Redis operation failed during logout for token: {}", accessToken, e);
-      throw new RuntimeException("로그아웃 처리 중 오류가 발생했습니다.", e);
+      throw new CustomException(AuthErrorStatus.LOGIN_FAIL);
+    }
+  }
+
+  @Override
+  public String logout(String accessToken) {
+    String username = jwtProvider.getUsernameFromToken(accessToken);
+
+    jwtProvider.deleteRefreshToken(username);
+    jwtProvider.blacklistToken(accessToken);
+
+    log.info("로그아웃 성공: {}", username);
+    return "로그아웃 성공 - 사용자: " + username;
+  }
+
+  @Override
+  public String reissueAccessToken(String refreshToken) {
+
+    String username = jwtProvider.getUsernameFromToken(refreshToken);
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
+
+    if (!jwtProvider.validateRefreshToken(user.getUsername(), refreshToken)) {
+      throw new CustomException(AuthErrorStatus.INVALID_REFRESH_TOKEN);
+    }
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    log.info("AT 재발급 성공: {}", user.getUsername());
+    return jwtProvider.createToken(authentication);
+  }
+
+  @Override
+  @Transactional
+  public TokenResponse testLogin() {
+
+    UsernamePasswordAuthenticationToken authenticationToken =
+        new UsernamePasswordAuthenticationToken(testUsername, testPassword);
+
+    try {
+      authenticationManager.authenticate(authenticationToken);
+
+      TokenResponse tokenResponse = jwtProvider.createTokens(authenticationToken);
+      log.info("테스트 로그인 성공: {}", testUsername);
+      return tokenResponse;
+    } catch (Exception e) {
+      // 인증 실패 시 커스텀 예외로 변환
+      throw new CustomException(AuthErrorStatus.LOGIN_FAIL);
     }
   }
 }

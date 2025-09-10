@@ -3,23 +3,22 @@
  */
 package com.yfive.gbjs.domain.auth.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.gbjs.domain.auth.dto.request.TokenRefreshRequest;
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.domain.auth.service.AuthService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
-import com.yfive.gbjs.global.config.jwt.JwtFilter;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 인증 컨트롤러 구현체
@@ -29,80 +28,74 @@ import lombok.extern.slf4j.Slf4j;
  * @author YFIVE
  * @since 1.0.0
  */
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class AuthControllerImpl implements AuthController {
 
-  /** 인증 서비스 */
   private final AuthService authService;
+  private final JwtProvider jwtProvider;
 
-  /**
-   * 로그인 페이지 테스트용 API
-   *
-   * @return 로그인 페이지 메시지
-   */
   @Override
-  public ResponseEntity<ApiResponse<String>> loginPage() {
-    return ResponseEntity.ok(ApiResponse.success("로그인 페이지"));
-  }
+  public ResponseEntity<ApiResponse<String>> login(
+      HttpServletResponse response, @RequestBody @Valid LoginRequest loginRequest) {
 
-  /**
-   * 로그인 API
-   *
-   * <p>사용자 로그인 처리 후 JWT 토큰을 발급합니다.
-   *
-   * @param loginRequest 로그인 요청 정보
-   * @return 토큰 정보가 포함된 응답
-   */
-  @Override
-  public ResponseEntity<ApiResponse<TokenResponse>> login(
-      @Valid @RequestBody LoginRequest loginRequest) {
     TokenResponse tokenResponse = authService.login(loginRequest);
-    return ResponseEntity.ok(ApiResponse.success(tokenResponse));
+
+    jwtProvider.addJwtToCookie(
+        response,
+        tokenResponse.getRefreshToken(),
+        "REFRESH_TOKEN",
+        jwtProvider.getExpirationTime(tokenResponse.getRefreshToken()));
+    jwtProvider.addJwtToCookie(
+        response,
+        tokenResponse.getAccessToken(),
+        "ACCESS_TOKEN",
+        jwtProvider.getExpirationTime(tokenResponse.getAccessToken()));
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success(tokenResponse.getAccessToken()));
   }
 
-  /**
-   * 토큰 갱신 API
-   *
-   * <p>Refresh Token을 사용하여 새로운 Access Token을 발급합니다.
-   *
-   * @param refreshRequest 토큰 갱신 요청 정보
-   * @return 갱신된 토큰 정보가 포함된 응답
-   */
   @Override
-  public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(
-      @Valid @RequestBody TokenRefreshRequest refreshRequest) {
-    TokenResponse tokenResponse = authService.refreshToken(refreshRequest);
-    return ResponseEntity.ok(ApiResponse.success(tokenResponse));
+  public ResponseEntity<ApiResponse<String>> logout(
+      HttpServletRequest request, HttpServletResponse response) {
+
+    String accessToken = jwtProvider.extractAccessToken(request);
+    String result = authService.logout(accessToken);
+
+    jwtProvider.removeJwtCookie(response, "ACCESS_TOKEN");
+    jwtProvider.removeJwtCookie(response, "REFRESH_TOKEN");
+
+    return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(result));
   }
 
-  /**
-   * 로그아웃 API
-   *
-   * <p>사용자 로그아웃 처리 및 토큰 무효화를 수행합니다.
-   *
-   * @param bearerToken Authorization 헤더에 포함된 Bearer 토큰
-   * @return 성공 응답
-   */
   @Override
-  public ResponseEntity<ApiResponse<Void>> logout(
-      @RequestHeader(value = "Authorization", required = false) String bearerToken) {
-    String token = resolveToken(bearerToken);
-    authService.logout(token);
-    return ResponseEntity.ok(ApiResponse.success(null));
+  public ResponseEntity<ApiResponse<String>> reissueToken(
+      HttpServletRequest request, HttpServletResponse response) {
+
+    String refreshToken = jwtProvider.extractRefreshToken(request);
+
+    jwtProvider.validateTokenType(refreshToken, "refresh");
+
+    String newAccessToken = authService.reissueAccessToken(refreshToken);
+
+    jwtProvider.addJwtToCookie(
+        response, newAccessToken, "ACCESS_TOKEN", jwtProvider.getExpirationTime(newAccessToken));
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(newAccessToken));
   }
 
-  /**
-   * Bearer 토큰에서 액세스 토큰 추출
-   *
-   * @param bearerToken Bearer 접두사가 포함된 토큰
-   * @return 추출된 액세스 토큰 또는 null
-   */
-  private String resolveToken(String bearerToken) {
-    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(JwtFilter.BEARER_PREFIX)) {
-      return bearerToken.substring(7);
-    }
-    return null;
+  @Override
+  public ResponseEntity<ApiResponse<String>> testLogin(HttpServletResponse response) {
+
+    TokenResponse tokenResponse = authService.testLogin();
+
+    jwtProvider.addJwtToCookie(
+        response, tokenResponse.getRefreshToken(), "REFRESH_TOKEN", 7 * 24 * 60 * 60);
+    jwtProvider.addJwtToCookie(
+        response, tokenResponse.getAccessToken(), "ACCESS_TOKEN", 2 * 24 * 60 * 60);
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success(tokenResponse.getAccessToken()));
   }
 }
