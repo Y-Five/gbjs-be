@@ -16,14 +16,12 @@ import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 @Repository
 public interface AudioGuideRepository extends JpaRepository<AudioGuide, Long> {
 
-  boolean existsByTidAndAudioGuideId(String tid, String audioGuideId);
-
   // tid로 조회
   Optional<AudioGuide> findByTid(String tid);
 
-  List<AudioGuide> findByContentId(String contentId);
+  List<AudioGuide> findByContentId(Long contentId);
 
-  boolean existsByContentId(String contentId);
+  boolean existsByContentId(Long contentId);
 
   // tid로 삭제
   void deleteByTid(String tid);

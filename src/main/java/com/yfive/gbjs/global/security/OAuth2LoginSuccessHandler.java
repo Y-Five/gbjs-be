@@ -19,7 +19,7 @@ import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
-import com.yfive.gbjs.global.config.jwt.JwtTokenProvider;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-  private final JwtTokenProvider jwtProvider;
+  private final JwtProvider jwtProvider;
   private final UserRepository userRepository;
 
   @Override

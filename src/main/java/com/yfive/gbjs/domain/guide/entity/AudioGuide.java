@@ -3,13 +3,17 @@
  */
 package com.yfive.gbjs.domain.guide.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import com.yfive.gbjs.domain.tts.entity.AudioFile;
@@ -32,9 +36,9 @@ public class AudioGuide extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @OneToOne(fetch = jakarta.persistence.FetchType.LAZY)
-  @JoinColumn(name = "audio_file_id", unique = true)
-  private AudioFile audioFile;
+  @Builder.Default
+  @OneToMany(mappedBy = "audioGuide", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  private List<AudioFile> audioFiles = new ArrayList<>();
 
   @Column(name = "tid", nullable = false)
   private String tid;
@@ -76,7 +80,7 @@ public class AudioGuide extends BaseTimeEntity {
   private String imageUrl;
 
   @Column(name = "content_id")
-  private String contentId;
+  private Long contentId;
 
   @Column(name = "sync_status", length = 1)
   private String syncStatus; // A: 신규, U: 수정, D: 삭제
@@ -111,7 +115,7 @@ public class AudioGuide extends BaseTimeEntity {
     this.stlid = updatedData.getStlid();
   }
 
-  public void updateFile(AudioFile audioFile) {
-    this.audioFile = audioFile;
+  public void addAudioFile(AudioFile audioFile) {
+    this.audioFiles.add(audioFile);
   }
 }

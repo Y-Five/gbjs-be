@@ -3,8 +3,6 @@
  */
 package com.yfive.gbjs.global.config.jwt;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,21 +11,19 @@ import javax.crypto.SecretKey;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -43,12 +39,11 @@ import lombok.extern.slf4j.Slf4j;
  * <p>이 클래스는 JWT 토큰의 생성, 검증, 파싱 등의 기능을 제공합니다. Access Token과 Refresh Token을 모두 지원하며, Redis를 통한 토큰 관리
  * 기능을 포함합니다.
  *
- * @author YFIVE
  * @since 1.0.0
  */
 @Slf4j
 @Component
-public class JwtTokenProvider {
+public class JwtProvider {
 
   /** JWT 설정 속성 */
   private final JwtProperties jwtProperties;
@@ -65,13 +60,19 @@ public class JwtTokenProvider {
   /** Refresh Token 타입 상수 */
   public static final String TOKEN_TYPE_REFRESH = "refresh";
 
+  /** JWT 토큰이 담겨 오는 HTTP 헤더 이름 */
+  private static final String AUTHORIZATION_HEADER = "Authorization";
+
+  /** JWT 토큰 접두어 */
+  private static final String BEARER_PREFIX = "Bearer ";
+
   /**
    * 생성자
    *
    * @param jwtProperties JWT 설정 속성
    * @param tokenRepository 토큰 저장소
    */
-  public JwtTokenProvider(JwtProperties jwtProperties, TokenRepository tokenRepository) {
+  public JwtProvider(JwtProperties jwtProperties, TokenRepository tokenRepository) {
     this.jwtProperties = jwtProperties;
     this.tokenRepository = tokenRepository;
   }
@@ -104,7 +105,7 @@ public class JwtTokenProvider {
    * @return 토큰 응답 객체
    */
   public TokenResponse createTokens(Authentication authentication) {
-    String username = authentication.getName();
+    String username = resolveSubject(authentication);
 
     // Access Token 생성
     String accessToken = createToken(authentication, TOKEN_TYPE_ACCESS);
@@ -138,14 +139,7 @@ public class JwtTokenProvider {
             .map(GrantedAuthority::getAuthority)
             .collect(Collectors.joining(","));
 
-    OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-    Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
-
-    if (kakaoAccount == null || !kakaoAccount.containsKey("email")) {
-      throw new CustomException(UserErrorStatus.UNAUTHORIZED);
-    }
-
-    String email = (String) kakaoAccount.get("email");
+    String subject = resolveSubject(authentication);
 
     long now = System.currentTimeMillis();
     Date validity;
@@ -158,13 +152,25 @@ public class JwtTokenProvider {
     }
 
     return Jwts.builder()
-        .setSubject(email)
+        .setSubject(subject)
         .claim("auth", authorities)
         .claim("type", tokenType)
         .setIssuedAt(new Date(now))
         .setExpiration(validity)
         .signWith(key)
         .compact();
+  }
+
+  private String resolveSubject(Authentication authentication) {
+    Object principal = authentication.getPrincipal();
+    if (principal instanceof OAuth2User oAuth2User) {
+      Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
+      if (kakaoAccount == null || !kakaoAccount.containsKey("email")) {
+        throw new CustomException(UserErrorStatus.UNAUTHORIZED);
+      }
+      return (String) kakaoAccount.get("email");
+    }
+    return authentication.getName();
   }
 
   /**
@@ -175,27 +181,6 @@ public class JwtTokenProvider {
    */
   public String createToken(Authentication authentication) {
     return createToken(authentication, TOKEN_TYPE_ACCESS);
-  }
-
-  /**
-   * 토큰에서 인증 정보 추출
-   *
-   * <p>JWT 토큰을 파싱하여 사용자 인증 정보를 추출합니다.
-   *
-   * @param token JWT 토큰
-   * @return 인증 정보
-   */
-  public Authentication getAuthentication(String token) {
-    Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-
-    Collection<? extends GrantedAuthority> authorities =
-        Arrays.stream(claims.get("auth").toString().split(","))
-            .map(SimpleGrantedAuthority::new)
-            .collect(Collectors.toList());
-
-    Map<String, Object> attributes = Map.of("email", claims.getSubject());
-    OAuth2User principal = new DefaultOAuth2User(authorities, attributes, "email");
-    return new UsernamePasswordAuthenticationToken(principal, token, authorities);
   }
 
   /**
@@ -219,7 +204,7 @@ public class JwtTokenProvider {
    * @param token JWT 토큰
    * @return 토큰 타입 (access 또는 refresh)
    */
-  public String getTokenType(String token) {
+  private String getTokenType(String token) {
     return Jwts.parserBuilder()
         .setSigningKey(key)
         .build()
@@ -248,16 +233,12 @@ public class JwtTokenProvider {
       return true;
     } catch (SignatureException | MalformedJwtException e) {
       log.info("잘못된 JWT 서명입니다.");
-      log.trace("잘못된 JWT 서명 추적: {}", e);
     } catch (ExpiredJwtException e) {
       log.info("만료된 JWT 토큰입니다.");
-      log.trace("만료된 JWT 토큰 추적: {}", e);
     } catch (UnsupportedJwtException e) {
       log.info("지원되지 않는 JWT 토큰입니다.");
-      log.trace("지원되지 않는 JWT 토큰 추적: {}", e);
     } catch (IllegalArgumentException e) {
       log.info("JWT 토큰이 잘못되었습니다.");
-      log.trace("JWT 토큰이 잘못된 추적: {}", e);
     }
     return false;
   }
@@ -273,10 +254,12 @@ public class JwtTokenProvider {
    */
   public boolean validateTokenType(String token, String expectedType) {
     try {
-      String tokenType = getTokenType(token);
-      return expectedType.equals(tokenType);
-    } catch (Exception e) {
-      log.info("토큰 타입 검증 실패: {}", e.getMessage());
+      return expectedType.equals(getTokenType(token));
+    } catch (io.jsonwebtoken.ExpiredJwtException e) {
+      log.info("만료된 JWT 토큰입니다.");
+      return false;
+    } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+      log.info("유효하지 않은 JWT 토큰입니다.");
       return false;
     }
   }
@@ -333,6 +316,17 @@ public class JwtTokenProvider {
   }
 
   /**
+   * Redis에 저장된 Refresh Token 삭제
+   *
+   * <p>사용자의 Refresh Token을 Redis에서 삭제합니다.
+   *
+   * @param username 사용자 이름
+   */
+  public void deleteRefreshToken(String username) {
+    tokenRepository.deleteRefreshToken(username);
+  }
+
+  /**
    * JWT 토큰을 HTTP 응답의 쿠키에 추가합니다.
    *
    * <p>이 메서드는 주어진 JWT 토큰을 HttpOnly 및 Secure 속성이 설정된 쿠키로 만들어 응답에 추가합니다. 이 쿠키는 클라이언트에서 JavaScript로
@@ -345,12 +339,64 @@ public class JwtTokenProvider {
    */
   public void addJwtToCookie(HttpServletResponse response, String token, String name, long maxAge) {
     Cookie cookie = new Cookie(name, token);
-    cookie.setHttpOnly(true);
-    // cookie.setSecure(true);
+    //    cookie.setDomain("gbjs.co.kr");
+    //    cookie.setHttpOnly(true);
+    //    cookie.setSecure(true);
     cookie.setPath("/");
     cookie.setMaxAge((int) maxAge);
     response.addCookie(cookie);
 
     log.info("JWT 쿠키가 설정되었습니다 - 이름: {}, 만료: {}초", name, cookie.getMaxAge());
+  }
+
+  /**
+   * JWT 쿠키 삭제
+   *
+   * <p>로그아웃 시 브라우저에 저장된 JWT 쿠키를 삭제합니다.
+   *
+   * @param response 응답 객체 (HttpServletResponse)
+   * @param name 삭제할 쿠키 이름 (예: "accessToken", "refreshToken")
+   */
+  public void removeJwtCookie(HttpServletResponse response, String name) {
+    Cookie cookie = new Cookie(name, null);
+    //    cookie.setDomain("gbjs.co.kr");
+    //    cookie.setHttpOnly(true);
+    //    cookie.setSecure(true);
+    cookie.setPath("/");
+    cookie.setMaxAge(0);
+    response.addCookie(cookie);
+
+    log.info("JWT 쿠키가 삭제되었습니다 - 이름: {}", name);
+  }
+
+  public String extractAccessToken(HttpServletRequest request) {
+
+    // 1. 헤더에서 토큰 추출
+    String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+    if (bearerToken != null && bearerToken.startsWith(BEARER_PREFIX)) {
+      return bearerToken.substring(BEARER_PREFIX.length());
+    }
+    // 2. 쿠키에서 토큰 추출
+    else if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("ACCESS_TOKEN".equals(cookie.getName())) {
+          return cookie.getValue();
+        }
+      }
+    }
+
+    return null;
+  }
+
+  public String extractRefreshToken(HttpServletRequest request) {
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("REFRESH_TOKEN".equals(cookie.getName())) {
+          return cookie.getValue();
+        }
+      }
+    }
+
+    throw new CustomException(AuthErrorStatus.REFRESH_TOKEN_NOT_FOUND);
   }
 }

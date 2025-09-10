@@ -19,6 +19,8 @@ import com.yfive.gbjs.domain.course.entity.*;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
+import com.yfive.gbjs.domain.course.repository.DailyCourseRepository;
+import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
@@ -44,6 +46,8 @@ public class CourseServiceImpl implements CourseService {
   private final CourseConverter courseConverter;
   private final UserSealRepository userSealRepository;
   private final SealRepository sealRepository;
+  private final DailyCourseSpotRespository dailyCourseSpotRespository;
+  private final DailyCourseRepository dailyCourseRepository;
 
   /**
    * 여행 코스를 생성합니다. (DB 저장하지 않음) - 날짜 유효성 검증 - 자동으로 제목 생성 (예: "경주, 포항 2일 여행") - 각 일차별로 지역 분배 - 지역별
@@ -145,12 +149,13 @@ public class CourseServiceImpl implements CourseService {
     }
 
     Course course =
-        Course.builder()
-            .user(user)
-            .title(title)
-            .startDate(request.getStartDate())
-            .endDate(request.getEndDate())
-            .build();
+        courseRepository.save(
+            Course.builder()
+                .user(user)
+                .title(title)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .build());
 
     // 요청에 포함된 일차별 코스 및 관광지 정보로 저장
     for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
@@ -158,11 +163,13 @@ public class CourseServiceImpl implements CourseService {
           courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
 
       DailyCourse dailyCourse =
-          DailyCourse.builder()
-              .dayNumber(dailyCourseRequest.getDayNumber())
-              .date(dailyCourseRequest.getDate())
-              .location(location)
-              .build();
+          dailyCourseRepository.save(
+              DailyCourse.builder()
+                  .dayNumber(dailyCourseRequest.getDayNumber())
+                  .date(dailyCourseRequest.getDate())
+                  .location(location)
+                  .course(course)
+                  .build());
 
       if (dailyCourseRequest.getSpots() != null) {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
@@ -172,11 +179,13 @@ public class CourseServiceImpl implements CourseService {
                   .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
 
           DailyCourseSpot dailyCourseSpot =
-              DailyCourseSpot.builder()
-                  .sealSpot(sealSpot)
-                  .spotId(spotRequest.getSpotId())
-                  .visitOrder(spotRequest.getVisitOrder())
-                  .build();
+              dailyCourseSpotRespository.save(
+                  DailyCourseSpot.builder()
+                      .sealSpot(sealSpot)
+                      .spotId(spotRequest.getSpotId())
+                      .visitOrder(spotRequest.getVisitOrder())
+                      .dailyCourse(dailyCourse)
+                      .build());
           dailyCourse.addSpot(dailyCourseSpot);
         }
       }
