@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.user.entity;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 
 import lombok.AccessLevel;
@@ -42,6 +45,10 @@ public class User {
   @Column(name = "username", nullable = false, unique = true)
   private String username;
 
+  @JsonIgnore
+  @Column(name = "password")
+  private String password;
+
   @Column(name = "tts_setting", nullable = false)
   @Enumerated(EnumType.STRING)
   private TtsSetting ttsSetting;
@@ -57,15 +64,22 @@ public class User {
   @Column(name = "location_consent", nullable = false)
   private Boolean locationConsent;
 
+  @Column(name = "role", nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private Role role = Role.ROLE_USER;
+
   public static User fromOAuth(String profileImageUrl, String nickname, String email) {
     return User.builder()
         .profileImageUrl(profileImageUrl)
         .nickname(nickname)
         .username(email)
+        .password(UUID.randomUUID().toString())
         .ttsSetting(TtsSetting.FEMALE_A)
         .emailMarketingConsent(false)
         .pushNotificationConsent(false)
         .locationConsent(false)
+        .role(Role.ROLE_USER)
         .build();
   }
 
