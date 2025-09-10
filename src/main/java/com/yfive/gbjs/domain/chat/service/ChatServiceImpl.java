@@ -24,25 +24,37 @@ public class ChatServiceImpl implements ChatService {
 
   private final VectorStore vectorStore;
   private final ChatClient chatClient;
-  private static final double SIMILARITY_THRESHOLD = 0.75;
+  private static final double SIMILARITY_THRESHOLD = 0.3;
   private static final int TOP_K = 5;
 
   @Override
   public String ask(ChatRequest request) {
     try {
-      // 유사도 검색 (threshold/topK는 VectorStore에 위임)
+      log.info("사용자 질문: {}", request.getQuestion());
+      log.info("VectorStore 클래스: {}", vectorStore.getClass().getName());
+
+      // 유사도 검색
       SearchRequest searchRequest =
           SearchRequest.builder()
               .query(request.getQuestion())
               .similarityThreshold(SIMILARITY_THRESHOLD)
               .topK(TOP_K)
               .build();
+
       List<Document> docs = vectorStore.similaritySearch(searchRequest);
+      log.info("검색된 문서 수: {}", docs.size());
+
       if (docs.isEmpty()) {
+        log.info("질문 '{}'에 대해 검색된 문서가 없습니다.", request.getQuestion());
         return "관련된 데이터를 찾을 수 없습니다.";
       }
 
-      String context = docs.stream().map(Document::getText).collect(Collectors.joining("\n"));
+      // 벡터 검색 결과 로그
+      docs.forEach(
+          doc -> log.info("검색 결과 docId={}, content={}", doc.getId(), doc.getFormattedContent()));
+
+      String context =
+          docs.stream().map(Document::getFormattedContent).collect(Collectors.joining("\n"));
 
       String prompt =
           """
