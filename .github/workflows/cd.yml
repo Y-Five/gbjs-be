@@ -81,4 +81,4 @@ jobs:
             fi
 
             docker compose -f docker-compose.yml -f docker-compose-${NEW_COLOR}.yml pull
-            docker compose -f docker-compose.yml -f docker-compose-${NEW_COLOR}.yml up -d --pull
+            docker compose -f docker-compose.yml -f docker-compose-${NEW_COLOR}.yml up -d --build
