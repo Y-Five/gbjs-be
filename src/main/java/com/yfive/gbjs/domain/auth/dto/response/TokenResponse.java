@@ -30,6 +30,6 @@ public class TokenResponse {
   @Schema(description = "리프레시 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
   private String refreshToken;
 
-  @Schema(description = "사용자 이름", example = "홍길동")
+  @Schema(description = "사용자 아이디", example = "홍길동")
   private String username;
 }
