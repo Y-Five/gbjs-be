@@ -3,19 +3,16 @@
  */
 package com.yfive.gbjs.domain.chat.service;
 
+import com.yfive.gbjs.domain.chat.dto.request.ChatRequest;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
-
-import com.yfive.gbjs.domain.chat.dto.request.ChatRequest;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +21,8 @@ public class ChatServiceImpl implements ChatService {
 
   private final VectorStore vectorStore;
   private final ChatClient chatClient;
-  private static final double SIMILARITY_THRESHOLD = 0.3;
-  private static final int TOP_K = 5;
+  private static final double SIMILARITY_THRESHOLD = 0.2;
+  private static final int TOP_K = 50;
 
   @Override
   public String ask(ChatRequest request) {
@@ -63,9 +60,9 @@ public class ChatServiceImpl implements ChatService {
               당신은 gbjs 서비스 전용 답변 시스템입니다.
               반드시 아래 제공된 참고 데이터만을 근거로 답변하세요.
               참고 데이터에 없는 내용은 '관련된 데이터를 찾을 수 없습니다.'라고 답하세요.
-
+              
               사용자 질문: %s
-
+              
               참고 데이터:
               %s
               """
