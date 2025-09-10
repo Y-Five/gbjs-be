@@ -3,10 +3,27 @@
  */
 package com.yfive.gbjs.global.config.jwt;
 
+import java.util.Date;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.crypto.SecretKey;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.stereotype.Component;
+
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
+
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -14,19 +31,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
-import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.util.Date;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.stereotype.Component;
 
 /**
  * JWT 토큰 생성 및 검증을 담당하는 클래스
@@ -40,45 +45,31 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProvider {
 
-  /**
-   * JWT 설정 속성
-   */
+  /** JWT 설정 속성 */
   private final JwtProperties jwtProperties;
 
-  /**
-   * JWT 서명 키
-   */
+  /** JWT 서명 키 */
   private SecretKey key;
 
-  /**
-   * 토큰 저장소
-   */
+  /** 토큰 저장소 */
   private final TokenRepository tokenRepository;
 
-  /**
-   * Access Token 타입 상수
-   */
+  /** Access Token 타입 상수 */
   public static final String TOKEN_TYPE_ACCESS = "access";
 
-  /**
-   * Refresh Token 타입 상수
-   */
+  /** Refresh Token 타입 상수 */
   public static final String TOKEN_TYPE_REFRESH = "refresh";
 
-  /**
-   * JWT 토큰이 담겨 오는 HTTP 헤더 이름
-   */
+  /** JWT 토큰이 담겨 오는 HTTP 헤더 이름 */
   private static final String AUTHORIZATION_HEADER = "Authorization";
 
-  /**
-   * JWT 토큰 접두어
-   */
+  /** JWT 토큰 접두어 */
   private static final String BEARER_PREFIX = "Bearer ";
 
   /**
    * 생성자
    *
-   * @param jwtProperties   JWT 설정 속성
+   * @param jwtProperties JWT 설정 속성
    * @param tokenRepository 토큰 저장소
    */
   public JwtProvider(JwtProperties jwtProperties, TokenRepository tokenRepository) {
@@ -139,7 +130,7 @@ public class JwtProvider {
    * <p>인증 정보와 토큰 타입을 기반으로 JWT 토큰을 생성합니다. 토큰 타입에 따라 유효 기간이 다르게 설정됩니다.
    *
    * @param authentication 인증 정보
-   * @param tokenType      토큰 타입 (access 또는 refresh)
+   * @param tokenType 토큰 타입 (access 또는 refresh)
    * @return 생성된 JWT 토큰
    */
   public String createToken(Authentication authentication, String tokenType) {
@@ -257,7 +248,7 @@ public class JwtProvider {
    *
    * <p>토큰의 타입이 기대하는 타입과 일치하는지 검증합니다.
    *
-   * @param token        JWT 토큰
+   * @param token JWT 토큰
    * @param expectedType 기대하는 토큰 타입
    * @return 일치 여부
    */
@@ -315,7 +306,7 @@ public class JwtProvider {
    *
    * <p>사용자의 Refresh Token이 Redis에 저장된 토큰과 일치하는지 검증합니다.
    *
-   * @param username     사용자 이름
+   * @param username 사용자 이름
    * @param refreshToken Refresh Token
    * @return 일치 여부
    */
@@ -342,9 +333,9 @@ public class JwtProvider {
    * 접근할 수 없으며, HTTPS 환경에서만 전송됩니다.
    *
    * @param response 응답 객체 (HttpServletResponse)
-   * @param token    쿠키에 저장할 JWT 토큰 값
-   * @param name     쿠키 이름 (예: "accessToken", "refreshToken")
-   * @param maxAge   쿠키의 유효 시간 (밀리초 단위)
+   * @param token 쿠키에 저장할 JWT 토큰 값
+   * @param name 쿠키 이름 (예: "accessToken", "refreshToken")
+   * @param maxAge 쿠키의 유효 시간 (밀리초 단위)
    */
   public void addJwtToCookie(HttpServletResponse response, String token, String name, long maxAge) {
     Cookie cookie = new Cookie(name, token);
@@ -364,13 +355,13 @@ public class JwtProvider {
    * <p>로그아웃 시 브라우저에 저장된 JWT 쿠키를 삭제합니다.
    *
    * @param response 응답 객체 (HttpServletResponse)
-   * @param name     삭제할 쿠키 이름 (예: "accessToken", "refreshToken")
+   * @param name 삭제할 쿠키 이름 (예: "accessToken", "refreshToken")
    */
   public void removeJwtCookie(HttpServletResponse response, String name) {
     Cookie cookie = new Cookie(name, null);
-//    cookie.setDomain("gbjs.co.kr");
-//    cookie.setHttpOnly(true);
-//    cookie.setSecure(true);
+    //    cookie.setDomain("gbjs.co.kr");
+    //    cookie.setHttpOnly(true);
+    //    cookie.setSecure(true);
     cookie.setPath("/");
     cookie.setMaxAge(0);
     response.addCookie(cookie);

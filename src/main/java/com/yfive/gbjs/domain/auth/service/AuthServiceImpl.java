@@ -3,16 +3,6 @@
  */
 package com.yfive.gbjs.domain.auth.service;
 
-import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
-import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
-import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
-import com.yfive.gbjs.domain.user.entity.User;
-import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
-import com.yfive.gbjs.domain.user.repository.UserRepository;
-import com.yfive.gbjs.global.config.jwt.JwtProvider;
-import com.yfive.gbjs.global.error.exception.CustomException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +11,18 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
+import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
+import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
+import com.yfive.gbjs.domain.user.entity.User;
+import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
+import com.yfive.gbjs.domain.user.repository.UserRepository;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
+import com.yfive.gbjs.global.error.exception.CustomException;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 인증 서비스 구현 클래스
@@ -101,8 +103,7 @@ public class AuthServiceImpl implements AuthService {
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(
-            userDetails, null, userDetails.getAuthorities());
+        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
     log.info("AT 재발급 성공: {}", user.getUsername());
     return jwtProvider.createToken(authentication);
