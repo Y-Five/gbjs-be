@@ -62,10 +62,10 @@ public class AuthServiceImpl implements AuthService {
 
     try {
       // 인증 시도
-      authenticationManager.authenticate(authenticationToken);
+      Authentication authenticated = authenticationManager.authenticate(authenticationToken);
 
       // JWT 발급
-      TokenResponse tokenResponse = jwtProvider.createTokens(authenticationToken);
+      TokenResponse tokenResponse = jwtProvider.createTokens(authenticated);
       log.info("로그인 성공: {}", user.getUsername());
       return tokenResponse;
 
@@ -117,9 +117,9 @@ public class AuthServiceImpl implements AuthService {
         new UsernamePasswordAuthenticationToken(testUsername, testPassword);
 
     try {
-      authenticationManager.authenticate(authenticationToken);
+      Authentication authenticated = authenticationManager.authenticate(authenticationToken);
 
-      TokenResponse tokenResponse = jwtProvider.createTokens(authenticationToken);
+      TokenResponse tokenResponse = jwtProvider.createTokens(authenticated);
       log.info("테스트 로그인 성공: {}", testUsername);
       return tokenResponse;
     } catch (Exception e) {
