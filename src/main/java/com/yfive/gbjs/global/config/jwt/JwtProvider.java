@@ -114,7 +114,7 @@ public class JwtProvider {
    * @return 토큰 응답 객체
    */
   public TokenResponse createTokens(Authentication authentication) {
-    String username = authentication.getName();
+    String username = resolveSubject(authentication);
 
     // Access Token 생성
     String accessToken = createToken(authentication, TOKEN_TYPE_ACCESS);
@@ -148,18 +148,7 @@ public class JwtProvider {
             .map(GrantedAuthority::getAuthority)
             .collect(Collectors.joining(","));
 
-    String subject;
-    Object principal = authentication.getPrincipal();
-    if (principal instanceof OAuth2User oAuth2User) {
-      Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
-      if (kakaoAccount == null || !kakaoAccount.containsKey("email")) {
-        throw new CustomException(UserErrorStatus.UNAUTHORIZED);
-      }
-      subject = (String) kakaoAccount.get("email");
-    } else {
-      // 서비스 자체 로그인: authentication.getName() 사용 (username 또는 email)
-      subject = authentication.getName();
-    }
+    String subject = resolveSubject(authentication);
 
     long now = System.currentTimeMillis();
     Date validity;
@@ -179,6 +168,18 @@ public class JwtProvider {
         .setExpiration(validity)
         .signWith(key)
         .compact();
+  }
+
+  private String resolveSubject(Authentication authentication) {
+    Object principal = authentication.getPrincipal();
+    if (principal instanceof OAuth2User oAuth2User) {
+      Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
+      if (kakaoAccount == null || !kakaoAccount.containsKey("email")) {
+        throw new CustomException(UserErrorStatus.UNAUTHORIZED);
+      }
+      return (String) kakaoAccount.get("email");
+    }
+    return authentication.getName();
   }
 
   /**
@@ -263,8 +264,12 @@ public class JwtProvider {
   public boolean validateTokenType(String token, String expectedType) {
     try {
       return expectedType.equals(getTokenType(token));
-    } catch (Exception e) {
-      throw new CustomException(AuthErrorStatus.JWT_TOKEN_EXPIRED);
+    } catch (io.jsonwebtoken.ExpiredJwtException e) {
+      log.info("만료된 JWT 토큰입니다.");
+      return false;
+    } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+      log.info("유효하지 않은 JWT 토큰입니다.");
+      return false;
     }
   }
 

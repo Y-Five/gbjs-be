@@ -3,8 +3,8 @@
  */
 package com.yfive.gbjs.domain.user.entity;
 
-import java.util.UUID;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,10 +13,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.yfive.gbjs.domain.tts.entity.TtsSetting;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -74,7 +70,6 @@ public class User {
         .profileImageUrl(profileImageUrl)
         .nickname(nickname)
         .username(email)
-        .password(UUID.randomUUID().toString())
         .ttsSetting(TtsSetting.FEMALE_A)
         .emailMarketingConsent(false)
         .pushNotificationConsent(false)

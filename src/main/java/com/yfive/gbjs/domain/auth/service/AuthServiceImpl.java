@@ -3,16 +3,6 @@
  */
 package com.yfive.gbjs.domain.auth.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.yfive.gbjs.domain.auth.dto.request.LoginRequest;
 import com.yfive.gbjs.domain.auth.dto.response.TokenResponse;
 import com.yfive.gbjs.domain.auth.exception.AuthErrorStatus;
@@ -21,9 +11,16 @@ import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
 import com.yfive.gbjs.global.config.jwt.JwtProvider;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 인증 서비스 구현 클래스
@@ -47,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
   private final AuthenticationManager authenticationManager;
   private final JwtProvider jwtProvider;
   private final UserRepository userRepository;
-  @Autowired private PasswordEncoder passwordEncoder;
+  private final UserDetailsService userDetailsService;
 
   @Override
   @Transactional
@@ -88,7 +85,10 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public String reissueAccessToken(String refreshToken) {
-
+    if (!jwtProvider.validateToken(refreshToken)
+        || !jwtProvider.validateTokenType(refreshToken, JwtProvider.TOKEN_TYPE_REFRESH)) {
+      throw new CustomException(AuthErrorStatus.INVALID_REFRESH_TOKEN);
+    }
     String username = jwtProvider.getUsernameFromToken(refreshToken);
     User user =
         userRepository
@@ -99,7 +99,10 @@ public class AuthServiceImpl implements AuthService {
       throw new CustomException(AuthErrorStatus.INVALID_REFRESH_TOKEN);
     }
 
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    Authentication authentication =
+        new UsernamePasswordAuthenticationToken(
+            userDetails, null, userDetails.getAuthorities());
 
     log.info("AT 재발급 성공: {}", user.getUsername());
     return jwtProvider.createToken(authentication);
