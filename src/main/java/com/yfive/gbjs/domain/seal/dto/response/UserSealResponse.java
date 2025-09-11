@@ -85,4 +85,57 @@ public class UserSealResponse {
     @Schema(description = "수집한 띠부씰 수", example = "5")
     private long collectedCount;
   }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "NearbySeal : 주변 띠부씰 DTO")
+  public static class NearbySealDTO {
+    @Schema(description = "띠부씰 ID", example = "1")
+    private Long id;
+
+    @Schema(description = "띠부씰 번호", example = "1")
+    private Integer number;
+
+    @Schema(description = "명소 이름", example = "하회마을")
+    private String spotName;
+
+    @Schema(description = "지역 이름", example = "안동")
+    private String locationName;
+
+    @Schema(description = "지역 코드", example = "ANDONG")
+    private Location location;
+
+    @Schema(description = "설명", example = "안동 하회별신굿탈놀이를 대표하는 전통 탈")
+    private String content;
+
+    @Schema(description = "희귀도", example = "BLUE")
+    private Rarity rarity;
+
+    @Schema(description = "앞면 이미지 URL", example = "https://example.com/seal-front.jpg")
+    private String frontImageUrl;
+
+    @Schema(description = "뒷면 이미지 URL", example = "https://example.com/seal-back.jpg")
+    private String backImageUrl;
+
+    @Schema(description = "수집 여부", example = "true")
+    private boolean collected;
+
+    @Schema(description = "수집 일시", example = "2025-01-26T10:30:00")
+    private LocalDateTime collectedAt;
+
+    @Schema(description = "현재 위치로부터의 거리 (m)", example = "500")
+    private Integer distance;
+  }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "NearbySealList : 주변 띠부씰 목록 DTO")
+  public static class NearbySealListDTO {
+    @Schema(description = "주변 띠부씰 목록")
+    private List<NearbySealDTO> nearbySeals;
+  }
 }

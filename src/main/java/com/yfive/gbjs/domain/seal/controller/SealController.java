@@ -82,7 +82,7 @@ public interface SealController {
 
   @GetMapping("/nearby")
   @Operation(summary = "주변 띠부씰 조회", description = "현재 위치에서 가장 가까운 띠부씰 4개를 조회합니다.")
-  ResponseEntity<ApiResponse<SealResponse.NearbySealListDTO>> getNearbySeals(
+  ResponseEntity<ApiResponse<UserSealResponse.NearbySealListDTO>> getNearbySeals(
       @RequestParam @Parameter(description = "현재 위치 위도", required = true, example = "35.79000")
           Double latitude,
       @RequestParam @Parameter(description = "현재 위치 경도", required = true, example = "129.33222")

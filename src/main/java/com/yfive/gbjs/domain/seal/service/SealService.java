@@ -81,7 +81,7 @@ public interface SealService {
    * @param longitude 현재 위치 경도
    * @return 가까운 띠부씰 4개 목록
    */
-  SealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude);
+  UserSealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude);
 
   /**
    * 위치 인증을 통한 띠부씰 획득

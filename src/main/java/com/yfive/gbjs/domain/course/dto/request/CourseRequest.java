@@ -99,6 +99,12 @@ public class CourseRequest {
       @Schema(description = "카테고리", example = "유명 관광지")
       private String category;
 
+      @Schema(description = "위도", example = "35.8341")
+      private Double latitude;
+
+      @Schema(description = "경도", example = "129.2132")
+      private Double longitude;
+
       @Schema(description = "씰 관광지 여부", example = "true")
       private Boolean isSealSpot;
 

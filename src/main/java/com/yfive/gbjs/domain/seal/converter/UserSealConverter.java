@@ -40,4 +40,22 @@ public class UserSealConverter {
         .seals(seals)
         .build();
   }
+
+  public UserSealResponse.NearbySealDTO toNearbyDTO(
+      Seal seal, boolean collected, LocalDateTime collectedAt, Integer distance) {
+    return UserSealResponse.NearbySealDTO.builder()
+        .id(seal.getId())
+        .number(seal.getNumber())
+        .spotName(seal.getSpotName())
+        .locationName(seal.getLocationName())
+        .location(seal.getLocation())
+        .content(seal.getContent())
+        .rarity(seal.getRarity())
+        .frontImageUrl(seal.getFrontImageUrl())
+        .backImageUrl(seal.getBackImageUrl())
+        .collected(collected)
+        .collectedAt(collectedAt)
+        .distance(distance)
+        .build();
+  }
 }
