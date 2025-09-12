@@ -255,12 +255,16 @@ public class SealServiceImpl implements SealService {
 
   /** 현재 위치 기반 가까운 띠부씰 조회 */
   @Override
-  public SealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude) {
+  public UserSealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude) {
+    Long userId = userService.getCurrentUser().getId();
+    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+    Map<Long, UserSeal> userSealMap =
+        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
     // 모든 Seal 조회 (SealSpot과 AudioGuide 정보 포함)
     List<Seal> allSeals = sealRepository.findAll();
 
     // 각 Seal과의 거리를 계산하여 DTO 리스트 생성
-    List<SealResponse.NearbySealDTO> nearbySealDTOs =
+    List<UserSealResponse.NearbySealDTO> nearbySealDTOs =
         allSeals.stream()
             .filter(
                 seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
@@ -282,17 +286,12 @@ public class SealServiceImpl implements SealService {
                     double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
                     int distanceM = (int) Math.round(distanceKm * 1000);
 
-                    return SealResponse.NearbySealDTO.builder()
-                        .sealId(seal.getId())
-                        .number(seal.getNumber())
-                        .rarity(seal.getRarity())
-                        .frontImageUrl(seal.getFrontImageUrl())
-                        .spotName(seal.getSealSpot().getName())
-                        .locationName(seal.getSealSpot().getLocation().name())
-                        .latitude(guideLat)
-                        .longitude(guideLon)
-                        .distance(distanceM)
-                        .build();
+                    UserSeal userSeal = userSealMap.get(seal.getId());
+                    boolean collected = userSeal != null && userSeal.getCollected();
+                    LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+
+                    return userSealConverter.toNearbyDTO(seal, collected, collectedAt, distanceM);
+
                   } catch (NumberFormatException e) {
                     return null;
                   }
@@ -300,11 +299,11 @@ public class SealServiceImpl implements SealService {
             .filter(dto -> dto != null)
             .sorted(
                 java.util.Comparator.comparing(
-                    (SealResponse.NearbySealDTO dto) -> dto.getDistance()))
+                    (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
             .limit(4) // 가장 가까운 4개만
             .collect(Collectors.toList());
 
-    return SealResponse.NearbySealListDTO.builder().nearbySeals(nearbySealDTOs).build();
+    return UserSealResponse.NearbySealListDTO.builder().nearbySeals(nearbySealDTOs).build();
   }
 
   /**

@@ -89,9 +89,9 @@ public class SealControllerImpl implements SealController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<SealResponse.NearbySealListDTO>> getNearbySeals(
+  public ResponseEntity<ApiResponse<UserSealResponse.NearbySealListDTO>> getNearbySeals(
       Double latitude, Double longitude) {
-    SealResponse.NearbySealListDTO response = sealService.getNearbySeals(latitude, longitude);
+    UserSealResponse.NearbySealListDTO response = sealService.getNearbySeals(latitude, longitude);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

@@ -67,52 +67,6 @@ public class SealResponse {
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
-  @Schema(title = "NearbySeal : 주변 띠부씰 DTO")
-  public static class NearbySealDTO {
-    @Schema(description = "띠부씰 ID", example = "2")
-    private Long sealId;
-
-    @Schema(description = "띠부씰 번호", example = "2")
-    private Integer number;
-
-    @Schema(description = "희귀도", example = "BLUE")
-    private Rarity rarity;
-
-    @Schema(description = "앞면 이미지 URL", example = "https://example.com/seal-front.jpg")
-    private String frontImageUrl;
-
-    @Schema(description = "관광지 이름", example = "불국사")
-    @com.fasterxml.jackson.annotation.JsonProperty("spot_name")
-    private String spotName;
-
-    @Schema(description = "지역 이름", example = "경주시")
-    @com.fasterxml.jackson.annotation.JsonProperty("location_name")
-    private String locationName;
-
-    @Schema(description = "위도", example = "35.79000")
-    private Double latitude;
-
-    @Schema(description = "경도", example = "129.33222")
-    private Double longitude;
-
-    @Schema(description = "현재 위치로부터의 거리 (m)", example = "500")
-    private Integer distance;
-  }
-
-  @Getter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @Schema(title = "NearbySealList : 주변 띠부씰 목록 DTO")
-  public static class NearbySealListDTO {
-    @Schema(description = "주변 띠부씰 목록")
-    private List<NearbySealDTO> nearbySeals;
-  }
-
-  @Getter
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
   @Schema(title = "CollectSealResult : 띠부씰 획득 결과 DTO")
   public static class CollectSealResultDTO {
     @Schema(description = "띠부씰 ID", example = "1")
