@@ -37,4 +37,10 @@ public class DailyCourseSpot extends BaseTimeEntity {
 
   @Column(name = "visit_order", nullable = false)
   private Integer visitOrder;
+
+  @Column(name = "latitude")
+  private Double latitude;
+
+  @Column(name = "longitude")
+  private Double longitude;
 }

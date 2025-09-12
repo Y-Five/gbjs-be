@@ -101,6 +101,12 @@ public class CourseResponse {
     @Schema(description = "주소", example = "경상북도 경주시 첨성로 140-25")
     private String addr1;
 
+    @Schema(description = "위도", example = "35.8341")
+    private Double latitude;
+
+    @Schema(description = "경도", example = "129.2132")
+    private Double longitude;
+
     @Schema(description = "씰 관광지 여부", example = "true")
     private Boolean isSealSpot;
 

@@ -72,6 +72,8 @@ public class CourseConverter {
         .category(
             sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
         .addr1(sealSpot.getAddr1())
+        .latitude(sealSpot.getLatitude())
+        .longitude(sealSpot.getLongitude())
         .isSealSpot(true)
         .sealSpotId(sealSpot.getId())
         .build();

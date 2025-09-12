@@ -35,6 +35,12 @@ public class SealSpot extends BaseTimeEntity {
   @Column(name = "addr1")
   private String addr1;
 
+  @Column(name = "latitude")
+  private Double latitude;
+
+  @Column(name = "longitude")
+  private Double longitude;
+
   @Column(name = "image_url")
   private String imageUrl;
 

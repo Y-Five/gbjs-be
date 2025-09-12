@@ -68,6 +68,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     log.info("카카오 로그인 성공: {}", user.getUsername());
 
     response.addHeader("Authorization", "Bearer " + tokenResponse.getAccessToken());
-    response.sendRedirect("/swagger-ui/index.html#/");
+    response.sendRedirect("https://gbjs.co.kr");
   }
 }

@@ -339,9 +339,9 @@ public class JwtProvider {
    */
   public void addJwtToCookie(HttpServletResponse response, String token, String name, long maxAge) {
     Cookie cookie = new Cookie(name, token);
-    //    cookie.setDomain("gbjs.co.kr");
-    //    cookie.setHttpOnly(true);
-    //    cookie.setSecure(true);
+    cookie.setDomain("gbjs.co.kr");
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
     cookie.setPath("/");
     cookie.setMaxAge((int) maxAge);
     response.addCookie(cookie);
@@ -359,9 +359,9 @@ public class JwtProvider {
    */
   public void removeJwtCookie(HttpServletResponse response, String name) {
     Cookie cookie = new Cookie(name, null);
-    //    cookie.setDomain("gbjs.co.kr");
-    //    cookie.setHttpOnly(true);
-    //    cookie.setSecure(true);
+    cookie.setDomain("gbjs.co.kr");
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
     cookie.setPath("/");
     cookie.setMaxAge(0);
     response.addCookie(cookie);

@@ -95,6 +95,8 @@ public class CourseServiceImpl implements CourseService {
                           ? courseConverter.getCategoryKoreanName(sealSpot.getCategory())
                           : null)
                   .addr1(sealSpot.getAddr1())
+                  .latitude(sealSpot.getLatitude())
+                  .longitude(sealSpot.getLongitude())
                   .isSealSpot(true)
                   .sealSpotId(sealSpot.getId())
                   .build());
@@ -184,6 +186,8 @@ public class CourseServiceImpl implements CourseService {
                       .sealSpot(sealSpot)
                       .spotId(spotRequest.getSpotId())
                       .visitOrder(spotRequest.getVisitOrder())
+                      .latitude(spotRequest.getLatitude())
+                      .longitude(spotRequest.getLongitude())
                       .dailyCourse(dailyCourse)
                       .build());
           dailyCourse.addSpot(dailyCourseSpot);
