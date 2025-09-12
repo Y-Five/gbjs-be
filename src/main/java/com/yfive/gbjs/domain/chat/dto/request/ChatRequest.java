@@ -19,6 +19,6 @@ import lombok.NoArgsConstructor;
 public class ChatRequest {
 
   @NotBlank(message = "질문 항목은 필수입니다.")
-  @Schema(description = "사용자 질문", example = "띠부씰은 어떻게 모으나요?")
+  @Schema(description = "사용자 질문", example = "씰은 어떻게 모으나요?")
   private String question;
 }
