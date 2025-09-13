@@ -13,6 +13,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.service.CourseService;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -49,9 +50,10 @@ public class CourseControllerImpl implements CourseController {
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
-      Authentication authentication, List<String> locationNames) {
+      Authentication authentication, List<String> locationNames, SortBy sortBy) {
     Long userId = userService.getCurrentUser().getId();
-    CourseResponse.CourseListDTO response = courseService.getUserCourses(userId, locationNames);
+    CourseResponse.CourseListDTO response =
+        courseService.getUserCourses(userId, locationNames, sortBy);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

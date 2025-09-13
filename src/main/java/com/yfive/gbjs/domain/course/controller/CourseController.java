@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +43,12 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @RequestParam(required = false)
           @Parameter(description = "지역 이름 (여러 개 가능)", example = "안동시,경주시")
-          List<String> locationNames);
+          List<String> locationNames,
+      @RequestParam(defaultValue = "LATEST")
+          @Parameter(
+              description = "정렬 옵션 (LATEST: 코스 저장 최신순, OLDEST: 코스 저장 오래된순)",
+              example = "LATEST")
+          SortBy sortBy);
 
   @Operation(summary = "여행 코스 상세 조회", description = "코스 ID로 상세 정보를 조회합니다.")
   @GetMapping("/{courseId}")
