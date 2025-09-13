@@ -9,6 +9,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
+import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 /** 여행 코스 관련 비즈니스 로직을 처리하는 서비스 인터페이스 */
@@ -60,4 +61,12 @@ public interface CourseService {
    * @throws CustomException 코스를 찾을 수 없거나 권한이 없는 경우
    */
   void deleteCourse(Long userId, Long courseId);
+
+  /**
+   * 테마별/행사별 추천 코스 목록을 조회합니다.
+   *
+   * @param type 추천 타입 (THEME, FESTIVAL)
+   * @return 추천 코스 목록 (4개)
+   */
+  List<CourseResponse.RecommendedCourseDTO> getRecommendedCourses(RecommendationType type);
 }

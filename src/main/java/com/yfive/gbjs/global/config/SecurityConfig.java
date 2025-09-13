@@ -139,7 +139,7 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                 .hasRole("DEVELOPER")
-                .requestMatchers("/api/auth/**", "/actuator/health")
+                .requestMatchers("/api/auth/**", "/actuator/health", "/api/courses/recommend")
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()

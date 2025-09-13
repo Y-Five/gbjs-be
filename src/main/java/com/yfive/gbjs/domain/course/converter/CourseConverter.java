@@ -102,6 +102,17 @@ public class CourseConverter {
         .build();
   }
 
+  /** RecommendCourse 엔티티를 응답 DTO로 변환합니다. */
+  public CourseResponse.RecommendedCourseDTO toRecommendedCourseDTO(
+      RecommendCourse recommendCourse) {
+    return CourseResponse.RecommendedCourseDTO.builder()
+        .courseId(recommendCourse.getCourse().getId())
+        .title(recommendCourse.getTitle())
+        .locationName(recommendCourse.getLocationName())
+        .image(recommendCourse.getImageUrl())
+        .build();
+  }
+
   /**
    * Location enum을 한글 지역명으로 변환합니다.
    *

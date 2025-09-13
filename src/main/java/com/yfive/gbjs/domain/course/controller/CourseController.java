@@ -15,6 +15,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
+import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,4 +62,10 @@ public interface CourseController {
   ResponseEntity<ApiResponse<Void>> deleteCourse(
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "삭제할 코스 ID", example = "1") Long courseId);
+
+  @Operation(summary = "테마별/행사별 코스 조회", description = "테마별/행사별 추천 코스를 조회합니다.")
+  @GetMapping("/recommend")
+  ResponseEntity<ApiResponse<List<CourseResponse.RecommendedCourseDTO>>> getRecommendedCourses(
+      @RequestParam @Parameter(description = "추천 타입 (THEME, FESTIVAL)", required = true)
+          RecommendationType type);
 }
