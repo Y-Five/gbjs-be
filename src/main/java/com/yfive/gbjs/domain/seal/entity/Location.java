@@ -14,6 +14,8 @@ public enum Location {
   GORYEONG,
   @Schema(description = "구미시")
   GUMI,
+  @Schema(description = "군위군")
+  GUNWI,
   @Schema(description = "김천시")
   GIMCHEON,
   @Schema(description = "문경시")
