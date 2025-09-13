@@ -114,6 +114,7 @@ public class CourseConverter {
       case GYEONGJU -> "경주시";
       case GORYEONG -> "고령군";
       case GUMI -> "구미시";
+      case GUNWI -> "군위군";
       case GIMCHEON -> "김천시";
       case MUNGYEONG -> "문경시";
       case BONGHWA -> "봉화군";
@@ -148,6 +149,7 @@ public class CourseConverter {
       case "경주시" -> Location.GYEONGJU;
       case "고령군" -> Location.GORYEONG;
       case "구미시" -> Location.GUMI;
+      case "군위군" -> Location.GUNWI;
       case "김천시" -> Location.GIMCHEON;
       case "문경시" -> Location.MUNGYEONG;
       case "봉화군" -> Location.BONGHWA;
