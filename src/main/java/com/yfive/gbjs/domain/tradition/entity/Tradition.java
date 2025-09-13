@@ -55,8 +55,8 @@ public class Tradition {
   @Column(name = "price", nullable = false)
   private Long price;
 
-  public void update(TraditionRequest request, String imageUrl) {
-    this.imageUrl = imageUrl;
+  public void update(TraditionRequest request) {
+    this.imageUrl = request.getImageUrl();
     this.address = request.getAddress();
     this.name = request.getName();
     this.description = request.getDescription();

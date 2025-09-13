@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
@@ -39,12 +38,7 @@ public interface TraditionController {
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
           @RequestPart(value = "tradition")
           @Valid
-          TraditionRequest request,
-      @Parameter(
-              description = "전통문화 이미지",
-              content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-          @RequestPart(value = "image")
-          MultipartFile image);
+          TraditionRequest request);
 
   @GetMapping
   @Operation(summary = "전통문화 리스트 조회", description = "경상북도 전통문화 리스트 반환")
@@ -60,12 +54,7 @@ public interface TraditionController {
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
           @RequestPart(value = "tradition")
           @Valid
-          TraditionRequest request,
-      @Parameter(
-              description = "전통문화 이미지",
-              content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
-          @RequestPart(value = "image")
-          MultipartFile image);
+          TraditionRequest request);
 
   @DeleteMapping("/dev/{id}")
   @Operation(summary = "[개발자]전통문화 삭제", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 삭제")

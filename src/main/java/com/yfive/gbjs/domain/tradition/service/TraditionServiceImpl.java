@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
@@ -19,8 +18,6 @@ import com.yfive.gbjs.domain.tradition.repository.TraditionRepository;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
-import com.yfive.gbjs.global.s3.entity.PathName;
-import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
 import com.yfive.gbjs.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
@@ -38,23 +35,11 @@ public class TraditionServiceImpl implements TraditionService {
 
   @Override
   @Transactional
-  public TraditionResponse createTradition(
-      TraditionType type, TraditionRequest request, MultipartFile image) {
-
-    PathName pathName =
-        type == TraditionType.SPECIALTIES ? PathName.SPECIALTIES : PathName.ACTIVITY;
-    String imageUrl;
-
-    try {
-      imageUrl = s3Service.uploadFile(pathName, image);
-    } catch (Exception e) {
-      log.error("S3 파일 업로드 실패 - name: {}", request.getName(), e);
-      throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
-    }
+  public TraditionResponse createTradition(TraditionType type, TraditionRequest request) {
 
     Tradition tradition =
         Tradition.builder()
-            .imageUrl(imageUrl)
+            .imageUrl(request.getImageUrl())
             .address(request.getAddress())
             .name(request.getName())
             .description(request.getDescription())
@@ -63,12 +48,7 @@ public class TraditionServiceImpl implements TraditionService {
             .price(request.getPrice())
             .build();
 
-    try {
-      traditionRepository.save(tradition);
-    } catch (Exception e) {
-      s3Service.deleteFile(s3Service.extractKeyNameFromUrl(imageUrl));
-      throw e;
-    }
+    traditionRepository.save(tradition);
 
     log.info("전통문화 정보 생성 - type: {}, name: {}", type, request.getName());
 
@@ -89,27 +69,14 @@ public class TraditionServiceImpl implements TraditionService {
 
   @Override
   @Transactional
-  public TraditionResponse updateTradition(Long id, TraditionRequest request, MultipartFile image) {
+  public TraditionResponse updateTradition(Long id, TraditionRequest request) {
 
     Tradition tradition =
         traditionRepository
             .findById(id)
             .orElseThrow(() -> new CustomException(TraditionErrorStatus.TRADITION_NOT_FOUND));
 
-    PathName pathName =
-        tradition.getType() == TraditionType.SPECIALTIES ? PathName.SPECIALTIES : PathName.ACTIVITY;
-
-    String newImageUrl = tradition.getImageUrl();
-    if (image != null && !image.isEmpty()) {
-      try {
-        newImageUrl = s3Service.uploadFile(pathName, image);
-      } catch (Exception e) {
-        log.error("S3 파일 업로드 실패(교체) - id: {}", id, e);
-        throw new CustomException(S3ErrorStatus.FILE_SERVER_ERROR);
-      }
-    }
-
-    tradition.update(request, newImageUrl);
+    tradition.update(request);
 
     log.info("전통문화 정보 수정 - id: {}, name: {}", tradition.getId(), tradition.getName());
 
@@ -124,14 +91,6 @@ public class TraditionServiceImpl implements TraditionService {
         traditionRepository
             .findById(id)
             .orElseThrow(() -> new CustomException(TraditionErrorStatus.TRADITION_NOT_FOUND));
-
-    String imageUrl = tradition.getImageUrl();
-
-    try {
-      s3Service.deleteFile(s3Service.extractKeyNameFromUrl(imageUrl));
-    } catch (Exception e) {
-      log.warn("S3 파일 삭제 실패 - imageUrl: {}", imageUrl, e);
-    }
 
     traditionRepository.delete(tradition);
 

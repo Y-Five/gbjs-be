@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.tradition.dto.request.TraditionRequest;
 import com.yfive.gbjs.domain.tradition.dto.response.TraditionResponse;
@@ -33,11 +32,9 @@ public class TraditionControllerImpl implements TraditionController {
 
   @Override
   public ResponseEntity<ApiResponse<TraditionResponse>> createTradition(
-      @RequestParam TraditionType type,
-      @RequestPart("tradition") @Valid TraditionRequest request,
-      @RequestPart("image") MultipartFile image) {
+      @RequestParam TraditionType type, @RequestPart("tradition") @Valid TraditionRequest request) {
 
-    TraditionResponse response = traditionService.createTradition(type, request, image);
+    TraditionResponse response = traditionService.createTradition(type, request);
 
     return ResponseEntity.ok(ApiResponse.success(response));
   }
@@ -64,11 +61,9 @@ public class TraditionControllerImpl implements TraditionController {
 
   @Override
   public ResponseEntity<ApiResponse<TraditionResponse>> updateTradition(
-      @PathVariable Long id,
-      @RequestPart("tradition") @Valid TraditionRequest request,
-      @RequestPart("image") MultipartFile image) {
+      @PathVariable Long id, @RequestPart("tradition") @Valid TraditionRequest request) {
 
-    TraditionResponse traditionResponse = traditionService.updateTradition(id, request, image);
+    TraditionResponse traditionResponse = traditionService.updateTradition(id, request);
 
     return ResponseEntity.ok(ApiResponse.success(traditionResponse));
   }
