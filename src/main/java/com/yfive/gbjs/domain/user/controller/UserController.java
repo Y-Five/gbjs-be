@@ -5,6 +5,8 @@ package com.yfive.gbjs.domain.user.controller;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -87,5 +89,5 @@ public interface UserController {
 
   @DeleteMapping
   @Operation(summary = "회원 탈퇴", description = "현재 로그인한 사용자의 계정을 삭제합니다. (Hard Delete)")
-  ResponseEntity<ApiResponse<Void>> deleteUser();
+  ResponseEntity<ApiResponse<Void>> deleteUser(HttpServletResponse response);
 }

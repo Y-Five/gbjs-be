@@ -5,6 +5,8 @@ package com.yfive.gbjs.domain.user.controller;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -15,6 +17,7 @@ import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.user.dto.response.UserDetailResponse;
 import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class UserControllerImpl implements UserController {
 
   private final UserService userService;
+  private final JwtProvider jwtProvider;
 
   @Override
   public ResponseEntity<ApiResponse<Boolean>> checkNicknameDuplicated(
@@ -78,8 +82,12 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
-  public ResponseEntity<ApiResponse<Void>> deleteUser() {
+  public ResponseEntity<ApiResponse<Void>> deleteUser(HttpServletResponse response) {
     userService.deleteUser();
+
+    jwtProvider.removeJwtCookie(response, "accessToken");
+    jwtProvider.removeJwtCookie(response, "refreshToken");
+
     return ResponseEntity.ok(ApiResponse.success());
   }
 }

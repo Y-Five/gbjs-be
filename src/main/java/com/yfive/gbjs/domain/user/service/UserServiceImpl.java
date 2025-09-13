@@ -21,6 +21,7 @@ import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.domain.user.exception.UserErrorStatus;
 import com.yfive.gbjs.domain.user.mapper.UserMapper;
 import com.yfive.gbjs.domain.user.repository.UserRepository;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.s3.entity.PathName;
 import com.yfive.gbjs.global.s3.exception.S3ErrorStatus;
@@ -36,6 +37,7 @@ public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
   private final UserSealRepository userSealRepository;
+  private final JwtProvider jwtProvider;
   private final S3Service s3Service;
   private final UserMapper userMapper;
 
@@ -176,8 +178,13 @@ public class UserServiceImpl implements UserService {
   @Transactional
   @Override
   public void deleteUser() {
+
     User user = getCurrentUser();
+
+    jwtProvider.deleteRefreshToken(user.getUsername());
+
     userRepository.delete(user);
+
     log.info("사용자 계정 삭제 - userId: {}", user.getId());
   }
 
