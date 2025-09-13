@@ -303,14 +303,13 @@ public class CourseServiceImpl implements CourseService {
    * @return "지역1, 지역2, 지역3 N일 여행" 형식의 제목
    */
   private String generateTitle(List<Location> locations, long days) {
-    String locationNames =
+    String simplifiedLocationNames =
         locations.stream()
             .limit(3)
             .map(courseConverter::getLocationKoreanName)
+            .map(name -> name.replaceAll("[시군]$", ""))
             .collect(Collectors.joining(", "));
 
-    // "시", "군" 제거하고 지역명만 사용
-    String simplifiedLocationNames = locationNames.replace("시", "").replace("군", "");
     return String.format("%s %d일 여행", simplifiedLocationNames, days);
   }
 
