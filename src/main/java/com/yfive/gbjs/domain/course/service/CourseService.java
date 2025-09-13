@@ -8,6 +8,7 @@ import java.util.List;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 /** 여행 코스 관련 비즈니스 로직을 처리하는 서비스 인터페이스 */
@@ -44,9 +45,12 @@ public interface CourseService {
    * 사용자가 저장한 모든 코스 목록을 조회합니다.
    *
    * @param userId 사용자 ID
+   * @param locationNames 지역명 리스트
+   * @param sortBy 정렬 기준
    * @return 코스 목록 (요약 정보)
    */
-  CourseResponse.CourseListDTO getUserCourses(Long userId, List<String> locationNames);
+  CourseResponse.CourseListDTO getUserCourses(
+      Long userId, List<String> locationNames, SortBy sortBy);
 
   /**
    * 코스를 삭제합니다.

@@ -19,5 +19,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
       "SELECT c FROM Course c JOIN FETCH c.dailyCourses dc WHERE c.user = :user ORDER BY c.startDate DESC")
   List<Course> findByUserOrderByStartDateDesc(@Param("user") User user);
 
+  @Query("SELECT c FROM Course c JOIN FETCH c.dailyCourses dc WHERE c.user = :user")
+  List<Course> findByUser(@Param("user") User user);
+
   boolean existsByIdAndUserId(Long courseId, Long userId);
 }

@@ -15,7 +15,8 @@ import com.yfive.gbjs.domain.course.converter.CourseConverter;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
-import com.yfive.gbjs.domain.course.entity.*;
+import com.yfive.gbjs.domain.course.entity.Course;
+import com.yfive.gbjs.domain.course.entity.DailyCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
@@ -24,6 +25,7 @@ import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
+import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
@@ -219,13 +221,14 @@ public class CourseServiceImpl implements CourseService {
 
   /** 사용자의 모든 코스 목록을 조회합니다. - 시작일 기준 내림차순 정렬 - 코스 요약 정보만 반환 (상세 정보 제외) */
   @Override
-  public CourseResponse.CourseListDTO getUserCourses(Long userId, List<String> locationNames) {
+  public CourseResponse.CourseListDTO getUserCourses(
+      Long userId, List<String> locationNames, SortBy sortBy) {
     User user =
         userRepository
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
-    List<Course> courses = courseRepository.findByUserOrderByStartDateDesc(user);
+    List<Course> courses = courseRepository.findByUser(user);
 
     // 지역명 필터링 적용
     if (locationNames != null && !locationNames.isEmpty()) {
@@ -244,6 +247,7 @@ public class CourseServiceImpl implements CourseService {
 
     List<CourseResponse.CourseSummaryDTO> summaries =
         courses.stream()
+            .sorted(getCourseComparator(sortBy))
             .map(
                 course -> {
                   int totalCollectableSealsForCourse = 0;
@@ -275,6 +279,16 @@ public class CourseServiceImpl implements CourseService {
         .build();
   }
 
+  private java.util.Comparator<Course> getCourseComparator(SortBy sortBy) {
+    switch (sortBy) {
+      case OLDEST:
+        return java.util.Comparator.comparing(Course::getCreatedAt);
+      case LATEST:
+      default:
+        return java.util.Comparator.comparing(Course::getCreatedAt).reversed();
+    }
+  }
+
   /**
    * 코스를 삭제합니다. - 코스 존재 여부 확인 - 본인 코스인지 권한 검증 - 연관된 DailyCourse, DailyCourseSpot도 함께 삭제
    * (orphanRemoval)
@@ -303,14 +317,13 @@ public class CourseServiceImpl implements CourseService {
    * @return "지역1, 지역2, 지역3 N일 여행" 형식의 제목
    */
   private String generateTitle(List<Location> locations, long days) {
-    String locationNames =
+    String simplifiedLocationNames =
         locations.stream()
             .limit(3)
             .map(courseConverter::getLocationKoreanName)
+            .map(name -> name.replaceAll("[시군]$", ""))
             .collect(Collectors.joining(", "));
 
-    // "시", "군" 제거하고 지역명만 사용
-    String simplifiedLocationNames = locationNames.replace("시", "").replace("군", "");
     return String.format("%s %d일 여행", simplifiedLocationNames, days);
   }
 
