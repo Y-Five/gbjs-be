@@ -13,9 +13,7 @@ public enum SortBy {
   NUMBER("번호순"),
   RARITY("희귀도순"),
   LOCATION("지역순"),
-  COLLECTED("수집순"),
-  LATEST("최신순"),
-  OLDEST("오래된순");
+  COLLECTED("수집순");
 
   private final String description;
 }

@@ -17,6 +17,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.Course;
 import com.yfive.gbjs.domain.course.entity.DailyCourse;
+import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
@@ -25,7 +26,6 @@ import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
-import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
@@ -222,7 +222,7 @@ public class CourseServiceImpl implements CourseService {
   /** 사용자의 모든 코스 목록을 조회합니다. - 시작일 기준 내림차순 정렬 - 코스 요약 정보만 반환 (상세 정보 제외) */
   @Override
   public CourseResponse.CourseListDTO getUserCourses(
-      Long userId, List<String> locationNames, SortBy sortBy) {
+      Long userId, List<String> locationNames, CourseSortBy sortBy) {
     User user =
         userRepository
             .findById(userId)
@@ -279,7 +279,7 @@ public class CourseServiceImpl implements CourseService {
         .build();
   }
 
-  private java.util.Comparator<Course> getCourseComparator(SortBy sortBy) {
+  private java.util.Comparator<Course> getCourseComparator(CourseSortBy sortBy) {
     switch (sortBy) {
       case OLDEST:
         return java.util.Comparator.comparing(Course::getCreatedAt);
