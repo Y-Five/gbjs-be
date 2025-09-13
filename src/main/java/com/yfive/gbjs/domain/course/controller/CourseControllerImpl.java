@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
+import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.service.CourseService;
-import com.yfive.gbjs.domain.seal.entity.SortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -50,7 +50,7 @@ public class CourseControllerImpl implements CourseController {
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
-      Authentication authentication, List<String> locationNames, SortBy sortBy) {
+      Authentication authentication, List<String> locationNames, CourseSortBy sortBy) {
     Long userId = userService.getCurrentUser().getId();
     CourseResponse.CourseListDTO response =
         courseService.getUserCourses(userId, locationNames, sortBy);

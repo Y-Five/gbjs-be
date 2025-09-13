@@ -16,8 +16,8 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.Course;
-import com.yfive.gbjs.domain.course.entity.DailyCourse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
+import com.yfive.gbjs.domain.course.entity.DailyCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;

@@ -73,6 +73,9 @@ public interface SealController {
           MultipartFile frontImage,
       @RequestPart(value = "backImage", required = false) @Parameter(description = "띠부씰 뒷면 이미지 파일")
           MultipartFile backImage,
+      @RequestPart(value = "uncollectedImage", required = false)
+          @Parameter(description = "수집하지 않은 띠부씰 이미지 파일")
+          MultipartFile uncollectedImage,
       @RequestParam(value = "content", required = false) @Parameter(description = "띠부씰 시")
           String content);
 
