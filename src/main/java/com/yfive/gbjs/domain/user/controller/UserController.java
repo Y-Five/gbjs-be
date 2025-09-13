@@ -40,7 +40,7 @@ public interface UserController {
       @Parameter(description = "확인할 닉네임", example = "경북지색") @RequestParam String nickname);
 
   @GetMapping("/dev")
-  @Operation(summary = "[개발자]사용자 전체 조회", description = "스웨거를 사용해 전체 사용자를 조회합니다.")
+  @Operation(summary = "[개발용]사용자 전체 조회", description = "스웨거를 사용해 전체 사용자를 조회합니다.")
   ResponseEntity<ApiResponse<List<UserDetailResponse>>> getAllUsers();
 
   @GetMapping

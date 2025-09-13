@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface TraditionController {
 
   @PostMapping(value = "/dev", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Operation(summary = "[개발자]전통문화 생성", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 생성")
+  @Operation(summary = "[개발용]전통문화 생성", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 생성")
   ResponseEntity<ApiResponse<TraditionResponse>> createTradition(
       @Parameter(description = "전통문화 분류", example = "SPECIALTIES") @RequestParam TraditionType type,
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
@@ -48,7 +48,7 @@ public interface TraditionController {
       @Parameter(description = "페이지 크기", example = "3") @RequestParam Integer pageSize);
 
   @PutMapping(value = "/dev/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Operation(summary = "[개발자]전통문화 수정", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 수정")
+  @Operation(summary = "[개발용]전통문화 수정", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 수정")
   ResponseEntity<ApiResponse<TraditionResponse>> updateTradition(
       @Parameter(description = "전통문화 식별자", example = "1") @PathVariable Long id,
       @Parameter(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
@@ -57,6 +57,6 @@ public interface TraditionController {
           TraditionRequest request);
 
   @DeleteMapping("/dev/{id}")
-  @Operation(summary = "[개발자]전통문화 삭제", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 삭제")
+  @Operation(summary = "[개발용]전통문화 삭제", description = "스웨거를 사용해 경상북도 전통문화(특산품/체험) 삭제")
   ResponseEntity<ApiResponse<String>> deleteTradition(@PathVariable Long id);
 }

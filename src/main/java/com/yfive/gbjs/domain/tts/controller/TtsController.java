@@ -24,8 +24,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/tts")
 public interface TtsController {
 
-  @PostMapping
-  @Operation(summary = "음성 가이드 생성", description = "스크립트를 음성 타입에 맞게 변환된 파일 URL로 변환")
+  @PostMapping("/dev")
+  @Operation(summary = "[개발용]음성 가이드 생성", description = "스크립트를 음성 타입에 맞게 변환된 파일 URL로 변환")
   ResponseEntity<ApiResponse<String>> convertTextToSpeech(
       @Parameter(description = "가이드 식별자", example = "1") @RequestParam Long guideId,
       @Parameter(description = "음성 타입", example = "FEMALE_A") @RequestParam TtsSetting ttsSetting,

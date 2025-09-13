@@ -26,17 +26,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/s3")
 public interface S3Controller {
 
-  @Operation(summary = "이미지 업로드 API", description = "이미지를 업로드하고 URL을 리턴받는 API")
-  @PostMapping(value = "/image-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PostMapping(value = "/dev/image-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(summary = "[개발용]이미지 업로드 API", description = "이미지를 업로드하고 URL을 리턴받는 API")
   ResponseEntity<ApiResponse<S3Response>> uploadImage(
       @RequestParam PathName pathName, MultipartFile file);
 
-  @Operation(summary = "S3 파일 전체 조회 API", description = "해당 경로의 모든 파일 목록을 조회합니다.")
-  @GetMapping("/image-list")
+  @GetMapping("/dev/image-list")
+  @Operation(summary = "[개발용]S3 파일 전체 조회 API", description = "해당 경로의 모든 파일 목록을 조회합니다.")
   ResponseEntity<ApiResponse<List<String>>> listFiles(@RequestParam PathName pathName);
 
-  @Operation(summary = "S3 파일 삭제 API", description = "파일명을 기반으로 이미지를 삭제합니다.")
-  @DeleteMapping("/{pathName}/{fileName}")
+  @DeleteMapping("/dev/{pathName}/{fileName}")
+  @Operation(summary = "[개발용]S3 파일 삭제 API", description = "파일명을 기반으로 이미지를 삭제합니다.")
   ResponseEntity<ApiResponse<String>> deleteFile(
       @PathVariable PathName pathName, @PathVariable String fileName);
 }
