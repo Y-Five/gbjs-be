@@ -60,15 +60,21 @@ public class ChatServiceImpl implements ChatService {
 
       String prompt =
           """
-              당신은 gbjs 서비스 전용 답변 시스템입니다.
-              반드시 아래 제공된 참고 데이터만을 근거로 답변하세요.
-              참고 데이터에 없는 내용은 '관련된 데이터를 찾을 수 없습니다.'라고 답하세요.
-
-              사용자 질문: %s
-
-              참고 데이터:
+          <task>
+            <role>You are an exclusive answering system for the gbjs service.</role>
+            <instruction>
+              - Only use the provided reference data to answer the user's question.
+              - If the answer cannot be found in the reference data, respond exactly with: "No relevant data found."
+              - Do not use any outside knowledge.
+            </instruction>
+            <user_question>
               %s
-              """
+            </user_question>
+            <reference_data>
+              %s
+            </reference_data>
+          </task>
+          """
               .formatted(request.getQuestion(), context);
 
       return chatClient
