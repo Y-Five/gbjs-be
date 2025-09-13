@@ -45,6 +45,9 @@ public class Seal extends BaseTimeEntity {
   @Column(name = "backImageUrl", nullable = false)
   private String backImageUrl;
 
+  @Column(name = "uncollected_image_url")
+  private String uncollectedImageUrl;
+
   // 외래키 관계
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "seal_spot_id")

@@ -6,6 +6,7 @@ package com.yfive.gbjs.domain.seal.dto.response;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Rarity;
 
@@ -21,6 +22,7 @@ public class UserSealResponse {
   @Getter
   @NoArgsConstructor
   @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @Schema(title = "UserSeal : 사용자 띠부씰 수집 현황 DTO")
   public static class UserSealDTO {
     @Schema(description = "띠부씰 ID", example = "1")
@@ -55,6 +57,9 @@ public class UserSealResponse {
 
     @Schema(description = "수집 일시", example = "2025-01-26T10:30:00")
     private LocalDateTime collectedAt;
+
+    @Schema(description = "수집하지 않은 띠부씰 이미지 URL", example = "https://example.com/uncollected.jpg")
+    private String uncollectedImageUrl;
   }
 
   @Builder
@@ -90,6 +95,7 @@ public class UserSealResponse {
   @Getter
   @NoArgsConstructor
   @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @Schema(title = "NearbySeal : 주변 띠부씰 DTO")
   public static class NearbySealDTO {
     @Schema(description = "띠부씰 ID", example = "1")
@@ -127,6 +133,9 @@ public class UserSealResponse {
 
     @Schema(description = "현재 위치로부터의 거리 (m)", example = "500")
     private Integer distance;
+
+    @Schema(description = "수집하지 않은 띠부씰 이미지 URL", example = "https://example.com/uncollected.jpg")
+    private String uncollectedImageUrl;
   }
 
   @Builder
