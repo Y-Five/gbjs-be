@@ -156,7 +156,11 @@ public class SealServiceImpl implements SealService {
   @Override
   @Transactional
   public SealResponse.SealDTO uploadSealImages(
-      Long sealId, MultipartFile frontImage, MultipartFile backImage, String content) {
+      Long sealId,
+      MultipartFile frontImage,
+      MultipartFile backImage,
+      MultipartFile uncollectedImage,
+      String content) {
     Seal seal =
         sealRepository
             .findById(sealId)
@@ -170,6 +174,11 @@ public class SealServiceImpl implements SealService {
     if (backImage != null && !backImage.isEmpty()) {
       String backImageUrl = s3Service.uploadFile(PathName.SEAL, backImage);
       seal.setBackImageUrl(backImageUrl);
+    }
+
+    if (uncollectedImage != null && !uncollectedImage.isEmpty()) {
+      String uncollectedImageUrl = s3Service.uploadFile(PathName.SEAL, uncollectedImage);
+      seal.setUncollectedImageUrl(uncollectedImageUrl);
     }
 
     if (content != null && !content.trim().isEmpty()) {

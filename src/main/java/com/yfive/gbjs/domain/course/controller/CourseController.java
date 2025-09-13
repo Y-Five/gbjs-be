@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
-import com.yfive.gbjs.domain.seal.entity.SortBy;
+import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,7 +48,7 @@ public interface CourseController {
           @Parameter(
               description = "정렬 옵션 (LATEST: 코스 저장 최신순, OLDEST: 코스 저장 오래된순)",
               example = "LATEST")
-          SortBy sortBy);
+          CourseSortBy sortBy);
 
   @Operation(summary = "여행 코스 상세 조회", description = "코스 ID로 상세 정보를 조회합니다.")
   @GetMapping("/{courseId}")

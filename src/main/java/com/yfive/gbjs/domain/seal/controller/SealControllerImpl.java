@@ -76,9 +76,10 @@ public class SealControllerImpl implements SealController {
       @PathVariable Long sealId,
       @RequestPart(value = "frontImage", required = false) MultipartFile frontImage,
       @RequestPart(value = "backImage", required = false) MultipartFile backImage,
+      @RequestPart(value = "uncollectedImage", required = false) MultipartFile uncollectedImage,
       @RequestParam(value = "content", required = false) String content) {
     SealResponse.SealDTO response =
-        sealService.uploadSealImages(sealId, frontImage, backImage, content);
+        sealService.uploadSealImages(sealId, frontImage, backImage, uncollectedImage, content);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

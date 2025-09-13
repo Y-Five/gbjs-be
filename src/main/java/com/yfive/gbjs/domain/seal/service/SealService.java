@@ -65,7 +65,11 @@ public interface SealService {
    * @return 업데이트된 띠부씰 정보 DTO
    */
   SealResponse.SealDTO uploadSealImages(
-      Long sealId, MultipartFile frontImage, MultipartFile backImage, String content);
+      Long sealId,
+      MultipartFile frontImage,
+      MultipartFile backImage,
+      MultipartFile uncollectedImage,
+      String content);
 
   /**
    * 띠부씰 상품 목록 조회
