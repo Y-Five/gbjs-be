@@ -23,15 +23,17 @@ public class UserSealConverter {
             .spotName(seal.getSpotName())
             .locationName(seal.getLocationName())
             .location(seal.getLocation())
-            .content(seal.getContent())
             .rarity(seal.getRarity())
-            .frontImageUrl(seal.getFrontImageUrl())
-            .backImageUrl(seal.getBackImageUrl())
             .collected(collected)
             .collectedAt(collectedAt);
 
-    if (!collected) {
-      builder.uncollectedImageUrl(seal.getUncollectedImageUrl());
+    if (collected) {
+      builder
+          .content(seal.getContent())
+          .frontImageUrl(seal.getFrontImageUrl())
+          .backImageUrl(seal.getBackImageUrl());
+    } else {
+      builder.frontImageUrl(seal.getUncollectedImageUrl());
     }
 
     return builder.build();
@@ -56,16 +58,18 @@ public class UserSealConverter {
             .spotName(seal.getSpotName())
             .locationName(seal.getLocationName())
             .location(seal.getLocation())
-            .content(seal.getContent())
             .rarity(seal.getRarity())
-            .frontImageUrl(seal.getFrontImageUrl())
-            .backImageUrl(seal.getBackImageUrl())
             .collected(collected)
             .collectedAt(collectedAt)
             .distance(distance);
 
-    if (!collected) {
-      builder.uncollectedImageUrl(seal.getUncollectedImageUrl());
+    if (collected) {
+      builder
+          .content(seal.getContent())
+          .frontImageUrl(seal.getFrontImageUrl())
+          .backImageUrl(seal.getBackImageUrl());
+    } else {
+      builder.frontImageUrl(seal.getUncollectedImageUrl());
     }
     return builder.build();
   }

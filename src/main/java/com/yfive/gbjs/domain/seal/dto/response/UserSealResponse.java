@@ -57,9 +57,6 @@ public class UserSealResponse {
 
     @Schema(description = "수집 일시", example = "2025-01-26T10:30:00")
     private LocalDateTime collectedAt;
-
-    @Schema(description = "수집하지 않은 띠부씰 이미지 URL", example = "https://example.com/uncollected.jpg")
-    private String uncollectedImageUrl;
   }
 
   @Builder
@@ -133,9 +130,6 @@ public class UserSealResponse {
 
     @Schema(description = "현재 위치로부터의 거리 (m)", example = "500")
     private Integer distance;
-
-    @Schema(description = "수집하지 않은 띠부씰 이미지 URL", example = "https://example.com/uncollected.jpg")
-    private String uncollectedImageUrl;
   }
 
   @Builder
