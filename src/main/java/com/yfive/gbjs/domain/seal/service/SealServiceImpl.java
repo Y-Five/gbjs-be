@@ -305,89 +305,52 @@ public class SealServiceImpl implements SealService {
   public UserSealResponse.NearbySealListDTO getNearbySeals(
       Authentication authentication, Double latitude, Double longitude) {
     List<Seal> allSeals = sealRepository.findAll();
-    List<UserSealResponse.NearbySealDTO> nearbySealDTOs;
 
-    if (authentication != null && authentication.isAuthenticated()) {
-      Long userId = userService.getCurrentUser().getId();
-      List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
-      Map<Long, UserSeal> userSealMap =
-          userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
+    List<UserSealResponse.NearbySealDTO> nearbySealDTOs =
+        allSeals.stream()
+            .filter(
+                seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
+            .map(
+                seal -> {
+                  String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
+                  String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
 
-      nearbySealDTOs =
-          allSeals.stream()
-              .filter(
-                  seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
-              .map(
-                  seal -> {
-                    String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
-                    String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
+                  if (guideLatStr == null || guideLonStr == null) {
+                    return null;
+                  }
 
-                    if (guideLatStr == null || guideLonStr == null) {
-                      return null;
+                  try {
+                    double guideLat = Double.parseDouble(guideLatStr);
+                    double guideLon = Double.parseDouble(guideLonStr);
+
+                    double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
+                    int distanceM = (int) Math.round(distanceKm * 1000);
+
+                    boolean collected = false;
+                    LocalDateTime collectedAt = null;
+
+                    if (authentication != null && authentication.isAuthenticated()) {
+                      Long userId = userService.getCurrentUser().getId();
+                      UserSeal userSeal =
+                          userSealRepository
+                              .findByUser_IdAndSeal_Id(userId, seal.getId())
+                              .orElse(null);
+                      collected = userSeal != null && userSeal.getCollected();
+                      collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
                     }
 
-                    try {
-                      double guideLat = Double.parseDouble(guideLatStr);
-                      double guideLon = Double.parseDouble(guideLonStr);
+                    return userSealConverter.toNearbyDTO(seal, collected, collectedAt, distanceM);
 
-                      double distanceKm =
-                          calculateDistance(latitude, longitude, guideLat, guideLon);
-                      int distanceM = (int) Math.round(distanceKm * 1000);
-
-                      UserSeal userSeal = userSealMap.get(seal.getId());
-                      boolean collected = userSeal != null && userSeal.getCollected();
-                      LocalDateTime collectedAt =
-                          userSeal != null ? userSeal.getCollectedAt() : null;
-
-                      return userSealConverter.toNearbyDTO(seal, collected, collectedAt, distanceM);
-
-                    } catch (NumberFormatException e) {
-                      return null;
-                    }
-                  })
-              .filter(dto -> dto != null)
-              .sorted(
-                  java.util.Comparator.comparing(
-                      (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
-              .limit(4) // 가장 가까운 4개만
-              .collect(Collectors.toList());
-    } else {
-      // 비로그인 시 수집여부 false
-      nearbySealDTOs =
-          allSeals.stream()
-              .filter(
-                  seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
-              .map(
-                  seal -> {
-                    String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
-                    String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
-
-                    if (guideLatStr == null || guideLonStr == null) {
-                      return null;
-                    }
-
-                    try {
-                      double guideLat = Double.parseDouble(guideLatStr);
-                      double guideLon = Double.parseDouble(guideLonStr);
-
-                      double distanceKm =
-                          calculateDistance(latitude, longitude, guideLat, guideLon);
-                      int distanceM = (int) Math.round(distanceKm * 1000);
-
-                      // For unauthenticated users, collected is always false, collectedAt is null
-                      return userSealConverter.toNearbyDTO(seal, false, null, distanceM);
-
-                    } catch (NumberFormatException e) {
-                      return null;
-                    }
-                  })
-              .filter(dto -> dto != null)
-              .sorted(
-                  java.util.Comparator.comparing(
-                      (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
-              .limit(4) // 가장 가까운 4개만
-              .collect(Collectors.toList());
-    }
+                  } catch (NumberFormatException e) {
+                    return null;
+                  }
+                })
+            .filter(dto -> dto != null)
+            .sorted(
+                java.util.Comparator.comparing(
+                    (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
+            .limit(4) // 가장 가까운 4개만
+            .collect(Collectors.toList());
 
     return UserSealResponse.NearbySealListDTO.builder().nearbySeals(nearbySealDTOs).build();
   }
