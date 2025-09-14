@@ -23,26 +23,27 @@ public class UserSealConverter {
             .spotName(seal.getSpotName())
             .locationName(seal.getLocationName())
             .location(seal.getLocation())
-            .content(seal.getContent())
             .rarity(seal.getRarity())
-            .frontImageUrl(seal.getFrontImageUrl())
-            .backImageUrl(seal.getBackImageUrl())
             .collected(collected)
             .collectedAt(collectedAt);
 
-    if (!collected) {
-      builder.uncollectedImageUrl(seal.getUncollectedImageUrl());
+    if (collected) {
+      builder
+          .content(seal.getContent())
+          .frontImageUrl(seal.getFrontImageUrl())
+          .backImageUrl(seal.getBackImageUrl());
+    } else {
+      builder.frontImageUrl(seal.getUncollectedImageUrl());
     }
 
     return builder.build();
   }
 
-  public UserSealResponse.UserSealListDTO toListDTO(List<UserSealResponse.UserSealDTO> seals) {
-    long collectedCount = seals.stream().filter(UserSealResponse.UserSealDTO::isCollected).count();
-
+  public UserSealResponse.UserSealListDTO toListDTO(
+      List<UserSealResponse.UserSealDTO> seals, int collectedCount) {
     return UserSealResponse.UserSealListDTO.builder()
         .totalCount(seals.size())
-        .collectedCount((int) collectedCount)
+        .collectedCount(collectedCount)
         .seals(seals)
         .build();
   }
@@ -56,16 +57,18 @@ public class UserSealConverter {
             .spotName(seal.getSpotName())
             .locationName(seal.getLocationName())
             .location(seal.getLocation())
-            .content(seal.getContent())
             .rarity(seal.getRarity())
-            .frontImageUrl(seal.getFrontImageUrl())
-            .backImageUrl(seal.getBackImageUrl())
             .collected(collected)
             .collectedAt(collectedAt)
             .distance(distance);
 
-    if (!collected) {
-      builder.uncollectedImageUrl(seal.getUncollectedImageUrl());
+    if (collected) {
+      builder
+          .content(seal.getContent())
+          .frontImageUrl(seal.getFrontImageUrl())
+          .backImageUrl(seal.getBackImageUrl());
+    } else {
+      builder.frontImageUrl(seal.getUncollectedImageUrl());
     }
     return builder.build();
   }

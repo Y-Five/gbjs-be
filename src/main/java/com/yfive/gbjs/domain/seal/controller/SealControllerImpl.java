@@ -39,21 +39,22 @@ public class SealControllerImpl implements SealController {
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealDTO>> searchSeals(
       Authentication authentication, Long sealSpotId) {
-    UserSealResponse.UserSealDTO response = sealService.searchSeals(sealSpotId);
+    UserSealResponse.UserSealDTO response = sealService.searchSeals(authentication, sealSpotId);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getAllSeals(
-      SortBy sortBy, List<String> locationNames) {
-    UserSealResponse.UserSealListDTO response = sealService.getAllSeals(sortBy, locationNames);
+      Authentication authentication, SortBy sortBy, List<String> locationNames) {
+    UserSealResponse.UserSealListDTO response =
+        sealService.getAllSeals(authentication, sortBy, locationNames);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getMySeals(
       Authentication authentication, SortBy sortBy) {
-    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(sortBy);
+    UserSealResponse.UserSealListDTO response = sealService.getUserSeals(authentication, sortBy);
 
     // 획득한 띠부씰이 있는지 확인하여 적절한 메시지 설정 (NPE 방지)
     boolean hasCollected =
@@ -91,8 +92,9 @@ public class SealControllerImpl implements SealController {
 
   @Override
   public ResponseEntity<ApiResponse<UserSealResponse.NearbySealListDTO>> getNearbySeals(
-      Double latitude, Double longitude) {
-    UserSealResponse.NearbySealListDTO response = sealService.getNearbySeals(latitude, longitude);
+      Authentication authentication, Double latitude, Double longitude) {
+    UserSealResponse.NearbySealListDTO response =
+        sealService.getNearbySeals(authentication, latitude, longitude);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 

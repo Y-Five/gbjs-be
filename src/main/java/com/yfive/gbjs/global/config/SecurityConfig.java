@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -140,9 +139,21 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                 .hasRole("DEVELOPER")
-                .requestMatchers("/api/auth/**", "/actuator/health", "/api/courses/recommend")
-                .permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/courses/*")
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/actuator/health",
+                    "/api/seals/user",
+                    "/api/seals/popular-spots",
+                    "/api/seals/products",
+                    "/api/seals/location",
+                    "/api/seals/nearby",
+                    "/api/seals/spot/**",
+                    "/api/spots/**",
+                    "/api/weathers",
+                    "/api/traditions",
+                    "/api/chat",
+                    "/api/festivals/**",
+                    "/api/tts")
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()
