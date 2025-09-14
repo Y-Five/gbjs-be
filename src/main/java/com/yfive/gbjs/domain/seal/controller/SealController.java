@@ -43,6 +43,7 @@ public interface SealController {
   @GetMapping("/location")
   @Operation(summary = "행정구역 띠부씰 조회", description = "행정구역 띠부씰 목록을 조회합니다.")
   ResponseEntity<ApiResponse<UserSealResponse.UserSealListDTO>> getAllSeals(
+      @Parameter(hidden = true) Authentication authentication,
       @RequestParam(required = false, defaultValue = "NUMBER")
           @Parameter(description = "정렬 옵션 (NUMBER: 번호순, RARITY: 희귀도순, LOCATION: 지역순)")
           SortBy sortBy,
@@ -86,6 +87,7 @@ public interface SealController {
   @GetMapping("/nearby")
   @Operation(summary = "주변 띠부씰 조회", description = "현재 위치에서 가장 가까운 띠부씰 4개를 조회합니다.")
   ResponseEntity<ApiResponse<UserSealResponse.NearbySealListDTO>> getNearbySeals(
+      @Parameter(hidden = true) Authentication authentication,
       @RequestParam @Parameter(description = "현재 위치 위도", required = true, example = "35.79000")
           Double latitude,
       @RequestParam @Parameter(description = "현재 위치 경도", required = true, example = "129.33222")
