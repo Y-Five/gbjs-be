@@ -220,6 +220,15 @@ public class SpotServiceImpl implements SpotService {
             audioGuides.stream()
                 .map(
                     guide -> {
+                      if (guide.getAudioUrl() != null) {
+                        return SpotTtsResponse.builder()
+                            .guideId(guide.getId())
+                            .title(guide.getTitle())
+                            .script(guide.getScript())
+                            .audioURL(guide.getAudioUrl())
+                            .build();
+                      }
+
                       AudioFile audioFile =
                           ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
 
