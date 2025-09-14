@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.*;
+import com.yfive.gbjs.domain.course.entity.RecommendCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.seal.entity.Location;
@@ -103,12 +104,13 @@ public class CourseConverter {
   }
 
   /** RecommendCourse 엔티티를 응답 DTO로 변환합니다. */
-  public CourseResponse.RecommendedCourseDTO toRecommendedCourseDTO(Course course) {
+  public CourseResponse.RecommendedCourseDTO toRecommendedCourseDTO(
+      RecommendCourse recommendCourse) {
     return CourseResponse.RecommendedCourseDTO.builder()
-        .courseId(course.getId())
-        .title(course.getTitle())
-        .locationName(course.getLocationName())
-        .image(course.getThumbnailImageUrl())
+        .courseId(recommendCourse.getCourse().getId()) // Access Course ID from linked Course
+        .title(recommendCourse.getTitle())
+        .locationName(recommendCourse.getLocationName())
+        .image(recommendCourse.getImageUrl())
         .build();
   }
 

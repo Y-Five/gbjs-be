@@ -21,17 +21,17 @@ public class RecommendCourse extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false)
+  @Column(name = "title", nullable = false)
   private String title;
 
-  @Column(nullable = false)
-  private String ImageUrl;
+  @Column(name = "image_url")
+  private String imageUrl;
 
-  @Column(nullable = false)
+  @Column(name = "location_name")
   private String locationName;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(name = "type")
   private RecommendationType type;
 
   @ManyToOne(fetch = FetchType.LAZY)

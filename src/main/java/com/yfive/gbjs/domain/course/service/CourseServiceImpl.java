@@ -18,6 +18,7 @@ import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.Course;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.entity.DailyCourse;
+import com.yfive.gbjs.domain.course.entity.RecommendCourse;
 import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.domain.course.entity.UserCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
@@ -25,6 +26,7 @@ import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
+import com.yfive.gbjs.domain.course.repository.RecommendCourseRepository;
 import com.yfive.gbjs.domain.course.repository.UserCourseRepository;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
@@ -55,6 +57,7 @@ public class CourseServiceImpl implements CourseService {
   private final DailyCourseRepository dailyCourseRepository;
 
   private final UserCourseRepository userCourseRepository;
+  private final RecommendCourseRepository recommendCourseRepository;
 
   /**
    * 여행 코스를 생성합니다. (DB 저장하지 않음) - 날짜 유효성 검증 - 자동으로 제목 생성 (예: "경주, 포항 2일 여행") - 각 일차별로 지역 분배 - 지역별
@@ -356,9 +359,9 @@ public class CourseServiceImpl implements CourseService {
    */
   @Override
   public List<CourseResponse.RecommendedCourseDTO> getRecommendedCourses(RecommendationType type) {
-    List<Course> recommendedCourses = courseRepository.findTop4ByRecommendationType(type);
+    List<RecommendCourse> recommendedCourses = recommendCourseRepository.findTop4ByType(type);
     return recommendedCourses.stream()
-        .map(courseConverter::toRecommendedCourseDTO)
+        .map(courseConverter::toRecommendedCourseDTO) // This will be fixed in CourseConverter
         .collect(Collectors.toList());
   }
 
