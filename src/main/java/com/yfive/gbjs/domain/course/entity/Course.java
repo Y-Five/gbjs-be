@@ -8,12 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
-
-import com.yfive.gbjs.domain.course.entity.RecommendationType;
-import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
-
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+
+import com.yfive.gbjs.domain.user.entity.User;
+import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
 
 import lombok.*;
 
@@ -28,6 +27,10 @@ public class Course extends BaseTimeEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id")
+  private User user;
 
   @Column(name = "title", nullable = false)
   private String title;

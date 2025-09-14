@@ -3,9 +3,11 @@
  */
 package com.yfive.gbjs.domain.course.entity;
 
+import jakarta.persistence.*;
+
 import com.yfive.gbjs.domain.user.entity.User;
 import com.yfive.gbjs.global.common.entity.BaseTimeEntity;
-import jakarta.persistence.*;
+
 import lombok.*;
 
 @Entity

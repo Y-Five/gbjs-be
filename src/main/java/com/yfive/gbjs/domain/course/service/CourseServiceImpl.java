@@ -18,15 +18,14 @@ import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.Course;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.entity.DailyCourse;
-import com.yfive.gbjs.domain.course.entity.UserCourse;
-
 import com.yfive.gbjs.domain.course.entity.RecommendationType;
+import com.yfive.gbjs.domain.course.entity.UserCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
-
+import com.yfive.gbjs.domain.course.repository.UserCourseRepository;
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
@@ -54,7 +53,7 @@ public class CourseServiceImpl implements CourseService {
   private final SealRepository sealRepository;
   private final DailyCourseSpotRespository dailyCourseSpotRespository;
   private final DailyCourseRepository dailyCourseRepository;
-    
+
   private final UserCourseRepository userCourseRepository;
 
   /**
@@ -157,22 +156,24 @@ public class CourseServiceImpl implements CourseService {
     }
 
     // 1. Create and save the master Course template (without a user)
-    Course courseTemplate = Course.builder()
-        .title(title)
-        .startDate(request.getStartDate())
-        .endDate(request.getEndDate())
-        .build();
+    Course courseTemplate =
+        Course.builder()
+            .title(title)
+            .startDate(request.getStartDate())
+            .endDate(request.getEndDate())
+            .build();
 
     // Populate daily courses and spots for the template
     for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
       Location location =
           courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
 
-      DailyCourse dailyCourse = DailyCourse.builder()
-          .dayNumber(dailyCourseRequest.getDayNumber())
-          .date(dailyCourseRequest.getDate())
-          .location(location)
-          .build();
+      DailyCourse dailyCourse =
+          DailyCourse.builder()
+              .dayNumber(dailyCourseRequest.getDayNumber())
+              .date(dailyCourseRequest.getDate())
+              .location(location)
+              .build();
 
       if (dailyCourseRequest.getSpots() != null) {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
@@ -181,13 +182,14 @@ public class CourseServiceImpl implements CourseService {
                   .findById(spotRequest.getSealSpotId())
                   .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
 
-          DailyCourseSpot dailyCourseSpot = DailyCourseSpot.builder()
-              .sealSpot(sealSpot)
-              .spotId(spotRequest.getSpotId())
-              .visitOrder(spotRequest.getVisitOrder())
-              .latitude(spotRequest.getLatitude())
-              .longitude(spotRequest.getLongitude())
-              .build();
+          DailyCourseSpot dailyCourseSpot =
+              DailyCourseSpot.builder()
+                  .sealSpot(sealSpot)
+                  .spotId(spotRequest.getSpotId())
+                  .visitOrder(spotRequest.getVisitOrder())
+                  .latitude(spotRequest.getLatitude())
+                  .longitude(spotRequest.getLongitude())
+                  .build();
           dailyCourse.addSpot(dailyCourseSpot);
         }
       }
@@ -197,10 +199,7 @@ public class CourseServiceImpl implements CourseService {
     Course savedCourse = courseRepository.save(courseTemplate);
 
     // 2. Create the UserCourse link
-    UserCourse userCourse = UserCourse.builder()
-        .user(user)
-        .course(savedCourse)
-        .build();
+    UserCourse userCourse = UserCourse.builder().user(user).course(savedCourse).build();
     userCourseRepository.save(userCourse);
 
     return courseConverter.toCourseDetailDTO(savedCourse);
@@ -230,7 +229,8 @@ public class CourseServiceImpl implements CourseService {
     List<UserCourse> userCourses = userCourseRepository.findByUser(user);
 
     // 2. Extract the master Course templates from the links
-    List<Course> courses = userCourses.stream().map(UserCourse::getCourse).collect(Collectors.toList());
+    List<Course> courses =
+        userCourses.stream().map(UserCourse::getCourse).collect(Collectors.toList());
 
     // 3. Apply location filtering (if any)
     if (locationNames != null && !locationNames.isEmpty()) {
@@ -301,8 +301,13 @@ public class CourseServiceImpl implements CourseService {
   @Transactional
   public void deleteCourse(Long userId, Long courseId) {
     // Find the link in UserCourse table
-    UserCourse userCourse = userCourseRepository.findByUserIdAndCourseId(userId, courseId)
-        .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND)); // Or a more specific error
+    UserCourse userCourse =
+        userCourseRepository
+            .findByUserIdAndCourseId(userId, courseId)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        CourseErrorStatus._COURSE_NOT_FOUND)); // Or a more specific error
 
     // Delete the link, not the master course
     userCourseRepository.delete(userCourse);
@@ -362,20 +367,22 @@ public class CourseServiceImpl implements CourseService {
   public void bookmarkCourse(Long userId, Long courseId) {
     // 1. Check if the link already exists
     if (userCourseRepository.findByUserIdAndCourseId(userId, courseId).isPresent()) {
-      return; // Or throw an exception, e.g., new CustomException(CourseErrorStatus._COURSE_ALREADY_BOOKMARKED)
+      return; // Or throw an exception, e.g., new
+      // CustomException(CourseErrorStatus._COURSE_ALREADY_BOOKMARKED)
     }
 
     // 2. Get User and Course entities
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
-    Course course = courseRepository.findById(courseId)
-        .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
+    Course course =
+        courseRepository
+            .findById(courseId)
+            .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
 
     // 3. Create and save the link
-    UserCourse userCourse = UserCourse.builder()
-        .user(user)
-        .course(course)
-        .build();
+    UserCourse userCourse = UserCourse.builder().user(user).course(course).build();
     userCourseRepository.save(userCourse);
   }
 }

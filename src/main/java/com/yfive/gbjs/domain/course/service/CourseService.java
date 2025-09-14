@@ -21,7 +21,7 @@ public interface CourseService {
    * @param request 코스 생성 요청 정보 (시작일, 종료일, 지역 목록)
    * @return 생성된 코스 상세 정보 (일차별 관광지 포함)
    */
-  CourseResponse.CourseDetailDTO generateCourse(CreateCourseRequest request);
+  CourseResponse.CourseDetailDTO generateCourse(Long userId, CreateCourseRequest request);
 
   /**
    * 생성된 여행 코스를 DB에 저장합니다.
