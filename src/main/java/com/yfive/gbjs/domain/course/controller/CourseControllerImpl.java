@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.gbjs.domain.course.dto.request.CourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
@@ -84,9 +83,9 @@ public class CourseControllerImpl implements CourseController {
 
   @Override
   public ResponseEntity<ApiResponse<Void>> bookmarkCourse(
-      Authentication authentication, CourseRequest.BookmarkCourseRequest request) {
+      Authentication authentication, Long courseId) {
     Long userId = userService.getCurrentUser().getId();
-    courseService.bookmarkCourse(userId, request.getCourseId());
+    courseService.bookmarkCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(null, "코스를 성공적으로 저장했습니다."));
   }
 }

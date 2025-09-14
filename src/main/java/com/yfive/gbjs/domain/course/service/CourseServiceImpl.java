@@ -24,8 +24,6 @@ import com.yfive.gbjs.domain.course.entity.UserCourse;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
-import com.yfive.gbjs.domain.course.repository.DailyCourseRepository;
-import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
 import com.yfive.gbjs.domain.course.repository.RecommendCourseRepository;
 import com.yfive.gbjs.domain.course.repository.UserCourseRepository;
 import com.yfive.gbjs.domain.seal.entity.Location;
@@ -53,9 +51,6 @@ public class CourseServiceImpl implements CourseService {
   private final CourseConverter courseConverter;
   private final UserSealRepository userSealRepository;
   private final SealRepository sealRepository;
-  private final DailyCourseSpotRespository dailyCourseSpotRespository;
-  private final DailyCourseRepository dailyCourseRepository;
-
   private final UserCourseRepository userCourseRepository;
   private final RecommendCourseRepository recommendCourseRepository;
 
@@ -158,7 +153,7 @@ public class CourseServiceImpl implements CourseService {
       title = generateTitle(locations, totalDays);
     }
 
-    // 1. Create and save the master Course template (without a user)
+    // 코스 템플릿을 생성하고 저장 (사용자 연결 없음)
     Course courseTemplate =
         Course.builder()
             .title(title)
@@ -166,7 +161,7 @@ public class CourseServiceImpl implements CourseService {
             .endDate(request.getEndDate())
             .build();
 
-    // Populate daily courses and spots for the template
+    // 템플릿에 일차별 코스와 장소 채움
     for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
       Location location =
           courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
@@ -201,7 +196,6 @@ public class CourseServiceImpl implements CourseService {
 
     Course savedCourse = courseRepository.save(courseTemplate);
 
-    // 2. Create the UserCourse link
     UserCourse userCourse = UserCourse.builder().user(user).course(savedCourse).build();
     userCourseRepository.save(userCourse);
 
@@ -238,7 +232,6 @@ public class CourseServiceImpl implements CourseService {
             .endDate(request.getEndDate())
             .build();
 
-    // Populate daily courses and spots for the template
     for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
       Location location =
           courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
@@ -296,14 +289,12 @@ public class CourseServiceImpl implements CourseService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
-    // 1. Get all UserCourse links for the user
     List<UserCourse> userCourses = userCourseRepository.findByUser(user);
 
-    // 2. Extract the master Course templates from the links
     List<Course> courses =
         userCourses.stream().map(UserCourse::getCourse).collect(Collectors.toList());
 
-    // 3. Apply location filtering (if any)
+    // 지역 필터링을 적용
     if (locationNames != null && !locationNames.isEmpty()) {
       courses =
           courses.stream()
@@ -318,13 +309,11 @@ public class CourseServiceImpl implements CourseService {
               .collect(Collectors.toList());
     }
 
-    // 4. Sort and map to DTOs
     List<CourseResponse.CourseSummaryDTO> summaries =
         courses.stream()
             .sorted(getCourseComparator(sortBy))
             .map(
                 course -> {
-                  // ... (rest of the logic is the same)
                   int totalCollectableSealsForCourse = 0;
                   int userCollectedSealsForCourse = 0;
 
@@ -371,7 +360,7 @@ public class CourseServiceImpl implements CourseService {
   @Override
   @Transactional
   public void deleteCourse(Long userId, Long courseId) {
-    // Find the link in UserCourse table
+    // UserCourse 테이블에서 링크를 찾습니다.
     UserCourse userCourse =
         userCourseRepository
             .findByUserIdAndCourseId(userId, courseId)
@@ -380,7 +369,6 @@ public class CourseServiceImpl implements CourseService {
                     new CustomException(
                         CourseErrorStatus._COURSE_NOT_FOUND)); // Or a more specific error
 
-    // Delete the link, not the master course
     userCourseRepository.delete(userCourse);
   }
 
@@ -429,20 +417,17 @@ public class CourseServiceImpl implements CourseService {
   public List<CourseResponse.RecommendedCourseDTO> getRecommendedCourses(RecommendationType type) {
     List<RecommendCourse> recommendedCourses = recommendCourseRepository.findTop4ByType(type);
     return recommendedCourses.stream()
-        .map(courseConverter::toRecommendedCourseDTO) // This will be fixed in CourseConverter
+        .map(courseConverter::toRecommendedCourseDTO)
         .collect(Collectors.toList());
   }
 
   @Override
   @Transactional
   public void bookmarkCourse(Long userId, Long courseId) {
-    // 1. Check if the link already exists
     if (userCourseRepository.findByUserIdAndCourseId(userId, courseId).isPresent()) {
-      return; // Or throw an exception, e.g., new
-      // CustomException(CourseErrorStatus._COURSE_ALREADY_BOOKMARKED)
+      return;
     }
 
-    // 2. Get User and Course entities
     User user =
         userRepository
             .findById(userId)
@@ -452,7 +437,6 @@ public class CourseServiceImpl implements CourseService {
             .findById(courseId)
             .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
 
-    // 3. Create and save the link
     UserCourse userCourse = UserCourse.builder().user(user).course(course).build();
     userCourseRepository.save(userCourse);
   }

@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.yfive.gbjs.domain.course.dto.request.CourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseRequest;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
@@ -39,7 +38,7 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody SaveCourseRequest request);
 
-  @Operation(summary = "관리자용 여행 코스 저장", description = "사용자 연결 없이 코스를 저장합니다. (관리자용)")
+  @Operation(summary = "[개발용] 여행 코스 저장", description = "사용자 연결 없이 코스를 저장합니다.")
   @PostMapping("/admin/save")
   ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> createCourseForAdmin(
       @Valid @RequestBody SaveCourseRequest request);
@@ -76,8 +75,8 @@ public interface CourseController {
           RecommendationType type);
 
   @Operation(summary = "추천 코스 저장 (북마크)", description = "추천 코스를 내 코스 목록에 저장(북마크)합니다.")
-  @PostMapping("/recommend")
+  @PostMapping("/recommend/{courseId}")
   ResponseEntity<ApiResponse<Void>> bookmarkCourse(
       @Parameter(hidden = true) Authentication authentication,
-      @Valid @RequestBody CourseRequest.BookmarkCourseRequest request);
+      @PathVariable @Parameter(description = "저장할 코스 ID", example = "1") Long courseId);
 }
