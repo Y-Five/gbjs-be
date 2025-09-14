@@ -126,6 +126,12 @@ public class SpotServiceImpl implements SpotService {
       List<SpotResponse> spotResponses = new ArrayList<>();
       for (JsonNode item : items) {
         SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
+        if (item.get("mapy") != null) {
+          spotResponse.setLatitude(item.get("mapy").asDouble());
+        }
+        if (item.get("mapx") != null) {
+          spotResponse.setLongitude(item.get("mapx").asDouble());
+        }
         spotResponses.add(spotResponse);
 
         if (latitude != null
@@ -182,6 +188,13 @@ public class SpotServiceImpl implements SpotService {
 
       SpotDetailResponse spotDetailResponse =
           objectMapper.treeToValue(itemNode, SpotDetailResponse.class);
+
+      if (itemNode.get("mapy") != null) {
+        spotDetailResponse.setLatitude(itemNode.get("mapy").asDouble());
+      }
+      if (itemNode.get("mapx") != null) {
+        spotDetailResponse.setLongitude(itemNode.get("mapx").asDouble());
+      }
 
       if (latitude != null
           && longitude != null

@@ -42,6 +42,14 @@ public class SpotDetailResponse {
   @Schema(description = "관광지 주소", example = "경상북도 경주시 첨성로 140-25")
   private String address;
 
+  @Setter
+  @Schema(description = "위도", example = "36.5759985")
+  private Double latitude;
+
+  @Setter
+  @Schema(description = "경도", example = "128.505832")
+  private Double longitude;
+
   @Schema(description = "전화번호", example = "02-1234-5678")
   private String tel;
 
