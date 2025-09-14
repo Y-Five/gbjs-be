@@ -13,7 +13,9 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
+import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.domain.course.service.CourseService;
+import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class CourseControllerImpl implements CourseController {
 
   private final CourseService courseService;
-  private final com.yfive.gbjs.domain.user.service.UserService userService;
+  private final UserService userService;
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourse(
@@ -37,6 +39,13 @@ public class CourseControllerImpl implements CourseController {
       Authentication authentication, SaveCourseRequest request) {
     Long userId = userService.getCurrentUser().getId();
     CourseResponse.CourseDetailDTO response = courseService.saveCourse(userId, request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> createCourseForAdmin(
+      SaveCourseRequest request) {
+    CourseResponse.CourseDetailDTO response = courseService.createCourseForAdmin(request);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
@@ -63,5 +72,20 @@ public class CourseControllerImpl implements CourseController {
     Long userId = userService.getCurrentUser().getId();
     courseService.deleteCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<List<CourseResponse.RecommendedCourseDTO>>>
+      getRecommendedCourses(RecommendationType type) {
+    List<CourseResponse.RecommendedCourseDTO> response = courseService.getRecommendedCourses(type);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<Void>> bookmarkCourse(
+      Authentication authentication, Long courseId) {
+    Long userId = userService.getCurrentUser().getId();
+    courseService.bookmarkCourse(userId, courseId);
+    return ResponseEntity.ok(ApiResponse.success(null, "코스를 성공적으로 저장했습니다."));
   }
 }

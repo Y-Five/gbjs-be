@@ -157,4 +157,23 @@ public class CourseResponse {
     @Schema(description = "코스 내 수집한 띠부씰 수", example = "2")
     private int userCollectedSeals;
   }
+
+  @Builder
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "RecommendCourse : 테마별, 행사별 추천 코스 정보")
+  public static class RecommendedCourseDTO {
+    @Schema(description = "코스 ID", example = "1")
+    private Long courseId;
+
+    @Schema(description = "추천 코스 제목", example = "힐링 가득, 경북의 자연 명소")
+    private String title;
+
+    @Schema(description = "대표 지역명", example = "경주, 안동")
+    private String locationName;
+
+    @Schema(description = "썸네일 이미지 URL")
+    private String image;
+  }
 }

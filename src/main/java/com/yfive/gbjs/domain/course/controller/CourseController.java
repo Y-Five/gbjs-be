@@ -15,6 +15,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.CreateCourseReques
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
+import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,11 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody SaveCourseRequest request);
 
+  @Operation(summary = "[개발용] 여행 코스 저장", description = "사용자 연결 없이 코스를 저장합니다.")
+  @PostMapping("/admin/save")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> createCourseForAdmin(
+      @Valid @RequestBody SaveCourseRequest request);
+
   @Operation(summary = "내 여행 코스 목록 조회", description = "사용자가 저장한 코스 목록을 조회합니다.")
   @GetMapping("/users")
   ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
@@ -56,9 +62,21 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "코스 ID", example = "1") Long courseId);
 
-  @Operation(summary = "여행 코스 삭제", description = "코스 ID로 코스를 삭제합니다.")
+  @Operation(summary = "저장한 여행 코스 삭제", description = "코스 ID로 저장한 코스를 삭제합니다.")
   @DeleteMapping("/{courseId}")
   ResponseEntity<ApiResponse<Void>> deleteCourse(
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "삭제할 코스 ID", example = "1") Long courseId);
+
+  @Operation(summary = "테마별/행사별 코스 조회", description = "테마별/행사별 추천 코스를 조회합니다.")
+  @GetMapping("/recommend")
+  ResponseEntity<ApiResponse<List<CourseResponse.RecommendedCourseDTO>>> getRecommendedCourses(
+      @RequestParam @Parameter(description = "추천 타입 (THEME, FESTIVAL)", required = true)
+          RecommendationType type);
+
+  @Operation(summary = "추천 코스 저장 (북마크)", description = "추천 코스를 내 코스 목록에 저장(북마크)합니다.")
+  @PostMapping("/recommend/{courseId}")
+  ResponseEntity<ApiResponse<Void>> bookmarkCourse(
+      @Parameter(hidden = true) Authentication authentication,
+      @PathVariable @Parameter(description = "저장할 코스 ID", example = "1") Long courseId);
 }
