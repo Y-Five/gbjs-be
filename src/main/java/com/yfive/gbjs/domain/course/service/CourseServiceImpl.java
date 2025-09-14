@@ -18,14 +18,15 @@ import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.Course;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.entity.DailyCourse;
-import com.yfive.gbjs.domain.course.entity.RecommendCourse;
+import com.yfive.gbjs.domain.course.entity.UserCourse;
+
 import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.domain.course.entity.mapper.DailyCourseSpot;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.course.repository.CourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseRepository;
 import com.yfive.gbjs.domain.course.repository.DailyCourseSpotRespository;
-import com.yfive.gbjs.domain.course.repository.RecommendCourseRepository;
+
 import com.yfive.gbjs.domain.seal.entity.Location;
 import com.yfive.gbjs.domain.seal.entity.Seal;
 import com.yfive.gbjs.domain.seal.entity.SealSpot;
@@ -53,7 +54,8 @@ public class CourseServiceImpl implements CourseService {
   private final SealRepository sealRepository;
   private final DailyCourseSpotRespository dailyCourseSpotRespository;
   private final DailyCourseRepository dailyCourseRepository;
-  private final RecommendCourseRepository recommendCourseRepository;
+    
+  private final UserCourseRepository userCourseRepository;
 
   /**
    * 여행 코스를 생성합니다. (DB 저장하지 않음) - 날짜 유효성 검증 - 자동으로 제목 생성 (예: "경주, 포항 2일 여행") - 각 일차별로 지역 분배 - 지역별
@@ -139,7 +141,6 @@ public class CourseServiceImpl implements CourseService {
             .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
     long totalDays = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
-
     if (totalDays < 1) {
       throw new CustomException(CourseErrorStatus._INVALID_DATE_RANGE);
     }
@@ -147,7 +148,6 @@ public class CourseServiceImpl implements CourseService {
     // 제목이 없으면 자동 생성
     String title = request.getTitle();
     if (title == null || title.trim().isEmpty()) {
-      // 일차별 코스에서 지역 명 추출
       List<Location> locations =
           request.getDailyCourses().stream()
               .map(dc -> courseConverter.getLocationFromKoreanName(dc.getLocation()))
@@ -156,28 +156,23 @@ public class CourseServiceImpl implements CourseService {
       title = generateTitle(locations, totalDays);
     }
 
-    Course course =
-        courseRepository.save(
-            Course.builder()
-                .user(user)
-                .title(title)
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .build());
+    // 1. Create and save the master Course template (without a user)
+    Course courseTemplate = Course.builder()
+        .title(title)
+        .startDate(request.getStartDate())
+        .endDate(request.getEndDate())
+        .build();
 
-    // 요청에 포함된 일차별 코스 및 관광지 정보로 저장
+    // Populate daily courses and spots for the template
     for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
       Location location =
           courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
 
-      DailyCourse dailyCourse =
-          dailyCourseRepository.save(
-              DailyCourse.builder()
-                  .dayNumber(dailyCourseRequest.getDayNumber())
-                  .date(dailyCourseRequest.getDate())
-                  .location(location)
-                  .course(course)
-                  .build());
+      DailyCourse dailyCourse = DailyCourse.builder()
+          .dayNumber(dailyCourseRequest.getDayNumber())
+          .date(dailyCourseRequest.getDate())
+          .location(location)
+          .build();
 
       if (dailyCourseRequest.getSpots() != null) {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
@@ -186,24 +181,28 @@ public class CourseServiceImpl implements CourseService {
                   .findById(spotRequest.getSealSpotId())
                   .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
 
-          DailyCourseSpot dailyCourseSpot =
-              dailyCourseSpotRespository.save(
-                  DailyCourseSpot.builder()
-                      .sealSpot(sealSpot)
-                      .spotId(spotRequest.getSpotId())
-                      .visitOrder(spotRequest.getVisitOrder())
-                      .latitude(spotRequest.getLatitude())
-                      .longitude(spotRequest.getLongitude())
-                      .dailyCourse(dailyCourse)
-                      .build());
+          DailyCourseSpot dailyCourseSpot = DailyCourseSpot.builder()
+              .sealSpot(sealSpot)
+              .spotId(spotRequest.getSpotId())
+              .visitOrder(spotRequest.getVisitOrder())
+              .latitude(spotRequest.getLatitude())
+              .longitude(spotRequest.getLongitude())
+              .build();
           dailyCourse.addSpot(dailyCourseSpot);
         }
       }
-
-      course.addDailyCourse(dailyCourse);
+      courseTemplate.addDailyCourse(dailyCourse);
     }
 
-    Course savedCourse = courseRepository.save(course);
+    Course savedCourse = courseRepository.save(courseTemplate);
+
+    // 2. Create the UserCourse link
+    UserCourse userCourse = UserCourse.builder()
+        .user(user)
+        .course(savedCourse)
+        .build();
+    userCourseRepository.save(userCourse);
+
     return courseConverter.toCourseDetailDTO(savedCourse);
   }
 
@@ -214,11 +213,6 @@ public class CourseServiceImpl implements CourseService {
         courseRepository
             .findById(courseId)
             .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
-
-    // 본인의 코스인지 확인
-    if (!course.getUser().getId().equals(userId)) {
-      throw new CustomException(UserErrorStatus.UNAUTHORIZED);
-    }
 
     return courseConverter.toCourseDetailDTO(course);
   }
@@ -232,9 +226,13 @@ public class CourseServiceImpl implements CourseService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
 
-    List<Course> courses = courseRepository.findByUser(user);
+    // 1. Get all UserCourse links for the user
+    List<UserCourse> userCourses = userCourseRepository.findByUser(user);
 
-    // 지역명 필터링 적용
+    // 2. Extract the master Course templates from the links
+    List<Course> courses = userCourses.stream().map(UserCourse::getCourse).collect(Collectors.toList());
+
+    // 3. Apply location filtering (if any)
     if (locationNames != null && !locationNames.isEmpty()) {
       courses =
           courses.stream()
@@ -249,11 +247,13 @@ public class CourseServiceImpl implements CourseService {
               .collect(Collectors.toList());
     }
 
+    // 4. Sort and map to DTOs
     List<CourseResponse.CourseSummaryDTO> summaries =
         courses.stream()
             .sorted(getCourseComparator(sortBy))
             .map(
                 course -> {
+                  // ... (rest of the logic is the same)
                   int totalCollectableSealsForCourse = 0;
                   int userCollectedSealsForCourse = 0;
 
@@ -300,17 +300,12 @@ public class CourseServiceImpl implements CourseService {
   @Override
   @Transactional
   public void deleteCourse(Long userId, Long courseId) {
-    Course course =
-        courseRepository
-            .findById(courseId)
-            .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
+    // Find the link in UserCourse table
+    UserCourse userCourse = userCourseRepository.findByUserIdAndCourseId(userId, courseId)
+        .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND)); // Or a more specific error
 
-    // 본인의 코스인지 확인
-    if (!course.getUser().getId().equals(userId)) {
-      throw new CustomException(UserErrorStatus.UNAUTHORIZED);
-    }
-
-    courseRepository.deleteById(courseId);
+    // Delete the link, not the master course
+    userCourseRepository.delete(userCourse);
   }
 
   /**
@@ -356,9 +351,31 @@ public class CourseServiceImpl implements CourseService {
    */
   @Override
   public List<CourseResponse.RecommendedCourseDTO> getRecommendedCourses(RecommendationType type) {
-    List<RecommendCourse> recommendedCourses = recommendCourseRepository.findTop4ByType(type);
+    List<Course> recommendedCourses = courseRepository.findTop4ByRecommendationType(type);
     return recommendedCourses.stream()
         .map(courseConverter::toRecommendedCourseDTO)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  @Transactional
+  public void bookmarkCourse(Long userId, Long courseId) {
+    // 1. Check if the link already exists
+    if (userCourseRepository.findByUserIdAndCourseId(userId, courseId).isPresent()) {
+      return; // Or throw an exception, e.g., new CustomException(CourseErrorStatus._COURSE_ALREADY_BOOKMARKED)
+    }
+
+    // 2. Get User and Course entities
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorStatus.USER_NOT_FOUND));
+    Course course = courseRepository.findById(courseId)
+        .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
+
+    // 3. Create and save the link
+    UserCourse userCourse = UserCourse.builder()
+        .user(user)
+        .course(course)
+        .build();
+    userCourseRepository.save(userCourse);
   }
 }

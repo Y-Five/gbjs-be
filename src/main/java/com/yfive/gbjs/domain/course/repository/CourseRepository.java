@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.yfive.gbjs.domain.course.entity.Course;
+import com.yfive.gbjs.domain.course.entity.RecommendationType;
 import com.yfive.gbjs.domain.user.entity.User;
 
 @Repository
@@ -21,6 +22,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
   @Query("SELECT c FROM Course c JOIN FETCH c.dailyCourses dc WHERE c.user = :user")
   List<Course> findByUser(@Param("user") User user);
+
+  List<Course> findTop4ByRecommendationType(RecommendationType type);
 
   boolean existsByIdAndUserId(Long courseId, Long userId);
 }

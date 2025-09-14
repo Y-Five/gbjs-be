@@ -68,4 +68,10 @@ public interface CourseController {
   ResponseEntity<ApiResponse<List<CourseResponse.RecommendedCourseDTO>>> getRecommendedCourses(
       @RequestParam @Parameter(description = "추천 타입 (THEME, FESTIVAL)", required = true)
           RecommendationType type);
+
+  @Operation(summary = "추천 코스 저장 (북마크)", description = "추천 코스를 내 코스 목록에 저장(북마크)합니다.")
+  @PostMapping("/recommend")
+  ResponseEntity<ApiResponse<Void>> bookmarkCourse(
+      @Parameter(hidden = true) Authentication authentication,
+      @Valid @RequestBody CourseRequest.BookmarkCourseRequest request);
 }

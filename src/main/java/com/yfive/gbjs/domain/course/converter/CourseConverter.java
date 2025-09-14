@@ -103,13 +103,12 @@ public class CourseConverter {
   }
 
   /** RecommendCourse 엔티티를 응답 DTO로 변환합니다. */
-  public CourseResponse.RecommendedCourseDTO toRecommendedCourseDTO(
-      RecommendCourse recommendCourse) {
+  public CourseResponse.RecommendedCourseDTO toRecommendedCourseDTO(Course course) {
     return CourseResponse.RecommendedCourseDTO.builder()
-        .courseId(recommendCourse.getCourse().getId())
-        .title(recommendCourse.getTitle())
-        .locationName(recommendCourse.getLocationName())
-        .image(recommendCourse.getImageUrl())
+        .courseId(course.getId())
+        .title(course.getTitle())
+        .locationName(course.getLocationName())
+        .image(course.getThumbnailImageUrl())
         .build();
   }
 

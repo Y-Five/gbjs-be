@@ -117,4 +117,14 @@ public class CourseRequest {
       }
     }
   }
+
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Schema(title = "BookmarkCourseRequest : 코스 북마크 요청")
+  public static class BookmarkCourseRequest {
+    @NotNull
+    @Schema(description = "저장할 코스 ID", example = "1")
+    private Long courseId;
+  }
 }

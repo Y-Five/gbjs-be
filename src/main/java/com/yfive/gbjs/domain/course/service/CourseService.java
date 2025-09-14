@@ -69,4 +69,6 @@ public interface CourseService {
    * @return 추천 코스 목록 (4개)
    */
   List<CourseResponse.RecommendedCourseDTO> getRecommendedCourses(RecommendationType type);
+
+  void bookmarkCourse(Long userId, Long courseId);
 }
