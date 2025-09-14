@@ -62,7 +62,7 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "코스 ID", example = "1") Long courseId);
 
-  @Operation(summary = "여행 코스 삭제", description = "코스 ID로 코스를 삭제합니다.")
+  @Operation(summary = "저장한 여행 코스 삭제", description = "코스 ID로 저장한 코스를 삭제합니다.")
   @DeleteMapping("/{courseId}")
   ResponseEntity<ApiResponse<Void>> deleteCourse(
       @Parameter(hidden = true) Authentication authentication,
