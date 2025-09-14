@@ -14,5 +14,5 @@ import com.yfive.gbjs.domain.course.entity.RecommendationType;
 @Repository
 public interface RecommendCourseRepository extends JpaRepository<RecommendCourse, Long> {
 
-  List<RecommendCourse> findTop4ByType(RecommendationType type);
+  List<RecommendCourse> findTop4ByTypeOrderByIdAsc(RecommendationType type);
 }
