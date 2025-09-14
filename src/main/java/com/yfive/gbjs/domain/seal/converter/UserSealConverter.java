@@ -39,12 +39,11 @@ public class UserSealConverter {
     return builder.build();
   }
 
-  public UserSealResponse.UserSealListDTO toListDTO(List<UserSealResponse.UserSealDTO> seals) {
-    long collectedCount = seals.stream().filter(UserSealResponse.UserSealDTO::isCollected).count();
-
+  public UserSealResponse.UserSealListDTO toListDTO(
+      List<UserSealResponse.UserSealDTO> seals, int collectedCount) {
     return UserSealResponse.UserSealListDTO.builder()
         .totalCount(seals.size())
-        .collectedCount((int) collectedCount)
+        .collectedCount(collectedCount)
         .seals(seals)
         .build();
   }

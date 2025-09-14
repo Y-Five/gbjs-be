@@ -5,6 +5,7 @@ package com.yfive.gbjs.domain.seal.service;
 
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.yfive.gbjs.domain.seal.dto.response.PopularSealSpotResponse;
@@ -30,7 +31,7 @@ public interface SealService {
    * @param sealSpotId 띠부씰 관광지 ID
    * @return 특정 띠부씰 정보 DTO
    */
-  UserSealResponse.UserSealDTO searchSeals(Long sealSpotId);
+  UserSealResponse.UserSealDTO searchSeals(Authentication authentication, Long sealSpotId);
 
   /**
    * 등록된 모든 띠부씰 조회
@@ -38,7 +39,8 @@ public interface SealService {
    * @param sortBy 정렬 옵션
    * @return 전체 띠부씰 목록
    */
-  UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames);
+  UserSealResponse.UserSealListDTO getAllSeals(
+      Authentication authentication, SortBy sortBy, List<String> locationNames);
 
   /**
    * 특정 사용자의 띠부씰 수집 현황 조회
@@ -46,7 +48,7 @@ public interface SealService {
    * @param sortBy 정렬 옵션
    * @return 사용자의 띠부씰 수집 현황 (수집한 것/수집하지 않은 것 포함)
    */
-  UserSealResponse.UserSealListDTO getUserSeals(SortBy sortBy);
+  UserSealResponse.UserSealListDTO getUserSeals(Authentication authentication, SortBy sortBy);
 
   /**
    * 특정 사용자의 띠부씰 수집 개수 조회
@@ -85,7 +87,8 @@ public interface SealService {
    * @param longitude 현재 위치 경도
    * @return 가까운 띠부씰 4개 목록
    */
-  UserSealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude);
+  UserSealResponse.NearbySealListDTO getNearbySeals(
+      Authentication authentication, Double latitude, Double longitude);
 
   /**
    * 위치 인증을 통한 띠부씰 획득

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -66,29 +67,30 @@ public class SealServiceImpl implements SealService {
 
   /** sealSpotID로 특정 띠부씰을 조회하여 반환 */
   @Override
-  public UserSealResponse.UserSealDTO searchSeals(Long sealSpotId) {
+  public UserSealResponse.UserSealDTO searchSeals(Authentication authentication, Long sealSpotId) {
     Seal seal =
         sealRepository
             .findBySealSpotId(sealSpotId)
             .orElseThrow(() -> new CustomException(SealErrorStatus.SEAL_NOT_FOUND));
 
-    Long userId = userService.getCurrentUser().getId();
-    UserSeal userSeal =
-        userSealRepository.findByUser_IdAndSeal_Id(userId, seal.getId()).orElse(null);
-    boolean collected = userSeal != null && userSeal.getCollected();
-    java.time.LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+    boolean collected = false;
+    LocalDateTime collectedAt = null;
+
+    if (authentication != null && authentication.isAuthenticated()) {
+      Long userId = userService.getCurrentUser().getId();
+      UserSeal userSeal =
+          userSealRepository.findByUser_IdAndSeal_Id(userId, seal.getId()).orElse(null);
+      collected = userSeal != null && userSeal.getCollected();
+      collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+    }
 
     return userSealConverter.toDTO(seal, collected, collectedAt);
   }
 
   /** 행정구역 띠부씰을 조회하여 반환 */
   @Override
-  public UserSealResponse.UserSealListDTO getAllSeals(SortBy sortBy, List<String> locationNames) {
-    Long userId = userService.getCurrentUser().getId();
-    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
-    Map<Long, UserSeal> userSealMap =
-        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
-
+  public UserSealResponse.UserSealListDTO getAllSeals(
+      Authentication authentication, SortBy sortBy, List<String> locationNames) {
     List<Seal> seals;
     if (locationNames != null && !locationNames.isEmpty()) {
       seals = sealRepository.findAllByLocationNameIn(locationNames);
@@ -96,47 +98,83 @@ public class SealServiceImpl implements SealService {
       seals = sealRepository.findAll();
     }
 
-    // 필터링된 띠부씰에 사용자 수집 정보 매핑
-    List<UserSealResponse.UserSealDTO> userSealDTOs =
-        seals.stream()
-            .map(
-                seal -> {
-                  UserSeal userSeal = userSealMap.get(seal.getId());
-                  boolean collected = userSeal != null && userSeal.getCollected();
-                  LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
-                  return userSealConverter.toDTO(seal, collected, collectedAt);
-                })
-            .sorted(getUserSealComparator(sortBy)) // 정렬
-            .collect(Collectors.toList());
+    List<UserSealResponse.UserSealDTO> userSealDTOs;
+    long collectedCount = 0;
 
-    return userSealConverter.toListDTO(userSealDTOs);
+    if (authentication != null && authentication.isAuthenticated()) {
+      Long userId = userService.getCurrentUser().getId();
+      List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+      Map<Long, UserSeal> userSealMap =
+          userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
+
+      userSealDTOs =
+          seals.stream()
+              .map(
+                  seal -> {
+                    UserSeal userSeal = userSealMap.get(seal.getId());
+                    boolean collected = userSeal != null && userSeal.getCollected();
+                    LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+                    return userSealConverter.toDTO(seal, collected, collectedAt);
+                  })
+              .sorted(getUserSealComparator(sortBy)) // 정렬
+              .collect(Collectors.toList());
+      collectedCount =
+          userSealDTOs.stream().filter(UserSealResponse.UserSealDTO::isCollected).count();
+    } else {
+      // 비로그인 시 수집여부 false
+      userSealDTOs =
+          seals.stream()
+              .map(seal -> userSealConverter.toDTO(seal, false, null))
+              .sorted(getUserSealComparator(sortBy))
+              .collect(Collectors.toList());
+      collectedCount = 0;
+    }
+
+    return userSealConverter.toListDTO(userSealDTOs, (int) collectedCount);
   }
 
   /** 특정 사용자의 띠부씰 수집 현황을 조회 모든 띠부씰에 대해 사용자의 수집 여부와 수집 시간을 포함하여 반환 */
   @Override
-  public UserSealResponse.UserSealListDTO getUserSeals(SortBy sortBy) {
-    Long userId = userService.getCurrentUser().getId();
+  public UserSealResponse.UserSealListDTO getUserSeals(
+      Authentication authentication, SortBy sortBy) {
     List<Seal> allSeals = sealRepository.findAll();
-    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+    List<UserSealResponse.UserSealDTO> userSealDTOs;
+    long collectedCount = 0;
 
-    // 사용자가 수집한 띠부씰을 Map으로 변환 (빠른 조회를 위해)
-    Map<Long, UserSeal> userSealMap =
-        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
+    if (authentication != null && authentication.isAuthenticated()) {
+      Long userId = userService.getCurrentUser().getId();
+      List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
 
-    // 모든 띠부씰에 대해 사용자의 수집 정보를 합쳐서 반환
-    List<UserSealResponse.UserSealDTO> userSealDTOs =
-        allSeals.stream()
-            .map(
-                seal -> {
-                  UserSeal userSeal = userSealMap.get(seal.getId());
-                  boolean collected = userSeal != null && userSeal.getCollected();
-                  LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
-                  return userSealConverter.toDTO(seal, collected, collectedAt);
-                })
-            .sorted(getUserSealComparator(sortBy))
-            .collect(Collectors.toList());
+      Map<Long, UserSeal> userSealMap =
+          userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
-    return userSealConverter.toListDTO(userSealDTOs);
+      userSealDTOs =
+          allSeals.stream()
+              .map(
+                  seal -> {
+                    UserSeal userSeal = userSealMap.get(seal.getId());
+                    boolean collected = userSeal != null && userSeal.getCollected();
+                    LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+                    return userSealConverter.toDTO(seal, collected, collectedAt);
+                  })
+              .sorted(getUserSealComparator(sortBy))
+              .collect(Collectors.toList());
+      collectedCount =
+          userSealDTOs.stream().filter(UserSealResponse.UserSealDTO::isCollected).count();
+    } else {
+      // 비로그인 시 수집여부 false
+      userSealDTOs =
+          allSeals.stream()
+              .map(
+                  seal ->
+                      userSealConverter.toDTO(
+                          seal, false, null)) // collected: false, collectedAt: null
+              .sorted(getUserSealComparator(sortBy))
+              .collect(Collectors.toList());
+      collectedCount = 0; // No seals collected for unauthenticated user
+    }
+
+    return userSealConverter.toListDTO(userSealDTOs, (int) collectedCount);
   }
 
   /** 특정 사용자의 띠부씰 수집 개수를 조회 */
@@ -264,53 +302,92 @@ public class SealServiceImpl implements SealService {
 
   /** 현재 위치 기반 가까운 띠부씰 조회 */
   @Override
-  public UserSealResponse.NearbySealListDTO getNearbySeals(Double latitude, Double longitude) {
-    Long userId = userService.getCurrentUser().getId();
-    List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
-    Map<Long, UserSeal> userSealMap =
-        userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
-    // 모든 Seal 조회 (SealSpot과 AudioGuide 정보 포함)
+  public UserSealResponse.NearbySealListDTO getNearbySeals(
+      Authentication authentication, Double latitude, Double longitude) {
     List<Seal> allSeals = sealRepository.findAll();
+    List<UserSealResponse.NearbySealDTO> nearbySealDTOs;
 
-    // 각 Seal과의 거리를 계산하여 DTO 리스트 생성
-    List<UserSealResponse.NearbySealDTO> nearbySealDTOs =
-        allSeals.stream()
-            .filter(
-                seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
-            .map(
-                seal -> {
-                  // AudioGuide에서 위도/경도 가져오기
-                  String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
-                  String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
+    if (authentication != null && authentication.isAuthenticated()) {
+      Long userId = userService.getCurrentUser().getId();
+      List<UserSeal> userSeals = userSealRepository.findByUserId(userId);
+      Map<Long, UserSeal> userSealMap =
+          userSeals.stream().collect(Collectors.toMap(us -> us.getSeal().getId(), us -> us));
 
-                  if (guideLatStr == null || guideLonStr == null) {
-                    return null;
-                  }
+      nearbySealDTOs =
+          allSeals.stream()
+              .filter(
+                  seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
+              .map(
+                  seal -> {
+                    String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
+                    String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
 
-                  try {
-                    double guideLat = Double.parseDouble(guideLatStr);
-                    double guideLon = Double.parseDouble(guideLonStr);
+                    if (guideLatStr == null || guideLonStr == null) {
+                      return null;
+                    }
 
-                    // 거리 계산 (Haversine formula) - km를 m로 변환
-                    double distanceKm = calculateDistance(latitude, longitude, guideLat, guideLon);
-                    int distanceM = (int) Math.round(distanceKm * 1000);
+                    try {
+                      double guideLat = Double.parseDouble(guideLatStr);
+                      double guideLon = Double.parseDouble(guideLonStr);
 
-                    UserSeal userSeal = userSealMap.get(seal.getId());
-                    boolean collected = userSeal != null && userSeal.getCollected();
-                    LocalDateTime collectedAt = userSeal != null ? userSeal.getCollectedAt() : null;
+                      double distanceKm =
+                          calculateDistance(latitude, longitude, guideLat, guideLon);
+                      int distanceM = (int) Math.round(distanceKm * 1000);
 
-                    return userSealConverter.toNearbyDTO(seal, collected, collectedAt, distanceM);
+                      UserSeal userSeal = userSealMap.get(seal.getId());
+                      boolean collected = userSeal != null && userSeal.getCollected();
+                      LocalDateTime collectedAt =
+                          userSeal != null ? userSeal.getCollectedAt() : null;
 
-                  } catch (NumberFormatException e) {
-                    return null;
-                  }
-                })
-            .filter(dto -> dto != null)
-            .sorted(
-                java.util.Comparator.comparing(
-                    (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
-            .limit(4) // 가장 가까운 4개만
-            .collect(Collectors.toList());
+                      return userSealConverter.toNearbyDTO(seal, collected, collectedAt, distanceM);
+
+                    } catch (NumberFormatException e) {
+                      return null;
+                    }
+                  })
+              .filter(dto -> dto != null)
+              .sorted(
+                  java.util.Comparator.comparing(
+                      (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
+              .limit(4) // 가장 가까운 4개만
+              .collect(Collectors.toList());
+    } else {
+      // 비로그인 시 수집여부 false
+      nearbySealDTOs =
+          allSeals.stream()
+              .filter(
+                  seal -> seal.getSealSpot() != null && seal.getSealSpot().getAudioGuide() != null)
+              .map(
+                  seal -> {
+                    String guideLatStr = seal.getSealSpot().getAudioGuide().getLatitude();
+                    String guideLonStr = seal.getSealSpot().getAudioGuide().getLongitude();
+
+                    if (guideLatStr == null || guideLonStr == null) {
+                      return null;
+                    }
+
+                    try {
+                      double guideLat = Double.parseDouble(guideLatStr);
+                      double guideLon = Double.parseDouble(guideLonStr);
+
+                      double distanceKm =
+                          calculateDistance(latitude, longitude, guideLat, guideLon);
+                      int distanceM = (int) Math.round(distanceKm * 1000);
+
+                      // For unauthenticated users, collected is always false, collectedAt is null
+                      return userSealConverter.toNearbyDTO(seal, false, null, distanceM);
+
+                    } catch (NumberFormatException e) {
+                      return null;
+                    }
+                  })
+              .filter(dto -> dto != null)
+              .sorted(
+                  java.util.Comparator.comparing(
+                      (UserSealResponse.NearbySealDTO dto) -> dto.getDistance()))
+              .limit(4) // 가장 가까운 4개만
+              .collect(Collectors.toList());
+    }
 
     return UserSealResponse.NearbySealListDTO.builder().nearbySeals(nearbySealDTOs).build();
   }
