@@ -39,6 +39,11 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody SaveCourseRequest request);
 
+  @Operation(summary = "관리자용 여행 코스 저장", description = "사용자 연결 없이 코스를 저장합니다. (관리자용)")
+  @PostMapping("/admin/save")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> createCourseForAdmin(
+      @Valid @RequestBody SaveCourseRequest request);
+
   @Operation(summary = "내 여행 코스 목록 조회", description = "사용자가 저장한 코스 목록을 조회합니다.")
   @GetMapping("/users")
   ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(

@@ -208,6 +208,74 @@ public class CourseServiceImpl implements CourseService {
     return courseConverter.toCourseDetailDTO(savedCourse);
   }
 
+  /**
+   * 사용자 연결 없이 코스를 저장합니다. (관리자용) - Course 엔티티 생성 및 저장 - DailyCourse와 DailyCourseSpot 관계 설정 - 영속성
+   * 전이(Cascade)로 연관 엔티티 자동 저장
+   */
+  @Override
+  @Transactional
+  public CourseResponse.CourseDetailDTO createCourseForAdmin(SaveCourseRequest request) {
+    long totalDays = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+    if (totalDays < 1) {
+      throw new CustomException(CourseErrorStatus._INVALID_DATE_RANGE);
+    }
+
+    // 제목이 없으면 자동 생성
+    String title = request.getTitle();
+    if (title == null || title.trim().isEmpty()) {
+      List<Location> locations =
+          request.getDailyCourses().stream()
+              .map(dc -> courseConverter.getLocationFromKoreanName(dc.getLocation()))
+              .distinct()
+              .collect(Collectors.toList());
+      title = generateTitle(locations, totalDays);
+    }
+
+    Course courseTemplate =
+        Course.builder()
+            .title(title)
+            .startDate(request.getStartDate())
+            .endDate(request.getEndDate())
+            .build();
+
+    // Populate daily courses and spots for the template
+    for (SaveCourseRequest.DailyCourseRequest dailyCourseRequest : request.getDailyCourses()) {
+      Location location =
+          courseConverter.getLocationFromKoreanName(dailyCourseRequest.getLocation());
+
+      DailyCourse dailyCourse =
+          DailyCourse.builder()
+              .dayNumber(dailyCourseRequest.getDayNumber())
+              .date(dailyCourseRequest.getDate())
+              .location(location)
+              .build();
+
+      if (dailyCourseRequest.getSpots() != null) {
+        for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
+          SealSpot sealSpot =
+              sealSpotRepository
+                  .findById(spotRequest.getSealSpotId())
+                  .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
+
+          DailyCourseSpot dailyCourseSpot =
+              DailyCourseSpot.builder()
+                  .sealSpot(sealSpot)
+                  .spotId(spotRequest.getSpotId())
+                  .visitOrder(spotRequest.getVisitOrder())
+                  .latitude(spotRequest.getLatitude())
+                  .longitude(spotRequest.getLongitude())
+                  .build();
+          dailyCourse.addSpot(dailyCourseSpot);
+        }
+      }
+      courseTemplate.addDailyCourse(dailyCourse);
+    }
+
+    Course savedCourse = courseRepository.save(courseTemplate);
+
+    return courseConverter.toCourseDetailDTO(savedCourse);
+  }
+
   /** 특정 코스의 상세 정보를 조회합니다. - 코스 존재 여부 확인 - 본인 코스인지 권한 검증 */
   @Override
   public CourseResponse.CourseDetailDTO getCourse(Long userId, Long courseId) {

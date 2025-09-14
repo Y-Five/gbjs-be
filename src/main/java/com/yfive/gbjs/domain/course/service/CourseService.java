@@ -33,6 +33,14 @@ public interface CourseService {
   CourseResponse.CourseDetailDTO saveCourse(Long userId, SaveCourseRequest request);
 
   /**
+   * 사용자 연결 없이 코스를 저장합니다. (관리자용)
+   *
+   * @param request 코스 저장 요청 정보 (제목, 날짜, 일차별 코스 및 관광지)
+   * @return 저장된 코스 상세 정보 (ID 포함)
+   */
+  CourseResponse.CourseDetailDTO createCourseForAdmin(SaveCourseRequest request);
+
+  /**
    * 특정 코스의 상세 정보를 조회합니다.
    *
    * @param userId 사용자 ID (권한 확인용)

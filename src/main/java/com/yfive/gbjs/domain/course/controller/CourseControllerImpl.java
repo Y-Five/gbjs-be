@@ -44,6 +44,13 @@ public class CourseControllerImpl implements CourseController {
   }
 
   @Override
+  public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> createCourseForAdmin(
+      SaveCourseRequest request) {
+    CourseResponse.CourseDetailDTO response = courseService.createCourseForAdmin(request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> getCourse(
       Authentication authentication, Long courseId) {
     Long userId = userService.getCurrentUser().getId();
