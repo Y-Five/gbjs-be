@@ -3,34 +3,33 @@
  */
 package com.yfive.gbjs.domain.weather.service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.weather.dto.response.WeatherResponse;
 import com.yfive.gbjs.domain.weather.exception.WeatherErrorStatus;
 import com.yfive.gbjs.global.error.exception.CustomException;
-
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
-  /** 서울 지역 기준의 표준 시간대를 나타냅니다. */
+  /**
+   * 서울 지역 기준의 표준 시간대를 나타냅니다.
+   */
   private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Value("${openapi.secret.key}")
@@ -46,7 +45,7 @@ public class WeatherServiceImpl implements WeatherService {
    * 위도와 경도를 기반으로 기상청 API를 호출하여 날씨 정보를 조회합니다.
    *
    * @param longitude 경도
-   * @param latitude 위도
+   * @param latitude  위도
    * @return 조회된 날씨 정보를 담은 WeatherResponse 객체
    */
   @Override
@@ -125,11 +124,10 @@ public class WeatherServiceImpl implements WeatherService {
    * 위도와 경도를 기상청 격자 좌표로 변환합니다.
    *
    * @param longitude 경도
-   * @param latitude 위도
+   * @param latitude  위도
    * @return 변환된 격자 좌표 (GridCoord)
    */
-  @Override
-  public GridCoord convertToGrid(double longitude, double latitude) {
+  private GridCoord convertToGrid(double longitude, double latitude) {
     double RE = 6371.00877; // Earth radius (km)
     double GRID = 5.0; // Grid spacing (km)
     double SLAT1 = 30.0; // Projection latitude 1 (degree)
@@ -179,8 +177,7 @@ public class WeatherServiceImpl implements WeatherService {
    *
    * @return 발표 기준 시각 (HHmm 형식)
    */
-  @Override
-  public String getBaseTime() {
+  private String getBaseTime() {
     LocalTime now = LocalTime.now(ZONE_ID);
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HHmm");
 
@@ -197,14 +194,7 @@ public class WeatherServiceImpl implements WeatherService {
     return "2300";
   }
 
-  /**
-   * 기상청 API에서 받은 JSON 데이터를 파싱하여 WeatherResponse 객체로 변환합니다.
-   *
-   * @param items 기상청 응답의 item 배열 노드
-   * @return 파싱된 날씨 정보 객체
-   */
-  @Override
-  public WeatherResponse parseWeather(JsonNode items) {
+  private WeatherResponse parseWeather(JsonNode items) {
     String temperature = null;
     String skyStatus = null;
     String lowestTemperature = null;
@@ -218,7 +208,9 @@ public class WeatherServiceImpl implements WeatherService {
       String value = item.get("fcstValue").asText();
 
       switch (category) {
-        case "TMP" -> temperature = value;
+        case "TMP" -> {
+          temperature = value;
+        }
         case "SKY" -> skyStatus = mapSkyStatus(value);
         case "TMN" -> lowestTemperature = value;
         case "TMX" -> highestTemperature = value;
@@ -234,6 +226,7 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     return WeatherResponse.builder()
+        .imageUrl(mapWeatherImage(weather))
         .lowestTemperature(lowestTemperature)
         .highestTemperature(highestTemperature)
         .temperature(temperature)
@@ -248,8 +241,7 @@ public class WeatherServiceImpl implements WeatherService {
    * @param code SKY 코드 값
    * @return 하늘 상태 (예: 맑음, 흐림 등)
    */
-  @Override
-  public String mapSkyStatus(String code) {
+  private String mapSkyStatus(String code) {
     return switch (code) {
       case "1" -> "맑음";
       case "3" -> "구름많음";
@@ -264,8 +256,7 @@ public class WeatherServiceImpl implements WeatherService {
    * @param code PTY 코드 값
    * @return 강수 형태 (예: 비, 눈, 없음 등)
    */
-  @Override
-  public String mapPrecipitationType(String code) {
+  private String mapPrecipitationType(String code) {
     return switch (code) {
       case "0" -> "없음";
       case "1" -> "비";
@@ -273,6 +264,22 @@ public class WeatherServiceImpl implements WeatherService {
       case "3" -> "눈";
       case "4" -> "소나기";
       default -> "알 수 없음";
+    };
+  }
+
+  private String mapWeatherImage(String weather) {
+    return switch (weather) {
+      case "맑음" ->
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/40c97784-86d7-444a-8dec-1129d553b2e3";
+      case "구름많음" -> "구름많음";
+      case "흐림" -> "흐림";
+      case "비" ->
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/f009c9ee-5455-4e74-83ce-f04f48bcd767";
+      case "비/눈" -> "비/눈";
+      case "눈" -> "눈";
+      case "소나기" ->
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/f6a699e8-fceb-4932-91e8-1cdf0cdac0b4";
+      default -> "";
     };
   }
 }
