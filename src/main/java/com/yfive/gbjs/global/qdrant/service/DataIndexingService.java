@@ -163,8 +163,18 @@ public class DataIndexingService {
                           "spot",
                           "location",
                           spot.getLocation().name(),
-                          "spotId",
-                          spot.getSpotId() != null ? spot.getSpotId() : "없음"));
+                          "contentId",
+                          spot.getSpotId(),
+                          "name",
+                          spot.getName(),
+                          "addr1",
+                          spot.getAddr1(),
+                          "category",
+                          spot.getCategory() != null ? spot.getCategory().name() : null,
+                          "latitude",
+                          spot.getLatitude(),
+                          "longitude",
+                          spot.getLongitude()));
                 })
             .collect(Collectors.toList());
     vectorStore.add(documents);
