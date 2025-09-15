@@ -3,11 +3,15 @@
  */
 package com.yfive.gbjs.global.config;
 
-import java.io.IOException;
-
+import com.yfive.gbjs.global.config.jwt.JwtFilter;
+import com.yfive.gbjs.global.security.CustomOAuth2UserService;
+import com.yfive.gbjs.global.security.CustomUserDetails;
+import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import java.io.IOException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,14 +31,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
-
-import com.yfive.gbjs.global.config.jwt.JwtFilter;
-import com.yfive.gbjs.global.security.CustomOAuth2UserService;
-import com.yfive.gbjs.global.security.CustomUserDetails;
-import com.yfive.gbjs.global.security.OAuth2LoginSuccessHandler;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
@@ -56,7 +52,9 @@ public class SecurityConfig {
     return http.build();
   }
 
-  /** 필터와 기본 설정 */
+  /**
+   * 필터와 기본 설정
+   */
   private void configureFilters(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
@@ -75,7 +73,9 @@ public class SecurityConfig {
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
   }
 
-  /** 예외 처리: 인증 실패와 권한 부족 처리 */
+  /**
+   * 예외 처리: 인증 실패와 권한 부족 처리
+   */
   private void configureExceptionHandling(HttpSecurity http) throws Exception {
     http.exceptionHandling(
         e ->
@@ -133,7 +133,9 @@ public class SecurityConfig {
     }
   }
 
-  /** 권한 설정 */
+  /**
+   * 권한 설정
+   */
   private void configureAuthorization(HttpSecurity http) throws Exception {
     http.authorizeHttpRequests(
         auth ->
@@ -153,7 +155,6 @@ public class SecurityConfig {
                     "/api/spots/**",
                     "/api/weathers",
                     "/api/traditions",
-                    "/api/chat",
                     "/api/festivals/**",
                     "/api/tts")
                 .permitAll()
@@ -163,7 +164,9 @@ public class SecurityConfig {
                 .authenticated());
   }
 
-  /** OAuth2 로그인 설정 */
+  /**
+   * OAuth2 로그인 설정
+   */
   private void configureOAuth2(HttpSecurity http) throws Exception {
     http.oauth2Login(
         oauth2 ->
@@ -172,13 +175,17 @@ public class SecurityConfig {
                 .successHandler(customSuccessHandler));
   }
 
-  /** 비밀번호 인코더 Bean */
+  /**
+   * 비밀번호 인코더 Bean
+   */
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
 
-  /** 인증 관리자 Bean */
+  /**
+   * 인증 관리자 Bean
+   */
   @Bean
   public AuthenticationManager authenticationManager(
       AuthenticationConfiguration authenticationConfiguration) throws Exception {
