@@ -91,21 +91,30 @@ public class CourseGenerationAiService {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
-    // 1) Qdrant에서 관광지 검색 (지역별 개별 검색)
+    // 1) Qdrant에서 관광지 검색 (하이브리드: 개별 검색 + 통합 검색)
     List<String> locations = request.getLocations();
     int totalTopK = Math.max(150, Math.min(300, expectedDays * 40));
     int topKPerLocation = locations.isEmpty() ? 0 : totalTopK / locations.size();
 
     List<Document> allRelevantDocuments = new ArrayList<>();
+
+    // 1-1) 각 지역별 개별 검색 실행
     if (topKPerLocation > 0) {
       for (String location : locations) {
         String query = location + " 여행지";
-        log.info("Searching for '{}' with topK={}", query, topKPerLocation);
+        log.info("Executing individual search for '{}' with topK={}", query, topKPerLocation);
         SearchRequest searchRequest =
             SearchRequest.builder().query(query).topK(topKPerLocation).build();
         allRelevantDocuments.addAll(vectorStore.similaritySearch(searchRequest));
       }
     }
+
+    // 1-2) 전체 지역 통합 검색을 추가로 실행하여 후보군 보충
+    String combinedQuery = String.join(" ", locations) + " 여행지";
+    log.info("Executing combined search for '{}' with topK={}", combinedQuery, totalTopK);
+    SearchRequest combinedSearchRequest =
+        SearchRequest.builder().query(combinedQuery).topK(totalTopK).build();
+    allRelevantDocuments.addAll(vectorStore.similaritySearch(combinedSearchRequest));
 
     // 2) 문서 → SimpleSpotDTO 변환 (+서버 측 필터링)
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
