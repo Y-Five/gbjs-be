@@ -66,18 +66,34 @@ public class CourseConverter {
   /** DailyCourseSpot 엔티티를 간략한 관광지 응답 DTO로 변환합니다. */
   public CourseResponse.SimpleSpotDTO toSimpleSpotDTO(DailyCourseSpot dailyCourseSpot) {
     SealSpot sealSpot = dailyCourseSpot.getSealSpot();
-    return CourseResponse.SimpleSpotDTO.builder()
-        .spotId(dailyCourseSpot.getSealSpot().getSpotId())
-        .visitOrder(dailyCourseSpot.getVisitOrder())
-        .name(sealSpot.getName())
-        .category(
-            sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
-        .addr1(sealSpot.getAddr1())
-        .latitude(sealSpot.getLatitude())
-        .longitude(sealSpot.getLongitude())
-        .isSealSpot(true)
-        .sealSpotId(sealSpot.getId())
-        .build();
+
+    if (sealSpot != null) {
+      return CourseResponse.SimpleSpotDTO.builder()
+          .spotId(sealSpot.getSpotId())
+          .visitOrder(dailyCourseSpot.getVisitOrder())
+          .name(sealSpot.getName())
+          .category(
+              sealSpot.getCategory() != null ? getCategoryKoreanName(sealSpot.getCategory()) : null)
+          .addr1(sealSpot.getAddr1())
+          .latitude(sealSpot.getLatitude())
+          .longitude(sealSpot.getLongitude())
+          .isSealSpot(true)
+          .sealSpotId(sealSpot.getId())
+          .build();
+    } else {
+      // SealSpot이 없는 경우 (사용자 직접 추가 등)
+      return CourseResponse.SimpleSpotDTO.builder()
+          .spotId(dailyCourseSpot.getSpotId())
+          .visitOrder(dailyCourseSpot.getVisitOrder())
+          .name(dailyCourseSpot.getName())
+          .category(dailyCourseSpot.getCategory())
+          .addr1(dailyCourseSpot.getAddr1())
+          .latitude(dailyCourseSpot.getLatitude())
+          .longitude(dailyCourseSpot.getLongitude())
+          .isSealSpot(false)
+          .sealSpotId(null)
+          .build();
+    }
   }
 
   /** Course 엔티티를 요약 응답 DTO로 변환합니다. 목록 조회 시 사용 (상세 정보 제외) */

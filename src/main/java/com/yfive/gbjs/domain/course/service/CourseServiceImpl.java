@@ -198,10 +198,13 @@ public class CourseServiceImpl implements CourseService {
 
       if (dailyCourseRequest.getSpots() != null) {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
-          SealSpot sealSpot =
-              sealSpotRepository
-                  .findById(spotRequest.getSealSpotId())
-                  .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
+          SealSpot sealSpot = null;
+          if (spotRequest.getSealSpotId() != null) {
+            sealSpot =
+                sealSpotRepository
+                    .findById(spotRequest.getSealSpotId())
+                    .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
+          }
 
           DailyCourseSpot dailyCourseSpot =
               DailyCourseSpot.builder()
@@ -210,6 +213,9 @@ public class CourseServiceImpl implements CourseService {
                   .visitOrder(spotRequest.getVisitOrder())
                   .latitude(spotRequest.getLatitude())
                   .longitude(spotRequest.getLongitude())
+                  .name(spotRequest.getName())
+                  .category(spotRequest.getCategory())
+                  .addr1(spotRequest.getAddr1())
                   .build();
           dailyCourse.addSpot(dailyCourseSpot);
         }
