@@ -3,9 +3,10 @@
  */
 package com.yfive.gbjs.domain.seal.converter;
 
-import com.yfive.gbjs.domain.seal.entity.SealSpotCategory;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+
+import com.yfive.gbjs.domain.seal.entity.SealSpotCategory;
 
 @Converter(autoApply = true)
 public class SealSpotCategoryConverter implements AttributeConverter<SealSpotCategory, String> {

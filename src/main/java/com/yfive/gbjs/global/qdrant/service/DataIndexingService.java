@@ -130,6 +130,7 @@ public class DataIndexingService {
         sealSpots.stream()
             .map(
                 spot -> {
+                  String categoryKoreanName = getCategoryKoreanName(spot.getCategory());
                   String searchableContent =
                       "씰 관광지 이름: "
                           + spot.getName()
@@ -142,7 +143,7 @@ public class DataIndexingService {
                           + ", 주소: "
                           + spot.getAddr1()
                           + ", 카테고리: "
-                          + (spot.getCategory() != null ? spot.getCategory().name() : "없음")
+                          + (categoryKoreanName != null ? categoryKoreanName : "없음")
                           + ", 오디오 가이드 ID: "
                           + (spot.getAudioGuide() != null ? spot.getAudioGuide().getId() : "없음")
                           + ", 해시태그: "
@@ -170,7 +171,7 @@ public class DataIndexingService {
                           "addr1",
                           spot.getAddr1(),
                           "category",
-                          spot.getCategory() != null ? spot.getCategory().name() : null,
+                          categoryKoreanName,
                           "latitude",
                           spot.getLatitude(),
                           "longitude",
@@ -446,5 +447,19 @@ public class DataIndexingService {
       vectorStore.add(allFestivalDocuments);
     }
     log.info("축제 정보 총 {}개 색인 완료", allFestivalDocuments.size());
+  }
+
+  private String getCategoryKoreanName(
+      com.yfive.gbjs.domain.seal.entity.SealSpotCategory category) {
+    if (category == null) {
+      return null;
+    }
+    return switch (category) {
+      case NATURE -> "자연환경";
+      case NIGHTSCAPE -> "야경 명소";
+      case HEALING -> "힐링 명소";
+      case ATTRACTION -> "유명 관광지";
+      case ACTIVITY -> "액티비티";
+    };
   }
 }
