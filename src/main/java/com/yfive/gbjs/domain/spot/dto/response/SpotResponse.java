@@ -37,6 +37,14 @@ public class SpotResponse {
   private String address;
 
   @Setter
+  @Schema(description = "위도", example = "36.5759985")
+  private Double latitude;
+
+  @Setter
+  @Schema(description = "경도", example = "128.505832")
+  private Double longitude;
+
+  @Setter
   @Schema(description = "관광지 분류코드", example = "유적지/사적지")
   private String type;
 

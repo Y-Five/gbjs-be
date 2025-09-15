@@ -27,8 +27,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface CourseController {
 
   @Operation(summary = "여행 코스 생성", description = "여행 날짜와 지역을 입력받아 코스를 생성합니다. (저장 X)")
-  @PostMapping("/generate")
+  @PostMapping("/generate-initial")
   ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourse(
+      @Parameter(hidden = true) Authentication authentication,
+      @Valid @RequestBody CreateCourseRequest request);
+
+  @Operation(
+      summary = "AI 기반 여행 코스 생성",
+      description = "OpenAI를 활용하여 여행 날짜와 지역을 기반으로 코스를 생성합니다. (저장 X)")
+  @PostMapping("/generate")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateAiCourse(
       @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody CreateCourseRequest request);
 

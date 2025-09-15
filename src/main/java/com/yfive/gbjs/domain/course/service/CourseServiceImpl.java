@@ -60,6 +60,11 @@ public class CourseServiceImpl implements CourseService {
    */
   @Override
   public CourseResponse.CourseDetailDTO generateCourse(CreateCourseRequest request) {
+    LocalDate today = LocalDate.now();
+    if (request.getStartDate().isBefore(today) || request.getEndDate().isBefore(today)) {
+      throw new CustomException(CourseErrorStatus.PAST_DATE_NOT_ALLOWED);
+    }
+
     long totalDays = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
 
     if (totalDays < 1) {
@@ -198,10 +203,13 @@ public class CourseServiceImpl implements CourseService {
 
       if (dailyCourseRequest.getSpots() != null) {
         for (SaveCourseRequest.SpotRequest spotRequest : dailyCourseRequest.getSpots()) {
-          SealSpot sealSpot =
-              sealSpotRepository
-                  .findById(spotRequest.getSealSpotId())
-                  .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
+          SealSpot sealSpot = null;
+          if (spotRequest.getSealSpotId() != null) {
+            sealSpot =
+                sealSpotRepository
+                    .findById(spotRequest.getSealSpotId())
+                    .orElseThrow(() -> new CustomException(CourseErrorStatus._SPOT_NOT_FOUND));
+          }
 
           DailyCourseSpot dailyCourseSpot =
               DailyCourseSpot.builder()
@@ -210,6 +218,9 @@ public class CourseServiceImpl implements CourseService {
                   .visitOrder(spotRequest.getVisitOrder())
                   .latitude(spotRequest.getLatitude())
                   .longitude(spotRequest.getLongitude())
+                  .name(spotRequest.getName())
+                  .category(spotRequest.getCategory())
+                  .addr1(spotRequest.getAddr1())
                   .build();
           dailyCourse.addSpot(dailyCourseSpot);
         }

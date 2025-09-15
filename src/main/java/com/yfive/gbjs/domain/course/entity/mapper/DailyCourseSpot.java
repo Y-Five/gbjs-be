@@ -29,7 +29,7 @@ public class DailyCourseSpot extends BaseTimeEntity {
   private DailyCourse dailyCourse;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "seal_spot_id", nullable = false)
+  @JoinColumn(name = "seal_spot_id")
   private SealSpot sealSpot;
 
   @Column(name = "spot_id")
@@ -43,4 +43,13 @@ public class DailyCourseSpot extends BaseTimeEntity {
 
   @Column(name = "longitude")
   private Double longitude;
+
+  @Column(name = "name")
+  private String name;
+
+  @Column(name = "category")
+  private String category;
+
+  @Column(name = "addr1")
+  private String addr1;
 }

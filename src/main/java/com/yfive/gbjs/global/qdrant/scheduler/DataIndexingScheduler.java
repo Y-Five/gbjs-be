@@ -15,6 +15,7 @@ public class DataIndexingScheduler {
 
   private final DataIndexingService dataIndexingService;
 
+  // 호출 횟수 이슈로 비활성화 했습니다.
   // 매일 00:00:00에 갱신
   // @Scheduled(cron = "0 0 0 * * ?")
   public void runDailyIndexing() {
