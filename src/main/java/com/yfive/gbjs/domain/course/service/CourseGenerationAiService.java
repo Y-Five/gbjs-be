@@ -92,7 +92,8 @@ public class CourseGenerationAiService {
     }
 
     String query = String.join(" ", request.getLocations()) + " 여행지";
-    int topK = Math.max(50, Math.min(100, expectedDays * 15));
+    // 더 넓은 범위로 검색하기 위해 topK 값 증가
+    int topK = Math.max(150, Math.min(300, expectedDays * 30));
     SearchRequest searchRequest = SearchRequest.builder().query(query).topK(topK).build();
     List<Document> allRelevantDocuments = vectorStore.similaritySearch(searchRequest);
 
@@ -100,6 +101,24 @@ public class CourseGenerationAiService {
     for (Document doc : allRelevantDocuments) {
       Map<String, Object> md = doc.getMetadata();
       if (md == null) continue;
+
+      // [핵심 수정] 주소 기반으로 요청된 지역인지 서버에서 명확하게 필터링
+      String addr1 = s(md, "addr1");
+      if (addr1 == null) {
+        continue; // 주소 없는 데이터는 제외
+      }
+      boolean isInRequestedLocation = false;
+      for (String loc : request.getLocations()) {
+        String simpleLoc = loc.replace("군", "").replace("시", "");
+        if (addr1.contains(simpleLoc)) {
+          isInRequestedLocation = true;
+          break;
+        }
+      }
+      if (!isInRequestedLocation) {
+        continue; // 요청된 지역에 속하지 않으면 이 관광지는 건너뜁니다.
+      }
+
       String contentIdStr = s(md, "contentId");
       if (contentIdStr == null) continue;
       Long id;
@@ -120,7 +139,7 @@ public class CourseGenerationAiService {
                 null,
                 s(md, "name"),
                 s(md, "category"),
-                s(md, "addr1"),
+                addr1, // 필터링에서 사용한 addr1 변수 재사용
                 d(md, "latitude"),
                 d(md, "longitude"),
                 "seal_spot".equals(entityType),
@@ -210,11 +229,12 @@ public class CourseGenerationAiService {
             }
 
             Constraints:
-            - Trip length = %d days from %s to %s. dailyCourses length MUST be exactly %d (one per day).
+            - Trip duration: %d days from %s to %s for the regions: %s.
+            - CRITICAL RULE: Each day in 'dailyCourses' MUST focus on spots from ONLY ONE of the requested regions. Do NOT mix spots from different regions (e.g., Gyeongju, Andong) on the same day.
+            - If the number of days is greater than the number of regions, you CAN assign the same region to multiple days. Distribute the regions as evenly as possible.
+            - The 'location' field for each day MUST be the name of the single region you focused on for that day (e.g., "경주시").
             - Up to 5 spots per day. Use ONLY values from the provided spots list verbatim.
             - If not a seal spot: isSealSpot=false, sealSpotId=null.
-            - location MUST match the dominant city/county of that day's spots.
-            - If you are at risk of running out of tokens, prioritize completing ALL days; reduce per-spot fields in this order: remove addr1, then category.
             - Output compact JSON without extra whitespace.
 
             Available spots (JSON array):
@@ -224,7 +244,7 @@ public class CourseGenerationAiService {
                 expectedDays,
                 request.getStartDate(),
                 request.getEndDate(),
-                expectedDays,
+                String.join(", ", request.getLocations()),
                 spotsJson);
 
     log.info(
@@ -395,11 +415,12 @@ public class CourseGenerationAiService {
       fixed.add(day);
     }
 
-    // [수정] 요청하신 한글 제목 형식으로 변경
     String title;
-    if (res.getTitle() == null || res.getTitle().isBlank()) {
-      String locations = String.join(", ", reqLocations);
-      title = String.format("%s %d일 여행 코스", locations, expectedDays);
+    if (res.getTitle() == null
+        || res.getTitle().isBlank()
+        || !res.getTitle().matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
+      String locationsString = String.join(", ", reqLocations);
+      title = String.format("%s %d일 여행 코스", locationsString, expectedDays);
     } else {
       title = res.getTitle();
     }
@@ -451,7 +472,7 @@ public class CourseGenerationAiService {
 
   private String guessLocationFromReq(List<String> reqLocations, int dayIndex) {
     if (reqLocations == null || reqLocations.isEmpty()) return "미정";
-    return reqLocations.get(Math.min(dayIndex, reqLocations.size() - 1));
+    return reqLocations.get(dayIndex % reqLocations.size());
   }
 
   private String guessLocationFromSpotsOrReq(
