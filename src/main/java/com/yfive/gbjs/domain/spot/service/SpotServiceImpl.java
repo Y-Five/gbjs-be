@@ -412,7 +412,7 @@ public class SpotServiceImpl implements SpotService {
   @Override
   public List<NearbyAudioSpotResponse> getNearbySpotsWithAudioGuides(
       Double latitude, Double longitude) {
-    List<SpotResponse> allSpots = fetchSpotListByKeyword("", "", "", "", latitude, longitude);
+    List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "20000");
 
     return allSpots.stream()
         .filter(SpotResponse::getTtsExist)
@@ -432,5 +432,71 @@ public class SpotServiceImpl implements SpotService {
                   .build();
             })
         .toList();
+  }
+
+  private List<SpotResponse> fetchLocationBasedSpots(
+      Double latitude, Double longitude, String radius) {
+
+    String endpoint = "/locationBasedList2";
+    UriComponentsBuilder uriBuilder =
+        UriComponentsBuilder.fromUriString(spotApiUrl + endpoint)
+            .queryParam("serviceKey", serviceKey)
+            .queryParam("numOfRows", 1000)
+            .queryParam("pageNo", 1)
+            .queryParam("MobileOS", "WEB")
+            .queryParam("MobileApp", "gbjs")
+            .queryParam("_type", "JSON")
+            .queryParam("arrange", "O")
+            .queryParam("mapX", longitude)
+            .queryParam("mapY", latitude)
+            .queryParam("radius", radius);
+
+    String response =
+        restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
+
+    validateApiResponse(response);
+
+    try {
+      JsonNode root = objectMapper.readTree(response);
+      JsonNode items = root.path("response").path("body").path("items").path("item");
+
+      List<SpotResponse> spotResponses = new ArrayList<>();
+      for (JsonNode item : items) {
+        // 이미지가 없는 관광지는 목록에서 제외
+        JsonNode imageNode = item.get("firstimage");
+        if (imageNode == null || imageNode.isNull() || imageNode.asText().isEmpty()) {
+          continue;
+        }
+
+        SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
+        spotResponses.add(spotResponse);
+
+        if (latitude != null
+            && longitude != null
+            && item.get("mapy") != null
+            && item.get("mapx") != null) {
+          double distance =
+              calculateDistance(
+                  latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
+          spotResponse.setDistance(distance);
+        } else {
+          spotResponse.setDistance(null);
+        }
+
+        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
+
+        spotResponse.setTtsExist(ttsExist);
+        spotResponse.setType(
+            fetchSpotType(
+                item.get("contenttypeid").asText(),
+                item.get("cat1").asText(),
+                item.get("cat2").asText(),
+                item.get("cat3").asText()));
+      }
+
+      return spotResponses;
+    } catch (Exception e) {
+      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
+    }
   }
 }

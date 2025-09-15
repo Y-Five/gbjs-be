@@ -69,7 +69,7 @@ public class SpotControllerImpl implements SpotController {
 
   @Override
   public ResponseEntity<ApiResponse<List<NearbyAudioSpotResponse>>> getNearbySpotsWithAudioGuides(
-      @RequestParam Double latitude, @RequestParam Double longitude) {
+      @RequestParam Double latitude, Double longitude) {
     List<NearbyAudioSpotResponse> nearbyAudioSpotResponses =
         spotService.getNearbySpotsWithAudioGuides(latitude, longitude);
     return ResponseEntity.ok(ApiResponse.success(nearbyAudioSpotResponses));
