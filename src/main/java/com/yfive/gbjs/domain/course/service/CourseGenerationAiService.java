@@ -91,21 +91,31 @@ public class CourseGenerationAiService {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
-    String query = String.join(" ", request.getLocations()) + " 여행지";
-    // 더 넓은 범위로 검색하기 위해 topK 값 증가
-    int topK = Math.max(150, Math.min(300, expectedDays * 30));
-    SearchRequest searchRequest = SearchRequest.builder().query(query).topK(topK).build();
-    List<Document> allRelevantDocuments = vectorStore.similaritySearch(searchRequest);
+    // 1) Qdrant에서 관광지 검색 (지역별 개별 검색)
+    List<String> locations = request.getLocations();
+    int totalTopK = Math.max(150, Math.min(300, expectedDays * 40));
+    int topKPerLocation = locations.isEmpty() ? 0 : totalTopK / locations.size();
 
+    List<Document> allRelevantDocuments = new ArrayList<>();
+    if (topKPerLocation > 0) {
+      for (String location : locations) {
+        String query = location + " 여행지";
+        log.info("Searching for '{}' with topK={}", query, topKPerLocation);
+        SearchRequest searchRequest =
+            SearchRequest.builder().query(query).topK(topKPerLocation).build();
+        allRelevantDocuments.addAll(vectorStore.similaritySearch(searchRequest));
+      }
+    }
+
+    // 2) 문서 → SimpleSpotDTO 변환 (+서버 측 필터링)
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
     for (Document doc : allRelevantDocuments) {
       Map<String, Object> md = doc.getMetadata();
       if (md == null) continue;
 
-      // [핵심 수정] 주소 기반으로 요청된 지역인지 서버에서 명확하게 필터링
       String addr1 = s(md, "addr1");
       if (addr1 == null) {
-        continue; // 주소 없는 데이터는 제외
+        continue;
       }
       boolean isInRequestedLocation = false;
       for (String loc : request.getLocations()) {
@@ -116,7 +126,7 @@ public class CourseGenerationAiService {
         }
       }
       if (!isInRequestedLocation) {
-        continue; // 요청된 지역에 속하지 않으면 이 관광지는 건너뜁니다.
+        continue;
       }
 
       String contentIdStr = s(md, "contentId");
@@ -139,7 +149,7 @@ public class CourseGenerationAiService {
                 null,
                 s(md, "name"),
                 s(md, "category"),
-                addr1, // 필터링에서 사용한 addr1 변수 재사용
+                addr1,
                 d(md, "latitude"),
                 d(md, "longitude"),
                 "seal_spot".equals(entityType),
