@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.entity.AudioGuide;
 import com.yfive.gbjs.domain.guide.repository.AudioGuideRepository;
+import com.yfive.gbjs.domain.spot.dto.response.NearbyAudioSpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotTtsResponse;
@@ -406,5 +407,30 @@ public class SpotServiceImpl implements SpotService {
       }
     }
     return new String[] {cat1, cat2, cat3};
+  }
+
+  @Override
+  public List<NearbyAudioSpotResponse> getNearbySpotsWithAudioGuides(
+      Double latitude, Double longitude) {
+    List<SpotResponse> allSpots = fetchSpotListByKeyword("", "", "", "", latitude, longitude);
+
+    return allSpots.stream()
+        .filter(SpotResponse::getTtsExist)
+        .sorted(
+            Comparator.comparing(
+                SpotResponse::getDistance, Comparator.nullsLast(Double::compareTo)))
+        .limit(5)
+        .map(
+            spot -> {
+              SpotDetailResponse detail =
+                  getSpotByContentId(spot.getSpotId(), latitude, longitude, false);
+              return NearbyAudioSpotResponse.builder()
+                  .contentId(spot.getSpotId())
+                  .title(spot.getTitle())
+                  .imageUrl(spot.getImageUrl())
+                  .type(detail.getType())
+                  .build();
+            })
+        .toList();
   }
 }
