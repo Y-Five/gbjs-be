@@ -28,6 +28,9 @@ public class UserDetailResponse {
   @Schema(description = "띠부씰 수집 개수", example = "17")
   private Long sealCount;
 
+  @Schema(description = "총 띠부씰 개수", example = "37")
+  private Long totalSealCount;
+
   @Schema(description = "아이디(이메일)", example = "heritage@example.com")
   private String username;
 

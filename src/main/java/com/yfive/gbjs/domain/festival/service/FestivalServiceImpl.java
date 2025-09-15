@@ -213,6 +213,7 @@ public class FestivalServiceImpl implements FestivalService {
       case "경주시" -> 2;
       case "고령군" -> 3;
       case "구미시" -> 4;
+      case "군위군" -> 5;
       case "김천시" -> 6;
       case "문경시" -> 7;
       case "봉화군" -> 8;
