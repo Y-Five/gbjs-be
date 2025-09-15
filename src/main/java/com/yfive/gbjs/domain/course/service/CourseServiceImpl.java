@@ -60,6 +60,11 @@ public class CourseServiceImpl implements CourseService {
    */
   @Override
   public CourseResponse.CourseDetailDTO generateCourse(CreateCourseRequest request) {
+    LocalDate today = LocalDate.now();
+    if (request.getStartDate().isBefore(today) || request.getEndDate().isBefore(today)) {
+      throw new CustomException(CourseErrorStatus.PAST_DATE_NOT_ALLOWED);
+    }
+
     long totalDays = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
 
     if (totalDays < 1) {

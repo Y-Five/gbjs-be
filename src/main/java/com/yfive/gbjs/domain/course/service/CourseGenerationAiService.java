@@ -28,8 +28,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
+import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
 import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
 import com.yfive.gbjs.domain.spot.service.SpotService;
+import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +82,10 @@ public class CourseGenerationAiService {
 
   public CourseResponse.CourseDetailDTO generateAiCourse(
       CourseRequest.CreateCourseRequest request) {
+    LocalDate today = LocalDate.now();
+    if (request.getStartDate().isBefore(today) || request.getEndDate().isBefore(today)) {
+      throw new CustomException(CourseErrorStatus.PAST_DATE_NOT_ALLOWED);
+    }
     Objects.requireNonNull(request, "request must not be null");
     LocalDate start = request.getStartDate();
     LocalDate end = request.getEndDate();
