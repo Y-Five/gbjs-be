@@ -6,6 +6,7 @@ package com.yfive.gbjs.domain.course.service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,63 +81,50 @@ public class CourseGenerationAiService {
   public CourseResponse.CourseDetailDTO generateAiCourse(
       CourseRequest.CreateCourseRequest request) {
     Objects.requireNonNull(request, "request must not be null");
-    Objects.requireNonNull(request.getStartDate(), "startDate must not be null");
-    Objects.requireNonNull(request.getEndDate(), "endDate must not be null");
-    Objects.requireNonNull(request.getLocations(), "locations must not be null");
-
     LocalDate start = request.getStartDate();
     LocalDate end = request.getEndDate();
     int expectedDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
+    List<String> locations = request.getLocations();
     if (expectedDays <= 0) {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
     // 1) Qdrant에서 관광지 검색 (하이브리드: 개별 검색 + 통합 검색)
-    List<String> locations = request.getLocations();
     int totalTopK = Math.max(150, Math.min(300, expectedDays * 40));
     int topKPerLocation = locations.isEmpty() ? 0 : totalTopK / locations.size();
-
     List<Document> allRelevantDocuments = new ArrayList<>();
 
-    // 1-1) 각 지역별 개별 검색 실행
     if (topKPerLocation > 0) {
       for (String location : locations) {
-        String query = location + " 여행지";
+        String query = location;
         log.info("Executing individual search for '{}' with topK={}", query, topKPerLocation);
         SearchRequest searchRequest =
             SearchRequest.builder().query(query).topK(topKPerLocation).build();
         allRelevantDocuments.addAll(vectorStore.similaritySearch(searchRequest));
       }
     }
-
-    // 1-2) 전체 지역 통합 검색을 추가로 실행하여 후보군 보충
-    String combinedQuery = String.join(" ", locations) + " 여행지";
+    String combinedQuery = String.join(" ", locations);
     log.info("Executing combined search for '{}' with topK={}", combinedQuery, totalTopK);
     SearchRequest combinedSearchRequest =
         SearchRequest.builder().query(combinedQuery).topK(totalTopK).build();
     allRelevantDocuments.addAll(vectorStore.similaritySearch(combinedSearchRequest));
 
-    // 2) 문서 → SimpleSpotDTO 변환 (+서버 측 필터링)
+    // 2) 문서 → DTO 변환 및 필터링
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
     for (Document doc : allRelevantDocuments) {
       Map<String, Object> md = doc.getMetadata();
       if (md == null) continue;
-
       String addr1 = s(md, "addr1");
-      if (addr1 == null) {
-        continue;
-      }
+      if (addr1 == null) continue;
       boolean isInRequestedLocation = false;
-      for (String loc : request.getLocations()) {
+      for (String loc : locations) {
         String simpleLoc = loc.replace("군", "").replace("시", "");
         if (addr1.contains(simpleLoc)) {
           isInRequestedLocation = true;
           break;
         }
       }
-      if (!isInRequestedLocation) {
-        continue;
-      }
+      if (!isInRequestedLocation) continue;
 
       String contentIdStr = s(md, "contentId");
       if (contentIdStr == null) continue;
@@ -146,7 +134,6 @@ public class CourseGenerationAiService {
       } catch (NumberFormatException e) {
         continue;
       }
-
       String type = s(md, "type");
       String entityType = s(md, "entity_type");
       if (!"spot".equals(type)) continue;
@@ -161,8 +148,8 @@ public class CourseGenerationAiService {
                 addr1,
                 d(md, "latitude"),
                 d(md, "longitude"),
-                "seal_spot".equals(entityType),
-                "seal_spot".equals(entityType)
+                "spot".equals(type) && "seal_spot".equals(entityType),
+                "spot".equals(type) && "seal_spot".equals(entityType)
                     ? (s(md, "sealSpotId") == null ? null : Long.valueOf(s(md, "sealSpotId")))
                     : null);
         uniq.put(id, dto);
@@ -170,53 +157,47 @@ public class CourseGenerationAiService {
     }
     List<CourseResponse.SimpleSpotDTO> deduped = new ArrayList<>(uniq.values());
 
-    deduped.sort(
-        (a, b) -> {
-          int p1 =
-              (a.getLatitude() == null || a.getLongitude() == null ? 1 : 0)
-                  + (a.getCategory() == null ? 1 : 0);
-          int p2 =
-              (b.getLatitude() == null || b.getLongitude() == null ? 1 : 0)
-                  + (b.getCategory() == null ? 1 : 0);
-          return Integer.compare(p1, p2);
-        });
-
-    List<CourseResponse.SimpleSpotDTO> seal =
+    // 3) 지역별 할당량 기반으로 AI에게 보낼 최종 후보 선정
+    Map<String, List<CourseResponse.SimpleSpotDTO>> spotsByLocation =
         deduped.stream()
-            .filter(CourseResponse.SimpleSpotDTO::getIsSealSpot)
-            .collect(Collectors.toList());
-    List<CourseResponse.SimpleSpotDTO> general =
-        deduped.stream().filter(s -> !s.getIsSealSpot()).collect(Collectors.toList());
+            .collect(
+                Collectors.groupingBy(spot -> findLocationForSpot(spot.getAddr1(), locations)));
 
-    int maxTotal = Math.min(expectedDays * 5, 20);
-    String seedBase = start + "|" + end + "|" + String.join(",", request.getLocations());
-    Random rand = new Random(seedBase.hashCode());
-    java.util.Collections.shuffle(seal, rand);
-    java.util.Collections.shuffle(general, rand);
-
-    int sealTarget = (int) Math.round(maxTotal * 0.4);
-    sealTarget = Math.max(Math.min(sealTarget, seal.size()), Math.min(2, maxTotal));
+    Random rand = new Random((start + "|" + end + "|" + String.join(",", locations)).hashCode());
+    spotsByLocation.values().forEach(list -> Collections.shuffle(list, rand));
 
     List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
-    if (sealTarget > 0 && !seal.isEmpty()) {
-      spotsForOpenAI.addAll(seal.subList(0, Math.min(sealTarget, seal.size())));
-    }
-    int remain = maxTotal - spotsForOpenAI.size();
-    if (remain > 0 && !general.isEmpty()) {
-      spotsForOpenAI.addAll(general.subList(0, Math.min(remain, general.size())));
-    }
-    if (spotsForOpenAI.isEmpty() && !deduped.isEmpty()) {
-      spotsForOpenAI.add(deduped.get(0));
+    int maxTotal = Math.min(expectedDays * 5, 20);
+    int spotsPerLocationQuota =
+        locations.isEmpty() ? 0 : (int) Math.ceil((double) maxTotal / locations.size());
+
+    for (String location : locations) {
+      List<CourseResponse.SimpleSpotDTO> spotsInLocation = spotsByLocation.get(location);
+      if (spotsInLocation != null && !spotsInLocation.isEmpty()) {
+        int countToAdd = Math.min(spotsInLocation.size(), spotsPerLocationQuota);
+        spotsForOpenAI.addAll(spotsInLocation.subList(0, countToAdd));
+      }
     }
 
+    if (spotsForOpenAI.size() < maxTotal) {
+      List<CourseResponse.SimpleSpotDTO> remainingSpots =
+          deduped.stream()
+              .filter(spot -> !spotsForOpenAI.contains(spot))
+              .collect(Collectors.toList());
+      Collections.shuffle(remainingSpots, rand);
+      int needed = maxTotal - spotsForOpenAI.size();
+      if (needed > 0 && !remainingSpots.isEmpty()) {
+        spotsForOpenAI.addAll(remainingSpots.subList(0, Math.min(needed, remainingSpots.size())));
+      }
+    }
+
+    // 4) 프롬프트 구성
     String spotsJson;
     try {
       spotsJson = objectMapper.writeValueAsString(spotsForOpenAI);
     } catch (JsonProcessingException e) {
-      log.error("OpenAI 프롬프트용 관광지 목록 JSON 변환 실패", e);
       throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
     }
-
     String prompt =
         """
             Return ONLY a single JSON object (no markdown, no commentary).
@@ -266,32 +247,22 @@ public class CourseGenerationAiService {
                 String.join(", ", request.getLocations()),
                 spotsJson);
 
-    log.info(
-        "Spots sent to OpenAI ({} total): {}",
-        spotsForOpenAI.size(),
-        spotsForOpenAI.stream()
-            .limit(15)
-            .map(s -> s.getName() + "(Seal:" + s.getIsSealSpot() + ")")
-            .collect(Collectors.joining(", ")));
-
+    // 5) AI 호출 및 후처리
     OpenAiChatOptions options =
         OpenAiChatOptions.builder()
             .temperature(0.2)
             .maxCompletionTokens(3072)
             .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
             .build();
-
     String aiResponse;
     try {
       aiResponse = chatClient.prompt().options(options).user(prompt).call().content();
     } catch (Exception e) {
-      log.error("OpenAI 호출 실패", e);
       throw new RuntimeException("AI 호출 실패: " + e.getMessage());
     }
 
     String cleaned = cleanJsonFences(aiResponse);
     CourseResponse.CourseDetailDTO result = null;
-
     try {
       result = parseStrict(cleaned, objectMapper);
     } catch (Exception e) {
@@ -333,17 +304,20 @@ public class CourseGenerationAiService {
     Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap =
         spotsForOpenAI.stream()
             .collect(Collectors.toMap(CourseResponse.SimpleSpotDTO::getSpotId, spot -> spot));
-
-    result = postFix(result, start, end, request.getLocations(), originalSpotMap);
-
-    if (result.getDailyCourses() == null || result.getDailyCourses().size() != expectedDays) {
-      log.warn(
-          "LLM returned {} days, expected {}",
-          result.getDailyCourses() == null ? 0 : result.getDailyCourses().size(),
-          expectedDays);
-    }
+    result = postFix(result, start, end, locations, originalSpotMap);
 
     return result;
+  }
+
+  private String findLocationForSpot(String addr1, List<String> requestedLocations) {
+    if (addr1 == null) return requestedLocations.get(0);
+    for (String loc : requestedLocations) {
+      String simpleLoc = loc.replace("군", "").replace("시", "");
+      if (addr1.contains(simpleLoc)) {
+        return loc;
+      }
+    }
+    return requestedLocations.get(0);
   }
 
   private CourseResponse.CourseDetailDTO parseStrict(String json, ObjectMapper om)
@@ -364,10 +338,8 @@ public class CourseGenerationAiService {
       Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap) {
 
     int expectedDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
-
     List<CourseResponse.DailyCourseDTO> inputDays =
         res.getDailyCourses() != null ? res.getDailyCourses() : List.of();
-
     Map<LocalDate, CourseResponse.DailyCourseDTO> byDate =
         inputDays.stream()
             .filter(dc -> dc.getDate() != null)
@@ -377,12 +349,11 @@ public class CourseGenerationAiService {
                     dc -> dc,
                     (a, b) -> a,
                     LinkedHashMap::new));
-
     List<CourseResponse.DailyCourseDTO> fixed = new ArrayList<>();
+
     for (int i = 0; i < expectedDays; i++) {
       LocalDate date = start.plusDays(i);
       CourseResponse.DailyCourseDTO originalDay = byDate.get(date);
-
       String location;
       List<CourseResponse.SimpleSpotDTO> finalSpots;
 
@@ -393,12 +364,9 @@ public class CourseGenerationAiService {
         List<CourseResponse.SimpleSpotDTO> spotsFromAi =
             originalDay.getSpots() != null ? originalDay.getSpots() : List.of();
         List<CourseResponse.SimpleSpotDTO> restoredSpots = new ArrayList<>();
-
         for (CourseResponse.SimpleSpotDTO aiSpot : spotsFromAi) {
           if (aiSpot.getSpotId() == null) continue;
-
           CourseResponse.SimpleSpotDTO originalSpot = originalSpotMap.get(aiSpot.getSpotId());
-
           if (originalSpot != null) {
             restoredSpots.add(
                 CourseResponse.SimpleSpotDTO.builder()
@@ -414,49 +382,57 @@ public class CourseGenerationAiService {
                     .build());
           }
         }
-
         finalSpots = normalizeVisitOrderSimple(restoredSpots);
-
         String inferredLocation = guessLocationFromSpotsOrReq(finalSpots, reqLocations, i);
         location =
             (inferredLocation == null || inferredLocation.isBlank())
                 ? originalDay.getLocation()
                 : inferredLocation;
       }
-
-      CourseResponse.DailyCourseDTO day =
+      fixed.add(
           CourseResponse.DailyCourseDTO.builder()
               .dayNumber(i + 1)
               .date(date)
               .location(location)
               .spots(finalSpots)
-              .build();
-      fixed.add(day);
+              .build());
     }
 
-    String title;
-    if (res.getTitle() == null
-        || res.getTitle().isBlank()
-        || !res.getTitle().matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣]+.*")) {
-      String locationsString = String.join(", ", reqLocations);
-      title = String.format("%s %d일 여행 코스", locationsString, expectedDays);
-    } else {
-      title = res.getTitle();
+    int minSpotsPerDay = 2;
+    List<CourseResponse.DailyCourseDTO> filteredCourses =
+        fixed.stream()
+            .filter(dailyCourse -> dailyCourse.getSpots().size() >= minSpotsPerDay)
+            .collect(Collectors.toList());
+
+    // [최종 수정] setDayNumber 오류를 해결하기 위해, dayNumber를 재설정한 새로운 리스트를 생성
+    List<CourseResponse.DailyCourseDTO> finalDailyCourses = new ArrayList<>();
+    for (int i = 0; i < filteredCourses.size(); i++) {
+      CourseResponse.DailyCourseDTO originalCourse = filteredCourses.get(i);
+      finalDailyCourses.add(
+          CourseResponse.DailyCourseDTO.builder()
+              .dayNumber(i + 1) // 새로운 dayNumber 부여
+              .date(originalCourse.getDate())
+              .location(originalCourse.getLocation())
+              .spots(originalCourse.getSpots())
+              .build());
     }
+
+    // [최종 수정] 제목 생성 로직을 사용자가 처음 요청한 지역 기반으로 고정
+    String locationsString = String.join(", ", reqLocations);
+    String title = String.format("%s %d일 여행 코스", locationsString, expectedDays);
 
     return CourseResponse.CourseDetailDTO.builder()
         .id(res.getId())
         .title(title)
         .startDate(start)
         .endDate(end)
-        .dailyCourses(fixed)
+        .dailyCourses(finalDailyCourses)
         .build();
   }
 
   private List<CourseResponse.SimpleSpotDTO> normalizeVisitOrderSimple(
       List<CourseResponse.SimpleSpotDTO> spots) {
     if (spots == null || spots.isEmpty()) return List.of();
-
     List<CourseResponse.SimpleSpotDTO> sorted =
         spots.stream()
             .sorted(
@@ -469,7 +445,6 @@ public class CourseGenerationAiService {
                             ? Integer.MAX_VALUE
                             : b.getVisitOrder()))
             .collect(Collectors.toList());
-
     List<CourseResponse.SimpleSpotDTO> rebuilt = new ArrayList<>(sorted.size());
     int order = 1;
     for (CourseResponse.SimpleSpotDTO s : sorted) {
