@@ -51,7 +51,6 @@ public class SealSpot extends BaseTimeEntity {
   @JoinColumn(name = "audio_guide_id")
   private AudioGuide audioGuide;
 
-  @Enumerated(EnumType.STRING)
   @Column(name = "category")
   private SealSpotCategory category;
 
