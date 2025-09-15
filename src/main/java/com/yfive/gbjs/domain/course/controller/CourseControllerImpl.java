@@ -14,6 +14,7 @@ import com.yfive.gbjs.domain.course.dto.request.CourseRequest.SaveCourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.entity.CourseSortBy;
 import com.yfive.gbjs.domain.course.entity.RecommendationType;
+import com.yfive.gbjs.domain.course.service.CourseGenerationAiService;
 import com.yfive.gbjs.domain.course.service.CourseService;
 import com.yfive.gbjs.domain.user.service.UserService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
@@ -26,6 +27,7 @@ public class CourseControllerImpl implements CourseController {
 
   private final CourseService courseService;
   private final UserService userService;
+  private final CourseGenerationAiService courseGenerationAiService;
 
   @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateCourse(
@@ -87,5 +89,12 @@ public class CourseControllerImpl implements CourseController {
     Long userId = userService.getCurrentUser().getId();
     courseService.bookmarkCourse(userId, courseId);
     return ResponseEntity.ok(ApiResponse.success(null, "코스를 성공적으로 저장했습니다."));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateAiCourse(
+      Authentication authentication, CreateCourseRequest request) {
+    CourseResponse.CourseDetailDTO response = courseGenerationAiService.generateAiCourse(request);
+    return ResponseEntity.ok(ApiResponse.success(response));
   }
 }

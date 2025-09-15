@@ -32,6 +32,14 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @Valid @RequestBody CreateCourseRequest request);
 
+  @Operation(
+      summary = "AI 기반 여행 코스 생성",
+      description = "OpenAI를 활용하여 여행 날짜와 지역을 기반으로 코스를 생성합니다. (저장 X)")
+  @PostMapping("/generate-ai")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> generateAiCourse(
+      @Parameter(hidden = true) Authentication authentication,
+      @Valid @RequestBody CreateCourseRequest request);
+
   @Operation(summary = "여행 코스 저장", description = "생성된 코스를 저장합니다.")
   @PostMapping
   ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> saveCourse(
