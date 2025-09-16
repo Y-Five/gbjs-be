@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
+import java.util.List;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.yfive.gbjs.domain.spot.dto.response.NearbyAudioSpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.entity.SearchBy;
@@ -43,6 +46,14 @@ public interface SpotController {
   ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
       HttpServletRequest request,
       @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") Long id,
+      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
+      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
+
+  @GetMapping("/audio-guides/nearby")
+  @Operation(
+      summary = "음성 가이드가 있는 내 주변 관광지 조회",
+      description = "현재 위치 기반으로 음성 가이드가 있는 관광지 5곳을 가까운 순으로 반환")
+  ResponseEntity<ApiResponse<List<NearbyAudioSpotResponse>>> getNearbySpotsWithAudioGuides(
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
 }

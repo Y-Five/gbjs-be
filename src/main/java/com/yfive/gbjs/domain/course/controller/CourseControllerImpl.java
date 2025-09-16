@@ -60,6 +60,13 @@ public class CourseControllerImpl implements CourseController {
   }
 
   @Override
+  public ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> getCoursePublic(
+      Long courseId) {
+    CourseResponse.CourseDetailDTO response = courseService.getCoursePublic(courseId);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @Override
   public ResponseEntity<ApiResponse<CourseResponse.CourseListDTO>> getMyCourses(
       Authentication authentication, List<String> locationNames, CourseSortBy sortBy) {
     Long userId = userService.getCurrentUser().getId();

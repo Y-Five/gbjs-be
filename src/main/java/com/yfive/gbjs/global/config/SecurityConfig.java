@@ -150,6 +150,8 @@ public class SecurityConfig {
                     "/api/seals/location",
                     "/api/seals/nearby",
                     "/api/seals/spot/**",
+                    "/api/courses/recommend",
+                    "/api/courses/*/public",
                     "/api/spots/**",
                     "/api/weathers",
                     "/api/traditions",

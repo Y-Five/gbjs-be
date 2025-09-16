@@ -242,6 +242,23 @@ public class CourseServiceImpl implements CourseService {
     return courseConverter.toCourseDetailDTO(course);
   }
 
+  /**
+   * 특정 코스의 상세 정보를 조회합니다. (로그인 없이 접근 가능)
+   *
+   * @param courseId 조회할 코스 ID
+   * @return 코스 상세 정보
+   * @throws CustomException 코스를 찾을 수 없는 경우
+   */
+  @Override
+  public CourseResponse.CourseDetailDTO getCoursePublic(Long courseId) {
+    Course course =
+        courseRepository
+            .findById(courseId)
+            .orElseThrow(() -> new CustomException(CourseErrorStatus._COURSE_NOT_FOUND));
+
+    return courseConverter.toCourseDetailDTO(course);
+  }
+
   /** 사용자의 모든 코스 목록을 조회합니다. - 시작일 기준 내림차순 정렬 - 코스 요약 정보만 반환 (상세 정보 제외) */
   @Override
   public CourseResponse.CourseListDTO getUserCourses(
