@@ -126,24 +126,7 @@ public class SpotServiceImpl implements SpotService {
 
       List<SpotResponse> spotResponses = new ArrayList<>();
       for (JsonNode item : items) {
-        SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
-        spotResponses.add(spotResponse);
-
-        if (latitude != null
-            && longitude != null
-            && item.get("mapy") != null
-            && item.get("mapx") != null) {
-          double distance =
-              calculateDistance(
-                  latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
-          spotResponse.setDistance(distance);
-        } else {
-          spotResponse.setDistance(null);
-        }
-
-        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
-
-        spotResponse.setTtsExist(ttsExist);
+        spotResponses.add(mapJsonNodeToSpotResponse(item, latitude, longitude));
       }
 
       return spotResponses;
@@ -415,10 +398,11 @@ public class SpotServiceImpl implements SpotService {
     List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "20000");
 
     return allSpots.stream()
-        .filter(SpotResponse::getTtsExist)
         .sorted(
             Comparator.comparing(
                 SpotResponse::getDistance, Comparator.nullsLast(Double::compareTo)))
+        .filter(
+            spot -> audioGuideRepository.existsByContentId(spot.getSpotId())) // Check ttsExist here
         .limit(5)
         .map(
             spot -> {
@@ -468,35 +452,32 @@ public class SpotServiceImpl implements SpotService {
           continue;
         }
 
-        SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
+        SpotResponse spotResponse = mapJsonNodeToSpotResponse(item, latitude, longitude);
         spotResponses.add(spotResponse);
-
-        if (latitude != null
-            && longitude != null
-            && item.get("mapy") != null
-            && item.get("mapx") != null) {
-          double distance =
-              calculateDistance(
-                  latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
-          spotResponse.setDistance(distance);
-        } else {
-          spotResponse.setDistance(null);
-        }
-
-        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
-
-        spotResponse.setTtsExist(ttsExist);
-        spotResponse.setType(
-            fetchSpotType(
-                item.get("contenttypeid").asText(),
-                item.get("cat1").asText(),
-                item.get("cat2").asText(),
-                item.get("cat3").asText()));
       }
 
       return spotResponses;
     } catch (Exception e) {
       throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
     }
+  }
+
+  private SpotResponse mapJsonNodeToSpotResponse(JsonNode item, Double latitude, Double longitude)
+      throws com.fasterxml.jackson.core.JsonProcessingException {
+    SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
+
+    if (latitude != null
+        && longitude != null
+        && item.get("mapy") != null
+        && item.get("mapx") != null) {
+      double distance =
+          calculateDistance(
+              latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
+      spotResponse.setDistance(distance);
+    } else {
+      spotResponse.setDistance(null);
+    }
+
+    return spotResponse;
   }
 }
