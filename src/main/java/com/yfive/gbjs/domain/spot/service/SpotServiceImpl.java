@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -126,7 +128,30 @@ public class SpotServiceImpl implements SpotService {
 
       List<SpotResponse> spotResponses = new ArrayList<>();
       for (JsonNode item : items) {
-        spotResponses.add(mapJsonNodeToSpotResponse(item, latitude, longitude));
+        SpotResponse spotResponse = objectMapper.treeToValue(item, SpotResponse.class);
+        if (item.get("mapy") != null) {
+          spotResponse.setLatitude(item.get("mapy").asDouble());
+        }
+        if (item.get("mapx") != null) {
+          spotResponse.setLongitude(item.get("mapx").asDouble());
+        }
+        spotResponses.add(spotResponse);
+
+        if (latitude != null
+            && longitude != null
+            && item.get("mapy") != null
+            && item.get("mapx") != null) {
+          double distance =
+              calculateDistance(
+                  latitude, longitude, item.get("mapy").asDouble(), item.get("mapx").asDouble());
+          spotResponse.setDistance(distance);
+        } else {
+          spotResponse.setDistance(null);
+        }
+
+        boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
+
+        spotResponse.setTtsExist(ttsExist);
       }
 
       return spotResponses;
@@ -167,6 +192,13 @@ public class SpotServiceImpl implements SpotService {
       SpotDetailResponse spotDetailResponse =
           objectMapper.treeToValue(itemNode, SpotDetailResponse.class);
 
+      if (itemNode.get("mapy") != null) {
+        spotDetailResponse.setLatitude(itemNode.get("mapy").asDouble());
+      }
+      if (itemNode.get("mapx") != null) {
+        spotDetailResponse.setLongitude(itemNode.get("mapx").asDouble());
+      }
+
       if (latitude != null
           && longitude != null
           && itemNode.get("mapy") != null
@@ -191,14 +223,24 @@ public class SpotServiceImpl implements SpotService {
       List<AudioGuide> audioGuides = audioGuideRepository.findByContentId(contentId);
 
       if (isDetail) {
-        User user = userService.getCurrentUser();
-        String type;
-        switch (user.getTtsSetting()) {
-          case FEMALE_B -> type = "B";
-          case MALE_C -> type = "C";
-          case MALE_D -> type = "D";
-          default -> type = "A";
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String type = "B";
+        User user = null;
+
+        if (authentication != null && authentication.isAuthenticated()) {
+          user = userService.getCurrentUser();
+
+          switch (user.getTtsSetting()) {
+            case FEMALE_B -> type = "B";
+            case MALE_C -> type = "C";
+            case MALE_D -> type = "D";
+            default -> type = "A";
+          }
         }
+
+        String finalType = type;
+        User finalUser = user;
 
         List<SpotTtsResponse> spotTtsResponses =
             audioGuides.stream()
@@ -214,12 +256,15 @@ public class SpotServiceImpl implements SpotService {
                       }
 
                       AudioFile audioFile =
-                          ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+                          ttsRepository.findByTypeAndAudioGuideId(finalType, guide.getId());
 
-                      if (audioFile == null) {
+                      if (audioFile == null && finalUser != null) {
                         ttsService.convertTextToSpeech(
-                            guide.getId(), user.getTtsSetting(), new TtsRequest(guide.getScript()));
-                        audioFile = ttsRepository.findByTypeAndAudioGuideId(type, guide.getId());
+                            guide.getId(),
+                            finalUser.getTtsSetting(),
+                            new TtsRequest(guide.getScript()));
+                        audioFile =
+                            ttsRepository.findByTypeAndAudioGuideId(finalType, guide.getId());
                       }
 
                       String audioUrl = (audioFile != null) ? audioFile.getFileUrl() : null;
