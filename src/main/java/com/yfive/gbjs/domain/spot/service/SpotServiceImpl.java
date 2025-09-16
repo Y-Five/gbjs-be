@@ -395,7 +395,7 @@ public class SpotServiceImpl implements SpotService {
   @Override
   public List<NearbyAudioSpotResponse> getNearbySpotsWithAudioGuides(
       Double latitude, Double longitude) {
-    List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "20000");
+    List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "10000");
 
     return allSpots.stream()
         .sorted(
@@ -477,6 +477,9 @@ public class SpotServiceImpl implements SpotService {
     } else {
       spotResponse.setDistance(null);
     }
+
+    boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
+    spotResponse.setTtsExist(ttsExist);
 
     return spotResponse;
   }
