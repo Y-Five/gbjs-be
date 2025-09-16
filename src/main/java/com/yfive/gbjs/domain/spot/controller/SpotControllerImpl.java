@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.yfive.gbjs.domain.spot.dto.response.NearbyAudioSpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.entity.SearchBy;
@@ -62,5 +65,13 @@ public class SpotControllerImpl implements SpotController {
         spotService.getSpotByContentId(id, latitude, longitude, true);
 
     return ResponseEntity.ok(ApiResponse.success(spotDetailResponse));
+  }
+
+  @Override
+  public ResponseEntity<ApiResponse<List<NearbyAudioSpotResponse>>> getNearbySpotsWithAudioGuides(
+      @RequestParam Double latitude, @RequestParam Double longitude) {
+    List<NearbyAudioSpotResponse> nearbyAudioSpotResponses =
+        spotService.getNearbySpotsWithAudioGuides(latitude, longitude);
+    return ResponseEntity.ok(ApiResponse.success(nearbyAudioSpotResponses));
   }
 }

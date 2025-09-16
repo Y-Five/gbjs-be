@@ -3,8 +3,11 @@
  */
 package com.yfive.gbjs.domain.spot.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 
+import com.yfive.gbjs.domain.spot.dto.response.NearbyAudioSpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
 import com.yfive.gbjs.domain.spot.entity.SearchBy;
@@ -23,4 +26,6 @@ public interface SpotService {
 
   SpotDetailResponse getSpotByContentId(
       Long contentId, Double latitude, Double longitude, Boolean isDetail);
+
+  List<NearbyAudioSpotResponse> getNearbySpotsWithAudioGuides(Double latitude, Double longitude);
 }
