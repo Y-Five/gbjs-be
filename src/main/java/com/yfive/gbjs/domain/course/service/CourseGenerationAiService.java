@@ -35,7 +35,7 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/** AI 기반 여행 코스 생성 서비스 (확장된 '앵커-위성' 모델 최종 적용) */
+/** AI 기반 여행 코스 생성 서비스 (모든 최적화 최종 적용) */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -77,10 +77,10 @@ public class CourseGenerationAiService {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
-    int totalTopK = Math.max(60, Math.min(100, expectedDays * 20));
-    int topKPerLocation = locations.isEmpty() ? 0 : totalTopK / locations.size();
-    List<Document> allRelevantDocuments = new ArrayList<>();
+    List<String> simplifiedLocations = locations.stream().map(this::simplifyLocationName).toList();
+    int topKPerLocation = 30;
 
+    List<Document> parallelDocuments = new ArrayList<>();
     if (topKPerLocation > 0 && !locations.isEmpty()) {
       ExecutorService executor = Executors.newCachedThreadPool();
       try {
@@ -103,68 +103,31 @@ public class CourseGenerationAiService {
                             },
                             executor))
                 .toList();
-
-        List<Document> parallelResults =
-            futures.stream().map(CompletableFuture::join).flatMap(List::stream).toList();
-        allRelevantDocuments.addAll(parallelResults);
+        parallelDocuments.addAll(
+            futures.stream().map(CompletableFuture::join).flatMap(List::stream).toList());
       } finally {
         executor.shutdown();
       }
     }
 
-    String combinedQuery = String.join(" ", locations);
-    SearchRequest combinedSearchRequest =
-        SearchRequest.builder().query(combinedQuery).topK(totalTopK).build();
-    allRelevantDocuments.addAll(vectorStore.similaritySearch(combinedSearchRequest));
-
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
-    for (Document doc : allRelevantDocuments) {
-      Map<String, Object> md = doc.getMetadata();
-      if (md == null) continue;
-      String addr1 = s(md, "addr1");
-      if (addr1 == null) continue;
+    parseAndAddDocuments(parallelDocuments, uniq, simplifiedLocations);
 
-      boolean isInRequestedLocation =
-          locations.stream()
-              .anyMatch(
-                  loc -> {
-                    String simpleLoc = loc.replaceAll("(시|군|구)$", "");
-                    return addr1.contains(simpleLoc);
-                  });
-      if (!isInRequestedLocation) continue;
-
-      String contentIdStr = s(md, "contentId");
-      if (contentIdStr == null) continue;
-
-      try {
-        Long id = Long.valueOf(contentIdStr);
-        String type = s(md, "type");
-        String entityType = s(md, "entity_type");
-        if (!"spot".equals(type)) continue;
-
-        if (!uniq.containsKey(id)) {
-          boolean isSealSpot = "spot".equals(type) && "seal_spot".equals(entityType);
-          Long sealSpotId =
-              isSealSpot && s(md, "sealSpotId") != null ? Long.valueOf(s(md, "sealSpotId")) : null;
-          uniq.put(
-              id,
-              new CourseResponse.SimpleSpotDTO(
-                  id,
-                  null,
-                  s(md, "name"),
-                  s(md, "category"),
-                  addr1,
-                  d(md, "latitude"),
-                  d(md, "longitude"),
-                  isSealSpot,
-                  sealSpotId));
-        }
-      } catch (NumberFormatException e) {
-        continue;
-      }
+    int threshold = expectedDays * 7;
+    if (uniq.size() < threshold) {
+      log.info(
+          "Initial search results are insufficient ({} < {}). Performing combined search.",
+          uniq.size(),
+          threshold);
+      int totalTopKForCombined = 80;
+      String combinedQuery = String.join(" ", locations);
+      SearchRequest combinedSearchRequest =
+          SearchRequest.builder().query(combinedQuery).topK(totalTopKForCombined).build();
+      List<Document> combinedDocuments = vectorStore.similaritySearch(combinedSearchRequest);
+      parseAndAddDocuments(combinedDocuments, uniq, simplifiedLocations);
     }
-    List<CourseResponse.SimpleSpotDTO> deduped = new ArrayList<>(uniq.values());
 
+    List<CourseResponse.SimpleSpotDTO> deduped = new ArrayList<>(uniq.values());
     Map<String, List<CourseResponse.SimpleSpotDTO>> spotsByLocation =
         deduped.stream()
             .collect(
@@ -172,7 +135,6 @@ public class CourseGenerationAiService {
                     spot -> findLocationForSpot(spot.getAddr1(), locations),
                     Collectors.toCollection(ArrayList::new)));
 
-    // [최종 수정] 확장된 '앵커-위성' 모델을 사용하여 AI에게 보낼 후보를 지능적으로 선정
     List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
     Random rand = new Random((start + "|" + end + "|" + String.join(",", locations)).hashCode());
 
@@ -191,53 +153,40 @@ public class CourseGenerationAiService {
       List<CourseResponse.SimpleSpotDTO> finalCandidates = new ArrayList<>();
 
       if (sealSpots.size() >= 2) {
-        // Case 1: 띠부실이 2개 이상일 경우 (2-Anchor 모델)
         Collections.shuffle(sealSpots, rand);
         List<CourseResponse.SimpleSpotDTO> anchors = sealSpots.stream().limit(2).toList();
-
         double midLat = (anchors.get(0).getLatitude() + anchors.get(1).getLatitude()) / 2;
         double midLon = (anchors.get(0).getLongitude() + anchors.get(1).getLongitude()) / 2;
-
         List<CourseResponse.SimpleSpotDTO> satelliteCandidates =
             regularSpots.stream()
                 .sorted(
                     Comparator.comparingDouble(
-                        spot ->
-                            calculateDistance(
-                                midLat, midLon, spot.getLatitude(), spot.getLongitude())))
+                        spot -> fastDist2(midLat, midLon, spot.getLatitude(), spot.getLongitude())))
                 .limit(7)
                 .collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(satelliteCandidates, rand);
         List<CourseResponse.SimpleSpotDTO> satellites =
             satelliteCandidates.stream().limit(3).toList();
-
         finalCandidates.addAll(anchors);
         finalCandidates.addAll(satellites);
-
       } else if (sealSpots.size() == 1) {
-        // Case 2: 띠부실이 1개일 경우 (1-Anchor 모델)
         CourseResponse.SimpleSpotDTO anchor = sealSpots.get(0);
-
         List<CourseResponse.SimpleSpotDTO> satellites =
             regularSpots.stream()
                 .sorted(
                     Comparator.comparingDouble(
                         spot ->
-                            calculateDistance(
+                            fastDist2(
                                 anchor.getLatitude(),
                                 anchor.getLongitude(),
                                 spot.getLatitude(),
                                 spot.getLongitude())))
                 .limit(4)
                 .toList();
-
         finalCandidates.add(anchor);
         finalCandidates.addAll(satellites);
-
       } else {
-        // Case 3: 띠부실이 하나도 없을 경우 (무게중심 모델)
         if (regularSpots.isEmpty()) continue;
-
         double avgLat =
             regularSpots.stream()
                 .filter(s -> s.getLatitude() != null)
@@ -250,17 +199,13 @@ public class CourseGenerationAiService {
                 .mapToDouble(CourseResponse.SimpleSpotDTO::getLongitude)
                 .average()
                 .orElse(0.0);
-
         List<CourseResponse.SimpleSpotDTO> centeredSpots =
             regularSpots.stream()
                 .sorted(
                     Comparator.comparingDouble(
-                        spot ->
-                            calculateDistance(
-                                avgLat, avgLon, spot.getLatitude(), spot.getLongitude())))
+                        spot -> fastDist2(avgLat, avgLon, spot.getLatitude(), spot.getLongitude())))
                 .limit(5)
                 .toList();
-
         finalCandidates.addAll(centeredSpots);
       }
       spotsForOpenAI.addAll(finalCandidates);
@@ -279,7 +224,7 @@ public class CourseGenerationAiService {
                 - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
                 - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
                 - 핵심 규칙 2: 각 지역별로 가장 매력적인 코스를 만들 수 있도록, 지리적으로 잘 묶인 추천 관광지 목록을 제공합니다. 띠부실 관광지(isSealSpot: true)가 있는 경우 우선적으로 포함되었습니다. 이 장소들을 활용하여 가장 동선이 효율적이고 매력적인 하루 코스를 만들어 주세요.
-                - 하루에 최소 3개, 최대 5개의 장소를 방문할 수 있습니다.
+                - 하루에 최소 4개, 최대 5개의 장소를 방문할 수 있습니다.
                 - 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
 
                 사용 가능한 장소 목록 (JSON 배열):
@@ -314,10 +259,63 @@ public class CourseGenerationAiService {
     return postFix(result, start, end, locations, originalSpotMap);
   }
 
+  private void parseAndAddDocuments(
+      List<Document> documents,
+      Map<Long, CourseResponse.SimpleSpotDTO> uniq,
+      List<String> simplifiedLocations) {
+    for (Document doc : documents) {
+      Map<String, Object> md = doc.getMetadata();
+      if (md == null) continue;
+      String addr1 = s(md, "addr1");
+      if (addr1 == null) continue;
+
+      boolean isInRequestedLocation = simplifiedLocations.stream().anyMatch(addr1::contains);
+      if (!isInRequestedLocation) continue;
+
+      String contentIdStr = s(md, "contentId");
+      if (contentIdStr == null) continue;
+
+      try {
+        Long id = Long.valueOf(contentIdStr);
+        if (uniq.containsKey(id)) continue;
+
+        String type = s(md, "type");
+        String entityType = s(md, "entity_type");
+        if (!"spot".equals(type)) continue;
+
+        boolean isSealSpot = "spot".equals(type) && "seal_spot".equals(entityType);
+        Long sealSpotId =
+            isSealSpot && s(md, "sealSpotId") != null ? Long.valueOf(s(md, "sealSpotId")) : null;
+        uniq.put(
+            id,
+            new CourseResponse.SimpleSpotDTO(
+                id,
+                null,
+                s(md, "name"),
+                s(md, "category"),
+                addr1,
+                d(md, "latitude"),
+                d(md, "longitude"),
+                isSealSpot,
+                sealSpotId));
+      } catch (NumberFormatException e) {
+        // ID 파싱 실패 시 건너뛰기
+      }
+    }
+  }
+
+  private String simplifyLocationName(String loc) {
+    if (loc == null) return "";
+    if (loc.endsWith("시") || loc.endsWith("군") || loc.endsWith("구")) {
+      return loc.substring(0, loc.length() - 1);
+    }
+    return loc;
+  }
+
   private String findLocationForSpot(String addr1, List<String> requestedLocations) {
     if (addr1 == null) return requestedLocations.get(0);
     for (String loc : requestedLocations) {
-      String simpleLoc = loc.replaceAll("(시|군|구)$", "");
+      String simpleLoc = simplifyLocationName(loc);
       if (addr1.contains(simpleLoc)) {
         return loc;
       }
@@ -334,9 +332,7 @@ public class CourseGenerationAiService {
 
     if (aiResult == null || aiResult.getDailyCourses() == null) {
       String locationsString =
-          reqLocations.stream()
-              .map(loc -> loc.replaceAll("(시|군|구)$", ""))
-              .collect(Collectors.joining(", "));
+          reqLocations.stream().map(this::simplifyLocationName).collect(Collectors.joining(", "));
 
       return CourseResponse.CourseDetailDTO.builder()
           .title(locationsString + " 코스")
@@ -362,7 +358,7 @@ public class CourseGenerationAiService {
         }
       }
 
-      if (restoredSpots.size() < 2) continue;
+      if (restoredSpots.size() < 3) continue;
 
       List<CourseResponse.SimpleSpotDTO> finalSpots = normalizeVisitOrderSimple(restoredSpots);
 
@@ -384,9 +380,7 @@ public class CourseGenerationAiService {
     long finalDays = ChronoUnit.DAYS.between(start, end) + 1;
 
     String locationsString =
-        reqLocations.stream()
-            .map(loc -> loc.replaceAll("(시|군|구)$", ""))
-            .collect(Collectors.joining(", "));
+        reqLocations.stream().map(this::simplifyLocationName).collect(Collectors.joining(", "));
 
     String title = String.format("%s %d일 코스", locationsString, finalDays);
 
@@ -424,23 +418,12 @@ public class CourseGenerationAiService {
     return result;
   }
 
-  private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  private double fastDist2(double lat1, double lon1, double lat2, double lon2) {
     if (lat1 == 0 || lon1 == 0 || lat2 == 0 || lon2 == 0) return Double.MAX_VALUE;
 
-    final int R = 6371; // 지구 반지름 (km)
-
-    double latDistance = Math.toRadians(lat2 - lat1);
-    double lonDistance = Math.toRadians(lon2 - lon1);
-
-    double a =
-        Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-            + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2)
-                * Math.sin(lonDistance / 2);
-
-    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // km 단위 거리
+    double latRad = Math.toRadians((lat1 + lat2) * 0.5);
+    double x = Math.toRadians(lon2 - lon1) * Math.cos(latRad);
+    double y = Math.toRadians(lat2 - lat1);
+    return x * x + y * y;
   }
 }
