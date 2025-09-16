@@ -62,6 +62,11 @@ public interface CourseController {
       @Parameter(hidden = true) Authentication authentication,
       @PathVariable @Parameter(description = "코스 ID", example = "1") Long courseId);
 
+  @Operation(summary = "여행 코스 상세 조회 (공개)", description = "코스 ID로 상세 정보를 조회합니다. (로그인 없이 접근 가능)")
+  @GetMapping("/{courseId}/public")
+  ResponseEntity<ApiResponse<CourseResponse.CourseDetailDTO>> getCoursePublic(
+      @PathVariable @Parameter(description = "코스 ID", example = "1") Long courseId);
+
   @Operation(summary = "저장한 여행 코스 삭제", description = "코스 ID로 저장한 코스를 삭제합니다.")
   @DeleteMapping("/{courseId}")
   ResponseEntity<ApiResponse<Void>> deleteCourse(
@@ -74,7 +79,7 @@ public interface CourseController {
       @RequestParam @Parameter(description = "추천 타입 (THEME, FESTIVAL)", required = true)
           RecommendationType type);
 
-  @Operation(summary = "추천 코스 저장 (북마크)", description = "추천 코스를 내 코스 목록에 저장(북마크)합니다.")
+  @Operation(summary = "테마별/행사별 코스 저장(북마크)", description = "추천 코스를 내 코스 목록에 저장(북마크)합니다.")
   @PostMapping("/recommend/{courseId}")
   ResponseEntity<ApiResponse<Void>> bookmarkCourse(
       @Parameter(hidden = true) Authentication authentication,

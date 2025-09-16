@@ -51,6 +51,15 @@ public interface CourseService {
   CourseResponse.CourseDetailDTO getCourse(Long userId, Long courseId);
 
   /**
+   * 특정 코스의 상세 정보를 조회합니다. (로그인 없이 접근 가능)
+   *
+   * @param courseId 조회할 코스 ID
+   * @return 코스 상세 정보
+   * @throws CustomException 코스를 찾을 수 없는 경우
+   */
+  CourseResponse.CourseDetailDTO getCoursePublic(Long courseId);
+
+  /**
    * 사용자가 저장한 모든 코스 목록을 조회합니다.
    *
    * @param userId 사용자 ID
