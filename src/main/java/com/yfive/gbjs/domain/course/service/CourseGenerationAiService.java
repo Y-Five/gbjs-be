@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/** AI 기반 여행 코스 생성 서비스 (띠부실 관광지 우선 포함 로직 추가) */
+/** AI 기반 여행 코스 생성 서비스 (확장된 '앵커-위성' 모델 최종 적용) */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -171,11 +172,8 @@ public class CourseGenerationAiService {
                     spot -> findLocationForSpot(spot.getAddr1(), locations),
                     Collectors.toCollection(ArrayList::new)));
 
-    // [수정] 띠부실 관광지를 우선적으로 포함하도록 후보 선정 로직 변경
+    // [최종 수정] 확장된 '앵커-위성' 모델을 사용하여 AI에게 보낼 후보를 지능적으로 선정
     List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
-    int maxTotal = Math.min(expectedDays * 5, 25); // AI에게 더 많은 선택지를 주기 위해 풀을 약간 늘림
-    int spotsPerLocationQuota =
-        locations.isEmpty() ? 0 : (int) Math.ceil((double) maxTotal / locations.size());
     Random rand = new Random((start + "|" + end + "|" + String.join(",", locations)).hashCode());
 
     for (String location : locations) {
@@ -184,28 +182,88 @@ public class CourseGenerationAiService {
         continue;
       }
 
-      // 관광지를 띠부실/일반으로 분리
-      Map<Boolean, List<CourseResponse.SimpleSpotDTO>> partitionedSpots =
+      Map<Boolean, List<CourseResponse.SimpleSpotDTO>> partitioned =
           spotsInLocation.stream()
               .collect(Collectors.partitioningBy(CourseResponse.SimpleSpotDTO::getIsSealSpot));
+      List<CourseResponse.SimpleSpotDTO> sealSpots = partitioned.get(true);
+      List<CourseResponse.SimpleSpotDTO> regularSpots = partitioned.get(false);
 
-      List<CourseResponse.SimpleSpotDTO> sealSpots = partitionedSpots.get(true);
-      List<CourseResponse.SimpleSpotDTO> regularSpots = partitionedSpots.get(false);
+      List<CourseResponse.SimpleSpotDTO> finalCandidates = new ArrayList<>();
 
-      // 각 리스트를 무작위로 섞음
-      Collections.shuffle(sealSpots, rand);
-      Collections.shuffle(regularSpots, rand);
+      if (sealSpots.size() >= 2) {
+        // Case 1: 띠부실이 2개 이상일 경우 (2-Anchor 모델)
+        Collections.shuffle(sealSpots, rand);
+        List<CourseResponse.SimpleSpotDTO> anchors = sealSpots.stream().limit(2).toList();
 
-      // 띠부실 관광지를 최대 2개까지 우선적으로 추가
-      int sealSpotsToTake = Math.min(sealSpots.size(), 2);
-      spotsForOpenAI.addAll(sealSpots.subList(0, sealSpotsToTake));
+        double midLat = (anchors.get(0).getLatitude() + anchors.get(1).getLatitude()) / 2;
+        double midLon = (anchors.get(0).getLongitude() + anchors.get(1).getLongitude()) / 2;
 
-      // 남은 할당량만큼 일반 관광지 추가
-      int remainingQuota = spotsPerLocationQuota - sealSpotsToTake;
-      if (remainingQuota > 0) {
-        int regularSpotsToTake = Math.min(regularSpots.size(), remainingQuota);
-        spotsForOpenAI.addAll(regularSpots.subList(0, regularSpotsToTake));
+        List<CourseResponse.SimpleSpotDTO> satelliteCandidates =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot ->
+                            calculateDistance(
+                                midLat, midLon, spot.getLatitude(), spot.getLongitude())))
+                .limit(7)
+                .collect(Collectors.toCollection(ArrayList::new));
+        Collections.shuffle(satelliteCandidates, rand);
+        List<CourseResponse.SimpleSpotDTO> satellites =
+            satelliteCandidates.stream().limit(3).toList();
+
+        finalCandidates.addAll(anchors);
+        finalCandidates.addAll(satellites);
+
+      } else if (sealSpots.size() == 1) {
+        // Case 2: 띠부실이 1개일 경우 (1-Anchor 모델)
+        CourseResponse.SimpleSpotDTO anchor = sealSpots.get(0);
+
+        List<CourseResponse.SimpleSpotDTO> satellites =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot ->
+                            calculateDistance(
+                                anchor.getLatitude(),
+                                anchor.getLongitude(),
+                                spot.getLatitude(),
+                                spot.getLongitude())))
+                .limit(4)
+                .toList();
+
+        finalCandidates.add(anchor);
+        finalCandidates.addAll(satellites);
+
+      } else {
+        // Case 3: 띠부실이 하나도 없을 경우 (무게중심 모델)
+        if (regularSpots.isEmpty()) continue;
+
+        double avgLat =
+            regularSpots.stream()
+                .filter(s -> s.getLatitude() != null)
+                .mapToDouble(CourseResponse.SimpleSpotDTO::getLatitude)
+                .average()
+                .orElse(0.0);
+        double avgLon =
+            regularSpots.stream()
+                .filter(s -> s.getLongitude() != null)
+                .mapToDouble(CourseResponse.SimpleSpotDTO::getLongitude)
+                .average()
+                .orElse(0.0);
+
+        List<CourseResponse.SimpleSpotDTO> centeredSpots =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot ->
+                            calculateDistance(
+                                avgLat, avgLon, spot.getLatitude(), spot.getLongitude())))
+                .limit(5)
+                .toList();
+
+        finalCandidates.addAll(centeredSpots);
       }
+      spotsForOpenAI.addAll(finalCandidates);
     }
 
     String spotsJson;
@@ -215,15 +273,13 @@ public class CourseGenerationAiService {
       throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
     }
 
-    // [수정] 띠부실 관광지 포함 규칙을 프롬프트에 명시적으로 추가
     String prompt =
         """
                 다음 제약 조건에 따라 여행 코스를 생성해 주세요.
                 - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
-                - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다. (예: 경주와 안동의 장소를 같은 날에 섞지 마세요.)
-                - 핵심 규칙 2: 각 지역별로 '띠부실 관광지'(isSealSpot: true)가 있다면, 하루 코스에 최소 1개 이상 반드시 포함시켜 주세요. 띠부실 관광지가 없는 지역은 이 규칙을 적용하지 않아도 됩니다.
-                - 여행 일수가 지역 수보다 많으면, 같은 지역을 여러 날에 걸쳐 계획할 수 있습니다. 지역을 최대한 균등하게 분배해 주세요.
-                - 하루에 최소 3개 최대 5개의 장소를 방문할 수 있습니다.
+                - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
+                - 핵심 규칙 2: 각 지역별로 가장 매력적인 코스를 만들 수 있도록, 지리적으로 잘 묶인 추천 관광지 목록을 제공합니다. 띠부실 관광지(isSealSpot: true)가 있는 경우 우선적으로 포함되었습니다. 이 장소들을 활용하여 가장 동선이 효율적이고 매력적인 하루 코스를 만들어 주세요.
+                - 하루에 최소 3개, 최대 5개의 장소를 방문할 수 있습니다.
                 - 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
 
                 사용 가능한 장소 목록 (JSON 배열):
@@ -249,7 +305,11 @@ public class CourseGenerationAiService {
 
     Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap =
         spotsForOpenAI.stream()
-            .collect(Collectors.toMap(CourseResponse.SimpleSpotDTO::getSpotId, spot -> spot));
+            .collect(
+                Collectors.toMap(
+                    CourseResponse.SimpleSpotDTO::getSpotId,
+                    spot -> spot,
+                    (first, second) -> first));
 
     return postFix(result, start, end, locations, originalSpotMap);
   }
@@ -362,5 +422,25 @@ public class CourseGenerationAiService {
       result.add(sortedSpots.get(i).toBuilder().visitOrder(i + 1).build());
     }
     return result;
+  }
+
+  private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    if (lat1 == 0 || lon1 == 0 || lat2 == 0 || lon2 == 0) return Double.MAX_VALUE;
+
+    final int R = 6371; // 지구 반지름 (km)
+
+    double latDistance = Math.toRadians(lat2 - lat1);
+    double lonDistance = Math.toRadians(lon2 - lon1);
+
+    double a =
+        Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+            + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2)
+                * Math.sin(lonDistance / 2);
+
+    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // km 단위 거리
   }
 }
