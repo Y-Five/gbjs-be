@@ -3,16 +3,6 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
-import java.util.List;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import com.yfive.gbjs.domain.spot.dto.response.NearbyAudioSpotResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotDetailResponse;
 import com.yfive.gbjs.domain.spot.dto.response.SpotResponse;
@@ -20,10 +10,16 @@ import com.yfive.gbjs.domain.spot.entity.SearchBy;
 import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.global.common.response.ApiResponse;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "관광지", description = "관광지 관련 API (공공데이터 관광정보 OpenAPI)")
 @RequestMapping("/api/spots")
@@ -37,23 +33,23 @@ public interface SpotController {
       @Parameter(description = "검색 키워드", example = "경주") @RequestParam String keyword,
       @Parameter(description = "정렬 기준", example = "DISTANCE") @RequestParam SortBy sortBy,
       @Parameter(description = "카테고리 선택", example = "HISTORIC_SITE") @RequestParam(required = false)
-          SearchBy searchBy,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
+      SearchBy searchBy,
+      @Parameter(description = "위도", example = "36.583333") @RequestParam(defaultValue = "36.583333") Double latitude,
+      @Parameter(description = "경도", example = "128.516667") @RequestParam(defaultValue = "128.516667") Double longitude);
 
   @GetMapping("{id}")
   @Operation(summary = "관광지 단일 조회", description = "관광지 식별자를 통한 단일 조회")
   ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
       HttpServletRequest request,
       @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") Long id,
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
+      @Parameter(description = "위도", example = "36.583333") @RequestParam(defaultValue = "36.583333") Double latitude,
+      @Parameter(description = "경도", example = "128.516667") @RequestParam(defaultValue = "128.516667") Double longitude);
 
   @GetMapping("/audio-guides/nearby")
   @Operation(
       summary = "음성 가이드가 있는 내 주변 관광지 조회",
       description = "현재 위치 기반으로 음성 가이드가 있는 관광지 5곳을 가까운 순으로 반환")
   ResponseEntity<ApiResponse<List<NearbyAudioSpotResponse>>> getNearbySpotsWithAudioGuides(
-      @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
-      @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
+      @Parameter(description = "위도", example = "36.583333") @RequestParam(defaultValue = "36.583333") Double latitude,
+      @Parameter(description = "경도", example = "128.516667") @RequestParam(defaultValue = "128.516667") Double longitude);
 }

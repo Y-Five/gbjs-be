@@ -3,8 +3,15 @@
  */
 package com.yfive.gbjs.domain.guide.controller;
 
+import com.yfive.gbjs.domain.guide.dto.response.AudioDetailResponse;
+import com.yfive.gbjs.domain.guide.dto.response.CoordinateValidationResponse;
+import com.yfive.gbjs.domain.guide.service.GuideService;
+import com.yfive.gbjs.global.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,17 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.yfive.gbjs.domain.guide.dto.response.AudioDetailResponse;
-import com.yfive.gbjs.domain.guide.dto.response.CoordinateValidationResponse;
-import com.yfive.gbjs.domain.guide.service.GuideService;
-import com.yfive.gbjs.global.common.response.ApiResponse;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-
-@Tag(name = "AudioGuide", description = "오디오 가이드 API")
+@Tag(name = "오디오 가이드", description = "오디오 가이드 API")
 @RestController
 @RequestMapping("/api/audio-guide")
 @RequiredArgsConstructor
@@ -34,7 +31,7 @@ public class AudioGuideController {
   @GetMapping("/title")
   public ResponseEntity<ApiResponse<List<AudioDetailResponse>>> searchExact(
       @Parameter(description = "검색 관광지명", required = true, example = "불국사") @RequestParam
-          String title) {
+      String title) {
     List<AudioDetailResponse> results = guideService.searchAudioGuideByTitle(title);
     return ResponseEntity.ok(ApiResponse.success(results));
   }
@@ -43,7 +40,7 @@ public class AudioGuideController {
   @GetMapping("/title-like")
   public ResponseEntity<ApiResponse<List<AudioDetailResponse>>> searchKeyword(
       @Parameter(description = "검색 관광지명", required = true, example = "불국사") @RequestParam
-          String title) {
+      String title) {
     List<AudioDetailResponse> results = guideService.searchAudioGuideByTitleLike(title);
     return ResponseEntity.ok(ApiResponse.success(results));
   }
@@ -71,9 +68,9 @@ public class AudioGuideController {
   @GetMapping("/test-coordinate")
   public ResponseEntity<ApiResponse<String>> testCoordinate(
       @Parameter(description = "위도", required = true, example = "36.0") @RequestParam
-          double latitude,
+      double latitude,
       @Parameter(description = "경도", required = true, example = "129.0") @RequestParam
-          double longitude) {
+      double longitude) {
     boolean isInside = guideService.testCoordinate(latitude, longitude);
     String message =
         String.format(
