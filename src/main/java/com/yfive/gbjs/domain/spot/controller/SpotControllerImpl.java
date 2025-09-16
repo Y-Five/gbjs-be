@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import com.yfive.gbjs.domain.spot.entity.SearchBy;
 import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.common.response.ApiResponse;
+import com.yfive.gbjs.global.config.jwt.JwtProvider;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
@@ -27,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class SpotControllerImpl implements SpotController {
 
   private final SpotService spotService;
+  private final JwtProvider jwtProvider;
 
   @Override
   public ResponseEntity<ApiResponse<PageResponse<SpotResponse>>> getSpotsByKeyword(
@@ -57,9 +61,14 @@ public class SpotControllerImpl implements SpotController {
 
   @Override
   public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
-      @PathVariable Long id, @RequestParam Double latitude, @RequestParam Double longitude) {
+      HttpServletRequest request,
+      @PathVariable Long id,
+      @RequestParam Double latitude,
+      @RequestParam Double longitude) {
+
+    String accessToken = jwtProvider.extractAccessToken(request);
     SpotDetailResponse spotDetailResponse =
-        spotService.getSpotByContentId(id, latitude, longitude, true);
+        spotService.getSpotByContentId(accessToken, id, latitude, longitude, true);
 
     return ResponseEntity.ok(ApiResponse.success(spotDetailResponse));
   }

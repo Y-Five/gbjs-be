@@ -22,5 +22,5 @@ public interface SpotService {
       Double longitude);
 
   SpotDetailResponse getSpotByContentId(
-      Long contentId, Double latitude, Double longitude, Boolean isDetail);
+      String accessToken, Long contentId, Double latitude, Double longitude, Boolean isDetail);
 }

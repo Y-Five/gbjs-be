@@ -261,8 +261,11 @@ public class DataIndexingService {
                       spot -> {
                         try {
                           SpotDetailResponse detail =
-                              spotService.getSpotByContentId(spot.getSpotId(), null, null, false);
-                          if (detail == null) return null;
+                              spotService.getSpotByContentId(
+                                  null, spot.getSpotId(), null, null, false);
+                          if (detail == null) {
+                            return null;
+                          }
 
                           String title = detail.getTitle() != null ? detail.getTitle() : "";
                           String overview =
@@ -389,7 +392,9 @@ public class DataIndexingService {
                         try {
                           FestivalDetailResponse detail =
                               festivalService.getFestivalById(festival.getFestivalId());
-                          if (detail == null) return null;
+                          if (detail == null) {
+                            return null;
+                          }
 
                           String title = detail.getTitle() != null ? detail.getTitle() : "";
                           String overview =

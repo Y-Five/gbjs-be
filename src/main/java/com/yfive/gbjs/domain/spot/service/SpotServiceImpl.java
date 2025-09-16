@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -32,6 +30,7 @@ import com.yfive.gbjs.domain.spot.entity.SortBy;
 import com.yfive.gbjs.domain.spot.exception.SpotErrorStatus;
 import com.yfive.gbjs.domain.tts.dto.request.TtsRequest;
 import com.yfive.gbjs.domain.tts.entity.AudioFile;
+import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.tts.repository.TtsRepository;
 import com.yfive.gbjs.domain.tts.service.TtsService;
 import com.yfive.gbjs.domain.user.entity.User;
@@ -163,7 +162,7 @@ public class SpotServiceImpl implements SpotService {
   @Override
   @Transactional
   public SpotDetailResponse getSpotByContentId(
-      Long contentId, Double latitude, Double longitude, Boolean isDetail) {
+      String accessToken, Long contentId, Double latitude, Double longitude, Boolean isDetail) {
 
     UriComponentsBuilder uriBuilder =
         UriComponentsBuilder.fromUriString(spotApiUrl + "/detailCommon2")
@@ -222,25 +221,15 @@ public class SpotServiceImpl implements SpotService {
       List<AudioGuide> audioGuides = audioGuideRepository.findByContentId(contentId);
 
       if (isDetail) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        TtsSetting ttsSetting = TtsSetting.FEMALE_B;
         String type = "B";
-        User user = null;
 
-        if (authentication != null && authentication.isAuthenticated()) {
-          user = userService.getCurrentUser();
-
-          switch (user.getTtsSetting()) {
-            case FEMALE_B -> type = "B";
-            case MALE_C -> type = "C";
-            case MALE_D -> type = "D";
-            default -> type = "A";
-          }
+        if (!accessToken.isEmpty()) {
+          User user = userService.getCurrentUser();
+          type = user.getTtsSetting().toString().substring(ttsSetting.toString().length() - 1);
         }
 
         String finalType = type;
-        User finalUser = user;
-
         List<SpotTtsResponse> spotTtsResponses =
             audioGuides.stream()
                 .map(
@@ -257,11 +246,9 @@ public class SpotServiceImpl implements SpotService {
                       AudioFile audioFile =
                           ttsRepository.findByTypeAndAudioGuideId(finalType, guide.getId());
 
-                      if (audioFile == null && finalUser != null) {
+                      if (audioFile == null) {
                         ttsService.convertTextToSpeech(
-                            guide.getId(),
-                            finalUser.getTtsSetting(),
-                            new TtsRequest(guide.getScript()));
+                            guide.getId(), ttsSetting, new TtsRequest(guide.getScript()));
                         audioFile =
                             ttsRepository.findByTypeAndAudioGuideId(finalType, guide.getId());
                       }
@@ -280,10 +267,7 @@ public class SpotServiceImpl implements SpotService {
         spotDetailResponse.setTotalTts(spotTtsResponses.size());
 
         log.info(
-            "관광지 단일 조회 성공 - userId: {}, contentId: {}, category: {}",
-            user.getId(),
-            contentId,
-            spotDetailResponse.getType());
+            "관광지 단일 조회 성공 - contentId: {}, category: {}", contentId, spotDetailResponse.getType());
       }
 
       return spotDetailResponse;
@@ -370,7 +354,7 @@ public class SpotServiceImpl implements SpotService {
     pageContent.forEach(
         response -> {
           SpotDetailResponse detail =
-              getSpotByContentId(response.getSpotId(), latitude, longitude, false);
+              getSpotByContentId(null, response.getSpotId(), latitude, longitude, false);
           response.setType(detail.getType());
         });
     Page<SpotResponse> page = new PageImpl<>(pageContent, pageable, spotResponses.size());

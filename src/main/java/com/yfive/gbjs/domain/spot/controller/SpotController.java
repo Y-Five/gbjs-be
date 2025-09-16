@@ -3,6 +3,8 @@
  */
 package com.yfive.gbjs.domain.spot.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,6 +41,7 @@ public interface SpotController {
   @GetMapping("{id}")
   @Operation(summary = "관광지 단일 조회", description = "관광지 식별자를 통한 단일 조회")
   ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotByContentId(
+      HttpServletRequest request,
       @Parameter(description = "관광지 식별자", example = "126207") @PathVariable("id") Long id,
       @Parameter(description = "위도", example = "36.5759985") @RequestParam Double latitude,
       @Parameter(description = "경도", example = "128.505832") @RequestParam Double longitude);
