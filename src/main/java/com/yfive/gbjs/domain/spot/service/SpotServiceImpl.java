@@ -3,21 +3,6 @@
  */
 package com.yfive.gbjs.domain.spot.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.guide.entity.AudioGuide;
@@ -40,9 +25,21 @@ import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.exception.PageErrorStatus;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
-
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -225,7 +222,7 @@ public class SpotServiceImpl implements SpotService {
         TtsSetting ttsSetting = TtsSetting.FEMALE_B;
         String type = "B";
 
-        if (!accessToken.isEmpty()) {
+        if (accessToken != null && !accessToken.isEmpty()) {
           User user = userService.getCurrentUser();
           type = user.getTtsSetting().toString().substring(ttsSetting.toString().length() - 1);
         }
@@ -319,9 +316,9 @@ public class SpotServiceImpl implements SpotService {
     double a =
         Math.sin(latDist / 2) * Math.sin(latDist / 2)
             + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDist / 2)
-                * Math.sin(lonDist / 2);
+            * Math.cos(Math.toRadians(lat2))
+            * Math.sin(lonDist / 2)
+            * Math.sin(lonDist / 2);
     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -418,7 +415,7 @@ public class SpotServiceImpl implements SpotService {
         cat3 = "A02060100";
       }
     }
-    return new String[] {cat1, cat2, cat3};
+    return new String[]{cat1, cat2, cat3};
   }
 
   @Override
