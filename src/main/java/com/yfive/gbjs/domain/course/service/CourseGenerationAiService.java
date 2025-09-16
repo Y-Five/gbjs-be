@@ -7,36 +7,35 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yfive.gbjs.domain.course.dto.request.CourseRequest;
 import com.yfive.gbjs.domain.course.dto.response.CourseResponse;
 import com.yfive.gbjs.domain.course.exception.CourseErrorStatus;
-import com.yfive.gbjs.domain.seal.repository.SealSpotRepository;
-import com.yfive.gbjs.domain.spot.service.SpotService;
 import com.yfive.gbjs.global.error.exception.CustomException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/** AI 기반 여행 코스 생성 서비스 (JSON 모드 강제 + 단일 호출 + 후검증/보정) */
+/** AI 기반 여행 코스 생성 서비스 (모든 최적화 최종 적용) */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,8 +43,6 @@ public class CourseGenerationAiService {
 
   private final VectorStore vectorStore;
   private final ChatClient chatClient;
-  private final SpotService spotService;
-  private final SealSpotRepository sealSpotRepository;
   private final ObjectMapper objectMapper;
 
   private static String s(Map<String, Object> m, String k) {
@@ -65,21 +62,6 @@ public class CourseGenerationAiService {
     }
   }
 
-  private static String cleanJsonFences(String raw) {
-    if (raw == null) return null;
-    String txt = raw.trim();
-    if (txt.startsWith("```")) {
-      int firstNl = txt.indexOf('\n');
-      if (firstNl > 0) {
-        txt = txt.substring(firstNl + 1);
-      }
-    }
-    if (txt.length() >= 3 && txt.substring(txt.length() - 3).equals("```")) {
-      txt = txt.substring(0, txt.length() - 3);
-    }
-    return txt.trim();
-  }
-
   public CourseResponse.CourseDetailDTO generateAiCourse(
       CourseRequest.CreateCourseRequest request) {
     LocalDate today = LocalDate.now();
@@ -95,57 +77,217 @@ public class CourseGenerationAiService {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
-    // 1) Qdrant에서 관광지 검색 (하이브리드: 개별 검색 + 통합 검색)
-    int totalTopK = Math.max(150, Math.min(300, expectedDays * 40));
-    int topKPerLocation = locations.isEmpty() ? 0 : totalTopK / locations.size();
-    List<Document> allRelevantDocuments = new ArrayList<>();
+    List<String> simplifiedLocations = locations.stream().map(this::simplifyLocationName).toList();
+    int topKPerLocation = 30;
 
-    if (topKPerLocation > 0) {
-      for (String location : locations) {
-        String query = location;
-        log.info("Executing individual search for '{}' with topK={}", query, topKPerLocation);
-        SearchRequest searchRequest =
-            SearchRequest.builder().query(query).topK(topKPerLocation).build();
-        allRelevantDocuments.addAll(vectorStore.similaritySearch(searchRequest));
+    List<Document> parallelDocuments = new ArrayList<>();
+    if (topKPerLocation > 0 && !locations.isEmpty()) {
+      ExecutorService executor = Executors.newCachedThreadPool();
+      try {
+        List<CompletableFuture<List<Document>>> futures =
+            locations.stream()
+                .map(
+                    location ->
+                        CompletableFuture.supplyAsync(
+                            () -> {
+                              log.info(
+                                  "Executing parallel search for '{}' with topK={}",
+                                  location,
+                                  topKPerLocation);
+                              SearchRequest searchRequest =
+                                  SearchRequest.builder()
+                                      .query(location)
+                                      .topK(topKPerLocation)
+                                      .build();
+                              return vectorStore.similaritySearch(searchRequest);
+                            },
+                            executor))
+                .toList();
+        parallelDocuments.addAll(
+            futures.stream().map(CompletableFuture::join).flatMap(List::stream).toList());
+      } finally {
+        executor.shutdown();
       }
     }
-    String combinedQuery = String.join(" ", locations);
-    log.info("Executing combined search for '{}' with topK={}", combinedQuery, totalTopK);
-    SearchRequest combinedSearchRequest =
-        SearchRequest.builder().query(combinedQuery).topK(totalTopK).build();
-    allRelevantDocuments.addAll(vectorStore.similaritySearch(combinedSearchRequest));
 
-    // 2) 문서 → DTO 변환 및 필터링
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
-    for (Document doc : allRelevantDocuments) {
+    parseAndAddDocuments(parallelDocuments, uniq, simplifiedLocations);
+
+    int threshold = expectedDays * 7;
+    if (uniq.size() < threshold) {
+      log.info(
+          "Initial search results are insufficient ({} < {}). Performing combined search.",
+          uniq.size(),
+          threshold);
+      int totalTopKForCombined = 80;
+      String combinedQuery = String.join(" ", locations);
+      SearchRequest combinedSearchRequest =
+          SearchRequest.builder().query(combinedQuery).topK(totalTopKForCombined).build();
+      List<Document> combinedDocuments = vectorStore.similaritySearch(combinedSearchRequest);
+      parseAndAddDocuments(combinedDocuments, uniq, simplifiedLocations);
+    }
+
+    List<CourseResponse.SimpleSpotDTO> deduped = new ArrayList<>(uniq.values());
+    Map<String, List<CourseResponse.SimpleSpotDTO>> spotsByLocation =
+        deduped.stream()
+            .collect(
+                Collectors.groupingBy(
+                    spot -> findLocationForSpot(spot.getAddr1(), locations),
+                    Collectors.toCollection(ArrayList::new)));
+
+    List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
+    Random rand = new Random((start + "|" + end + "|" + String.join(",", locations)).hashCode());
+
+    for (String location : locations) {
+      List<CourseResponse.SimpleSpotDTO> spotsInLocation = spotsByLocation.get(location);
+      if (spotsInLocation == null || spotsInLocation.isEmpty()) {
+        continue;
+      }
+
+      Map<Boolean, List<CourseResponse.SimpleSpotDTO>> partitioned =
+          spotsInLocation.stream()
+              .collect(Collectors.partitioningBy(CourseResponse.SimpleSpotDTO::getIsSealSpot));
+      List<CourseResponse.SimpleSpotDTO> sealSpots = partitioned.get(true);
+      List<CourseResponse.SimpleSpotDTO> regularSpots = partitioned.get(false);
+
+      List<CourseResponse.SimpleSpotDTO> finalCandidates = new ArrayList<>();
+
+      if (sealSpots.size() >= 2) {
+        Collections.shuffle(sealSpots, rand);
+        List<CourseResponse.SimpleSpotDTO> anchors = sealSpots.stream().limit(2).toList();
+        double midLat = (anchors.get(0).getLatitude() + anchors.get(1).getLatitude()) / 2;
+        double midLon = (anchors.get(0).getLongitude() + anchors.get(1).getLongitude()) / 2;
+        List<CourseResponse.SimpleSpotDTO> satelliteCandidates =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot -> fastDist2(midLat, midLon, spot.getLatitude(), spot.getLongitude())))
+                .limit(7)
+                .collect(Collectors.toCollection(ArrayList::new));
+        Collections.shuffle(satelliteCandidates, rand);
+        List<CourseResponse.SimpleSpotDTO> satellites =
+            satelliteCandidates.stream().limit(3).toList();
+        finalCandidates.addAll(anchors);
+        finalCandidates.addAll(satellites);
+      } else if (sealSpots.size() == 1) {
+        CourseResponse.SimpleSpotDTO anchor = sealSpots.get(0);
+        List<CourseResponse.SimpleSpotDTO> satellites =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot ->
+                            fastDist2(
+                                anchor.getLatitude(),
+                                anchor.getLongitude(),
+                                spot.getLatitude(),
+                                spot.getLongitude())))
+                .limit(4)
+                .toList();
+        finalCandidates.add(anchor);
+        finalCandidates.addAll(satellites);
+      } else {
+        if (regularSpots.isEmpty()) continue;
+        double avgLat =
+            regularSpots.stream()
+                .filter(s -> s.getLatitude() != null)
+                .mapToDouble(CourseResponse.SimpleSpotDTO::getLatitude)
+                .average()
+                .orElse(0.0);
+        double avgLon =
+            regularSpots.stream()
+                .filter(s -> s.getLongitude() != null)
+                .mapToDouble(CourseResponse.SimpleSpotDTO::getLongitude)
+                .average()
+                .orElse(0.0);
+        List<CourseResponse.SimpleSpotDTO> centeredSpots =
+            regularSpots.stream()
+                .sorted(
+                    Comparator.comparingDouble(
+                        spot -> fastDist2(avgLat, avgLon, spot.getLatitude(), spot.getLongitude())))
+                .limit(5)
+                .toList();
+        finalCandidates.addAll(centeredSpots);
+      }
+      spotsForOpenAI.addAll(finalCandidates);
+    }
+
+    String spotsJson;
+    try {
+      spotsJson = objectMapper.writeValueAsString(spotsForOpenAI);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
+    }
+
+    String prompt =
+        """
+                다음 제약 조건에 따라 여행 코스를 생성해 주세요.
+                - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
+                - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
+                - 핵심 규칙 2: 각 지역별로 가장 매력적인 코스를 만들 수 있도록, 지리적으로 잘 묶인 추천 관광지 목록을 제공합니다. 띠부실 관광지(isSealSpot: true)가 있는 경우 우선적으로 포함되었습니다. 이 장소들을 활용하여 가장 동선이 효율적이고 매력적인 하루 코스를 만들어 주세요.
+                - 하루에 최소 4개, 최대 5개의 장소를 방문할 수 있습니다.
+                - 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
+
+                사용 가능한 장소 목록 (JSON 배열):
+                %s
+                """
+            .formatted(start, end, expectedDays, String.join(", ", locations), spotsJson);
+
+    OpenAiChatOptions options =
+        OpenAiChatOptions.builder().temperature(0.2).maxCompletionTokens(3072).build();
+
+    CourseResponse.CourseDetailDTO result;
+    try {
+      result =
+          chatClient
+              .prompt()
+              .options(options)
+              .user(prompt)
+              .call()
+              .entity(CourseResponse.CourseDetailDTO.class);
+    } catch (Exception e) {
+      throw new RuntimeException("AI 코스 생성에 실패했습니다: " + e.getMessage());
+    }
+
+    Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap =
+        spotsForOpenAI.stream()
+            .collect(
+                Collectors.toMap(
+                    CourseResponse.SimpleSpotDTO::getSpotId,
+                    spot -> spot,
+                    (first, second) -> first));
+
+    return postFix(result, start, end, locations, originalSpotMap);
+  }
+
+  private void parseAndAddDocuments(
+      List<Document> documents,
+      Map<Long, CourseResponse.SimpleSpotDTO> uniq,
+      List<String> simplifiedLocations) {
+    for (Document doc : documents) {
       Map<String, Object> md = doc.getMetadata();
       if (md == null) continue;
       String addr1 = s(md, "addr1");
       if (addr1 == null) continue;
-      boolean isInRequestedLocation = false;
-      for (String loc : locations) {
-        String simpleLoc = loc.replace("군", "").replace("시", "");
-        if (addr1.contains(simpleLoc)) {
-          isInRequestedLocation = true;
-          break;
-        }
-      }
+
+      boolean isInRequestedLocation = simplifiedLocations.stream().anyMatch(addr1::contains);
       if (!isInRequestedLocation) continue;
 
       String contentIdStr = s(md, "contentId");
       if (contentIdStr == null) continue;
-      Long id;
-      try {
-        id = Long.valueOf(contentIdStr);
-      } catch (NumberFormatException e) {
-        continue;
-      }
-      String type = s(md, "type");
-      String entityType = s(md, "entity_type");
-      if (!"spot".equals(type)) continue;
 
-      if (!uniq.containsKey(id)) {
-        CourseResponse.SimpleSpotDTO dto =
+      try {
+        Long id = Long.valueOf(contentIdStr);
+        if (uniq.containsKey(id)) continue;
+
+        String type = s(md, "type");
+        String entityType = s(md, "entity_type");
+        if (!"spot".equals(type)) continue;
+
+        boolean isSealSpot = "spot".equals(type) && "seal_spot".equals(entityType);
+        Long sealSpotId =
+            isSealSpot && s(md, "sealSpotId") != null ? Long.valueOf(s(md, "sealSpotId")) : null;
+        uniq.put(
+            id,
             new CourseResponse.SimpleSpotDTO(
                 id,
                 null,
@@ -154,171 +296,26 @@ public class CourseGenerationAiService {
                 addr1,
                 d(md, "latitude"),
                 d(md, "longitude"),
-                "spot".equals(type) && "seal_spot".equals(entityType),
-                "spot".equals(type) && "seal_spot".equals(entityType)
-                    ? (s(md, "sealSpotId") == null ? null : Long.valueOf(s(md, "sealSpotId")))
-                    : null);
-        uniq.put(id, dto);
+                isSealSpot,
+                sealSpotId));
+      } catch (NumberFormatException e) {
+        // ID 파싱 실패 시 건너뛰기
       }
     }
-    List<CourseResponse.SimpleSpotDTO> deduped = new ArrayList<>(uniq.values());
+  }
 
-    // 3) 지역별 할당량 기반으로 AI에게 보낼 최종 후보 선정
-    Map<String, List<CourseResponse.SimpleSpotDTO>> spotsByLocation =
-        deduped.stream()
-            .collect(
-                Collectors.groupingBy(spot -> findLocationForSpot(spot.getAddr1(), locations)));
-
-    Random rand = new Random((start + "|" + end + "|" + String.join(",", locations)).hashCode());
-    spotsByLocation.values().forEach(list -> Collections.shuffle(list, rand));
-
-    List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
-    int maxTotal = Math.min(expectedDays * 5, 20);
-    int spotsPerLocationQuota =
-        locations.isEmpty() ? 0 : (int) Math.ceil((double) maxTotal / locations.size());
-
-    for (String location : locations) {
-      List<CourseResponse.SimpleSpotDTO> spotsInLocation = spotsByLocation.get(location);
-      if (spotsInLocation != null && !spotsInLocation.isEmpty()) {
-        int countToAdd = Math.min(spotsInLocation.size(), spotsPerLocationQuota);
-        spotsForOpenAI.addAll(spotsInLocation.subList(0, countToAdd));
-      }
+  private String simplifyLocationName(String loc) {
+    if (loc == null) return "";
+    if (loc.endsWith("시") || loc.endsWith("군") || loc.endsWith("구")) {
+      return loc.substring(0, loc.length() - 1);
     }
-
-    if (spotsForOpenAI.size() < maxTotal) {
-      List<CourseResponse.SimpleSpotDTO> remainingSpots =
-          deduped.stream()
-              .filter(spot -> !spotsForOpenAI.contains(spot))
-              .collect(Collectors.toList());
-      Collections.shuffle(remainingSpots, rand);
-      int needed = maxTotal - spotsForOpenAI.size();
-      if (needed > 0 && !remainingSpots.isEmpty()) {
-        spotsForOpenAI.addAll(remainingSpots.subList(0, Math.min(needed, remainingSpots.size())));
-      }
-    }
-
-    // 4) 프롬프트 구성
-    String spotsJson;
-    try {
-      spotsJson = objectMapper.writeValueAsString(spotsForOpenAI);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
-    }
-    String prompt =
-        """
-            Return ONLY a single JSON object (no markdown, no commentary).
-            It MUST match:
-            {
-              "title": string,
-              "startDate": "YYYY-MM-DD",
-              "endDate": "YYYY-MM-DD",
-              "dailyCourses": [
-                {
-                  "dayNumber": int,
-                  "date": "YYYY-MM-DD",
-                  "location": string,
-                  "spots": [
-                    {
-                      "spotId": long,
-                      "visitOrder": int,
-                      "name": string,
-                      "category": string,
-                      "addr1": string,
-                      "latitude": number,
-                      "longitude": number,
-                      "isSealSpot": boolean,
-                      "sealSpotId": long|null
-                    }
-                  ]
-                }
-              ]
-            }
-
-            Constraints:
-            - Trip duration: %d days from %s to %s for the regions: %s.
-            - CRITICAL RULE: Each day in 'dailyCourses' MUST focus on spots from ONLY ONE of the requested regions. Do NOT mix spots from different regions (e.g., Gyeongju, Andong) on the same day.
-            - If the number of days is greater than the number of regions, you CAN assign the same region to multiple days. Distribute the regions as evenly as possible.
-            - The 'location' field for each day MUST be the name of the single region you focused on for that day (e.g., "경주시").
-            - Up to 5 spots per day. Use ONLY values from the provided spots list verbatim.
-            - If not a seal spot: isSealSpot=false, sealSpotId=null.
-            - Output compact JSON without extra whitespace.
-
-            Available spots (JSON array):
-            %s
-            """
-            .formatted(
-                expectedDays,
-                request.getStartDate(),
-                request.getEndDate(),
-                String.join(", ", request.getLocations()),
-                spotsJson);
-
-    // 5) AI 호출 및 후처리
-    OpenAiChatOptions options =
-        OpenAiChatOptions.builder()
-            .temperature(0.2)
-            .maxCompletionTokens(3072)
-            .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
-            .build();
-    String aiResponse;
-    try {
-      aiResponse = chatClient.prompt().options(options).user(prompt).call().content();
-    } catch (Exception e) {
-      throw new RuntimeException("AI 호출 실패: " + e.getMessage());
-    }
-
-    String cleaned = cleanJsonFences(aiResponse);
-    CourseResponse.CourseDetailDTO result = null;
-    try {
-      result = parseStrict(cleaned, objectMapper);
-    } catch (Exception e) {
-      log.warn("JSON 1차 파싱 실패, 복구 시도 진행: {}", e.toString());
-      String repairPrompt =
-          """
-            Return ONLY a valid JSON object for CourseResponse.CourseDetailDTO.
-            Rules:
-            - If any array/object tail is truncated, REMOVE the incomplete tail and close the JSON.
-            - Keep existing fields/values as much as possible.
-            - NO markdown, NO commentary.
-
-            INPUT:
-            %s
-            """
-              .formatted(cleaned);
-      String repaired;
-      try {
-        repaired = chatClient.prompt().options(options).user(repairPrompt).call().content();
-      } catch (Exception e2) {
-        log.error("JSON 복구 호출 실패", e2);
-        throw new RuntimeException("AI 복구 호출 실패: " + e2.getMessage());
-      }
-      String repairedClean = cleanJsonFences(repaired);
-      try {
-        result = parseStrict(repairedClean, objectMapper);
-      } catch (Exception e2) {
-        log.error(
-            "JSON 복구 실패. 원본/복구 응답 일부: orig={}, repaired={}",
-            aiResponse == null
-                ? "null"
-                : aiResponse.substring(0, Math.min(aiResponse.length(), 400)),
-            repaired == null ? "null" : repaired.substring(0, Math.min(repaired.length(), 400)),
-            e2);
-        throw new RuntimeException("AI 코스 생성 실패: " + e2.getMessage());
-      }
-    }
-
-    Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap =
-        spotsForOpenAI.stream()
-            .collect(Collectors.toMap(CourseResponse.SimpleSpotDTO::getSpotId, spot -> spot));
-    result = postFix(result, start, end, locations, originalSpotMap);
-
-    return result;
+    return loc;
   }
 
   private String findLocationForSpot(String addr1, List<String> requestedLocations) {
     if (addr1 == null) return requestedLocations.get(0);
     for (String loc : requestedLocations) {
-      String simpleLoc = loc.replace("군", "").replace("시", "");
+      String simpleLoc = simplifyLocationName(loc);
       if (addr1.contains(simpleLoc)) {
         return loc;
       }
@@ -326,109 +323,69 @@ public class CourseGenerationAiService {
     return requestedLocations.get(0);
   }
 
-  private CourseResponse.CourseDetailDTO parseStrict(String json, ObjectMapper om)
-      throws Exception {
-    om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    JsonNode root = om.readTree(json);
-    if (root == null || !root.isObject()) {
-      throw new RuntimeException("AI 응답이 유효한 JSON 오브젝트가 아님");
-    }
-    return om.readValue(json, CourseResponse.CourseDetailDTO.class);
-  }
-
   private CourseResponse.CourseDetailDTO postFix(
-      CourseResponse.CourseDetailDTO res,
+      CourseResponse.CourseDetailDTO aiResult,
       LocalDate start,
       LocalDate end,
       List<String> reqLocations,
       Map<Long, CourseResponse.SimpleSpotDTO> originalSpotMap) {
 
-    int expectedDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
-    List<CourseResponse.DailyCourseDTO> inputDays =
-        res.getDailyCourses() != null ? res.getDailyCourses() : List.of();
-    Map<LocalDate, CourseResponse.DailyCourseDTO> byDate =
-        inputDays.stream()
-            .filter(dc -> dc.getDate() != null)
-            .collect(
-                Collectors.toMap(
-                    CourseResponse.DailyCourseDTO::getDate,
-                    dc -> dc,
-                    (a, b) -> a,
-                    LinkedHashMap::new));
-    List<CourseResponse.DailyCourseDTO> fixed = new ArrayList<>();
+    if (aiResult == null || aiResult.getDailyCourses() == null) {
+      String locationsString =
+          reqLocations.stream().map(this::simplifyLocationName).collect(Collectors.joining(", "));
 
-    for (int i = 0; i < expectedDays; i++) {
-      LocalDate date = start.plusDays(i);
-      CourseResponse.DailyCourseDTO originalDay = byDate.get(date);
-      String location;
-      List<CourseResponse.SimpleSpotDTO> finalSpots;
+      return CourseResponse.CourseDetailDTO.builder()
+          .title(locationsString + " 코스")
+          .startDate(start)
+          .endDate(end)
+          .dailyCourses(List.of())
+          .build();
+    }
 
-      if (originalDay == null) {
-        location = guessLocationFromReq(reqLocations, i);
-        finalSpots = List.of();
-      } else {
-        List<CourseResponse.SimpleSpotDTO> spotsFromAi =
-            originalDay.getSpots() != null ? originalDay.getSpots() : List.of();
-        List<CourseResponse.SimpleSpotDTO> restoredSpots = new ArrayList<>();
-        for (CourseResponse.SimpleSpotDTO aiSpot : spotsFromAi) {
-          if (aiSpot.getSpotId() == null) continue;
-          CourseResponse.SimpleSpotDTO originalSpot = originalSpotMap.get(aiSpot.getSpotId());
-          if (originalSpot != null) {
-            restoredSpots.add(
-                CourseResponse.SimpleSpotDTO.builder()
-                    .spotId(originalSpot.getSpotId())
-                    .visitOrder(aiSpot.getVisitOrder())
-                    .name(originalSpot.getName())
-                    .category(originalSpot.getCategory())
-                    .addr1(originalSpot.getAddr1())
-                    .latitude(originalSpot.getLatitude())
-                    .longitude(originalSpot.getLongitude())
-                    .isSealSpot(originalSpot.getIsSealSpot())
-                    .sealSpotId(originalSpot.getSealSpotId())
-                    .build());
-          }
-        }
-        finalSpots = normalizeVisitOrderSimple(restoredSpots);
-        String inferredLocation = guessLocationFromSpotsOrReq(finalSpots, reqLocations, i);
-        location =
-            (inferredLocation == null || inferredLocation.isBlank())
-                ? originalDay.getLocation()
-                : inferredLocation;
+    List<CourseResponse.DailyCourseDTO> validatedDailyCourses = new ArrayList<>();
+    for (CourseResponse.DailyCourseDTO dailyCourse : aiResult.getDailyCourses()) {
+      if (dailyCourse.getSpots() == null || dailyCourse.getSpots().isEmpty()) {
+        continue;
       }
-      fixed.add(
+
+      List<CourseResponse.SimpleSpotDTO> restoredSpots = new ArrayList<>();
+      for (CourseResponse.SimpleSpotDTO aiSpot : dailyCourse.getSpots()) {
+        if (aiSpot == null || aiSpot.getSpotId() == null) continue;
+        CourseResponse.SimpleSpotDTO originalSpot = originalSpotMap.get(aiSpot.getSpotId());
+
+        if (originalSpot != null) {
+          restoredSpots.add(originalSpot.toBuilder().visitOrder(aiSpot.getVisitOrder()).build());
+        }
+      }
+
+      if (restoredSpots.size() < 3) continue;
+
+      List<CourseResponse.SimpleSpotDTO> finalSpots = normalizeVisitOrderSimple(restoredSpots);
+
+      validatedDailyCourses.add(
           CourseResponse.DailyCourseDTO.builder()
-              .dayNumber(i + 1)
-              .date(date)
-              .location(location)
+              .dayNumber(dailyCourse.getDayNumber())
+              .date(dailyCourse.getDate())
+              .location(dailyCourse.getLocation())
               .spots(finalSpots)
               .build());
     }
 
-    int minSpotsPerDay = 2;
-    List<CourseResponse.DailyCourseDTO> filteredCourses =
-        fixed.stream()
-            .filter(dailyCourse -> dailyCourse.getSpots().size() >= minSpotsPerDay)
-            .collect(Collectors.toList());
-
-    // [최종 수정] setDayNumber 오류를 해결하기 위해, dayNumber를 재설정한 새로운 리스트를 생성
     List<CourseResponse.DailyCourseDTO> finalDailyCourses = new ArrayList<>();
-    for (int i = 0; i < filteredCourses.size(); i++) {
-      CourseResponse.DailyCourseDTO originalCourse = filteredCourses.get(i);
-      finalDailyCourses.add(
-          CourseResponse.DailyCourseDTO.builder()
-              .dayNumber(i + 1) // 새로운 dayNumber 부여
-              .date(originalCourse.getDate())
-              .location(originalCourse.getLocation())
-              .spots(originalCourse.getSpots())
-              .build());
+    for (int i = 0; i < validatedDailyCourses.size(); i++) {
+      CourseResponse.DailyCourseDTO course = validatedDailyCourses.get(i);
+      finalDailyCourses.add(course.toBuilder().dayNumber(i + 1).build());
     }
 
-    // [최종 수정] 제목 생성 로직을 사용자가 처음 요청한 지역 기반으로 고정
-    String locationsString = String.join(", ", reqLocations);
-    String title = String.format("%s %d일 여행 코스", locationsString, expectedDays);
+    long finalDays = ChronoUnit.DAYS.between(start, end) + 1;
+
+    String locationsString =
+        reqLocations.stream().map(this::simplifyLocationName).collect(Collectors.joining(", "));
+
+    String title = String.format("%s %d일 코스", locationsString, finalDays);
 
     return CourseResponse.CourseDetailDTO.builder()
-        .id(res.getId())
+        .id(aiResult.getId())
         .title(title)
         .startDate(start)
         .endDate(end)
@@ -439,65 +396,34 @@ public class CourseGenerationAiService {
   private List<CourseResponse.SimpleSpotDTO> normalizeVisitOrderSimple(
       List<CourseResponse.SimpleSpotDTO> spots) {
     if (spots == null || spots.isEmpty()) return List.of();
-    List<CourseResponse.SimpleSpotDTO> sorted =
-        spots.stream()
-            .sorted(
-                (a, b) ->
-                    Integer.compare(
-                        a.getVisitOrder() == null || a.getVisitOrder() <= 0
-                            ? Integer.MAX_VALUE
-                            : a.getVisitOrder(),
-                        b.getVisitOrder() == null || b.getVisitOrder() <= 0
-                            ? Integer.MAX_VALUE
-                            : b.getVisitOrder()))
-            .collect(Collectors.toList());
-    List<CourseResponse.SimpleSpotDTO> rebuilt = new ArrayList<>(sorted.size());
-    int order = 1;
-    for (CourseResponse.SimpleSpotDTO s : sorted) {
-      rebuilt.add(
-          CourseResponse.SimpleSpotDTO.builder()
-              .spotId(s.getSpotId())
-              .visitOrder(order++)
-              .name(s.getName())
-              .category(s.getCategory())
-              .addr1(s.getAddr1())
-              .latitude(s.getLatitude())
-              .longitude(s.getLongitude())
-              .isSealSpot(s.getIsSealSpot())
-              .sealSpotId(s.getSealSpotId())
-              .build());
+
+    List<CourseResponse.SimpleSpotDTO> sortedSpots = new ArrayList<>(spots);
+    sortedSpots.sort(
+        (a, b) -> {
+          int orderA =
+              a.getVisitOrder() == null || a.getVisitOrder() <= 0
+                  ? Integer.MAX_VALUE
+                  : a.getVisitOrder();
+          int orderB =
+              b.getVisitOrder() == null || b.getVisitOrder() <= 0
+                  ? Integer.MAX_VALUE
+                  : b.getVisitOrder();
+          return Integer.compare(orderA, orderB);
+        });
+
+    List<CourseResponse.SimpleSpotDTO> result = new ArrayList<>();
+    for (int i = 0; i < sortedSpots.size(); i++) {
+      result.add(sortedSpots.get(i).toBuilder().visitOrder(i + 1).build());
     }
-    return rebuilt;
+    return result;
   }
 
-  private String guessLocationFromReq(List<String> reqLocations, int dayIndex) {
-    if (reqLocations == null || reqLocations.isEmpty()) return "미정";
-    return reqLocations.get(dayIndex % reqLocations.size());
-  }
+  private double fastDist2(double lat1, double lon1, double lat2, double lon2) {
+    if (lat1 == 0 || lon1 == 0 || lat2 == 0 || lon2 == 0) return Double.MAX_VALUE;
 
-  private String guessLocationFromSpotsOrReq(
-      List<CourseResponse.SimpleSpotDTO> spots, List<String> reqLocations, int dayIndex) {
-    if (spots != null && !spots.isEmpty()) {
-      Map<String, Long> counts =
-          spots.stream()
-              .map(CourseResponse.SimpleSpotDTO::getAddr1)
-              .filter(Objects::nonNull)
-              .map(this::extractSiGun)
-              .filter(Objects::nonNull)
-              .collect(Collectors.groupingBy(x -> x, Collectors.counting()));
-      if (!counts.isEmpty()) {
-        return counts.entrySet().stream().max(Map.Entry.comparingByValue()).get().getKey();
-      }
-    }
-    return guessLocationFromReq(reqLocations, dayIndex);
-  }
-
-  private String extractSiGun(String addr) {
-    if (addr == null) return null;
-    String[] toks = addr.split("\\s+");
-    for (String t : toks) {
-      if (t.endsWith("시") || t.endsWith("군") || t.endsWith("구")) return t;
-    }
-    return null;
+    double latRad = Math.toRadians((lat1 + lat2) * 0.5);
+    double x = Math.toRadians(lon2 - lon1) * Math.cos(latRad);
+    double y = Math.toRadians(lat2 - lat1);
+    return x * x + y * y;
   }
 }

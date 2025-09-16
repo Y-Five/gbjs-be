@@ -33,8 +33,8 @@ public class CourseResponse {
     private List<DailyCourseDTO> dailyCourses;
   }
 
-  @Builder
-  @Getter
+  @Builder(toBuilder = true)
+  @Data
   @NoArgsConstructor
   @AllArgsConstructor
   @Schema(title = "DailyCourse : 일차별 코스 정보")
@@ -80,8 +80,8 @@ public class CourseResponse {
     private String imageUrl;
   }
 
-  @Builder
-  @Getter
+  @Builder(toBuilder = true)
+  @Data
   @NoArgsConstructor
   @AllArgsConstructor
   @Schema(title = "SimpleSpot : 간략한 방문 장소 정보")
