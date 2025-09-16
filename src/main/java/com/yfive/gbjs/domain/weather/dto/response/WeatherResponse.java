@@ -12,6 +12,9 @@ import lombok.Getter;
 @Schema(title = "WeatherResponse DTO", description = "날씨 응답 반환")
 public class WeatherResponse {
 
+  @Schema(description = "날씨 사진 URL")
+  private String imageUrl;
+
   @Schema(description = "최저 기온", example = "21")
   private String lowestTemperature; // TMN
 

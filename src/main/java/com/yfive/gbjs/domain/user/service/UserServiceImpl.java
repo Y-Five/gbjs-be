@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.yfive.gbjs.domain.seal.repository.SealRepository;
 import com.yfive.gbjs.domain.seal.repository.UserSealRepository;
 import com.yfive.gbjs.domain.tts.entity.TtsSetting;
 import com.yfive.gbjs.domain.user.dto.response.UserDetailResponse;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
+  private final SealRepository sealRepository;
   private final UserSealRepository userSealRepository;
   private final JwtProvider jwtProvider;
   private final S3Service s3Service;
@@ -54,6 +56,8 @@ public class UserServiceImpl implements UserService {
     List<Long> userIds = allUsers.stream().map(User::getId).toList();
 
     Map<Long, Long> sealCounts = userSealRepository.countSealsByUserIds(userIds);
+    Long totalSealCount = sealRepository.count();
+
     List<UserDetailResponse> userDetails =
         allUsers.stream()
             .map(
@@ -62,7 +66,7 @@ public class UserServiceImpl implements UserService {
                   if (sealCount == null) {
                     sealCount = 0L;
                   }
-                  return userMapper.toUserDetailResponse(user, sealCount);
+                  return userMapper.toUserDetailResponse(user, sealCount, totalSealCount);
                 })
             .toList();
     log.info("전체 사용자 조회, 총 사용자 수: {}", userDetails.size());
@@ -75,8 +79,9 @@ public class UserServiceImpl implements UserService {
     log.info("사용자 상세 조회 - userId: {}", user.getId());
 
     Long sealCount = (long) userSealRepository.findByUserId(user.getId()).size();
+    Long totalSealCount = sealRepository.count();
 
-    return userMapper.toUserDetailResponse(user, sealCount);
+    return userMapper.toUserDetailResponse(user, sealCount, totalSealCount);
   }
 
   @Override

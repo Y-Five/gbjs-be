@@ -139,9 +139,11 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                 .hasRole("DEVELOPER")
+                .requestMatchers(RegexRequestMatcher.regexMatcher(".*/dev.*"))
+                .hasRole("DEVELOPER")
                 .requestMatchers(
-                    "/api/auth/**",
                     "/actuator/health",
+                    "/api/auth/**",
                     "/api/seals/user",
                     "/api/seals/popular-spots",
                     "/api/seals/products",
@@ -153,14 +155,11 @@ public class SecurityConfig {
                     "/api/spots/**",
                     "/api/weathers",
                     "/api/traditions",
-                    "/api/chat",
                     "/api/festivals/**",
                     "/api/tts")
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()
-                .requestMatchers(RegexRequestMatcher.regexMatcher(".*/dev.*"))
-                .hasRole("DEVELOPER")
                 .anyRequest()
                 .authenticated());
   }

@@ -99,6 +99,9 @@ public class CourseRequest {
       @Schema(description = "카테고리", example = "유명 관광지")
       private String category;
 
+      @Schema(description = "주소", example = "경상북도 경주시 황남동")
+      private String addr1;
+
       @Schema(description = "위도", example = "35.8341")
       private Double latitude;
 

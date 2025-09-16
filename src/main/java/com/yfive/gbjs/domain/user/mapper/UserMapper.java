@@ -11,12 +11,13 @@ import com.yfive.gbjs.domain.user.entity.User;
 @Component
 public class UserMapper {
 
-  public UserDetailResponse toUserDetailResponse(User user, Long sealCount) {
+  public UserDetailResponse toUserDetailResponse(User user, Long sealCount, Long totalSealCount) {
     return UserDetailResponse.builder()
         .userId(user.getId())
         .profileImageUrl(user.getProfileImageUrl())
         .nickname(user.getNickname())
         .sealCount(sealCount)
+        .totalSealCount(totalSealCount)
         .username(user.getUsername())
         .ttsSetting(user.getTtsSetting())
         .emailMarketingConsent(user.getEmailMarketingConsent())
