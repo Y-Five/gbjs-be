@@ -453,7 +453,6 @@ public class SpotServiceImpl implements SpotService {
                   .contentId(spot.getSpotId())
                   .title(spot.getTitle())
                   .imageUrl(spot.getImageUrl())
-                  .type(detail.getType())
                   .build();
             })
         .toList();

@@ -22,7 +22,4 @@ public class NearbyAudioSpotResponse {
 
   @JsonProperty("image")
   private String imageUrl;
-
-  @JsonProperty("hashtag")
-  private String type;
 }
