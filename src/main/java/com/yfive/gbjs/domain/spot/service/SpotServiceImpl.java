@@ -7,7 +7,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -426,12 +429,21 @@ public class SpotServiceImpl implements SpotService {
       Double latitude, Double longitude) {
     List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "10000");
 
+    // 1. 모든 spotId를 추출
+    List<Long> allSpotIds =
+        allSpots.stream().map(SpotResponse::getSpotId).collect(Collectors.toList());
+
+    // 2. 추출된 spotId 목록으로 오디오 가이드가 존재하는 contentId들을 한 번에 조회
+    Set<Long> contentIdsWithAudioGuides =
+        new HashSet<>(audioGuideRepository.findContentIdsWithAudioGuidesByContentIdIn(allSpotIds));
+
     return allSpots.stream()
         .sorted(
             Comparator.comparing(
                 SpotResponse::getDistance, Comparator.nullsLast(Double::compareTo)))
         .filter(
-            spot -> audioGuideRepository.existsByContentId(spot.getSpotId())) // Check ttsExist here
+            // 3. Set을 사용하여 메모리에서 빠르게 필터링
+            spot -> contentIdsWithAudioGuides.contains(spot.getSpotId()))
         .limit(5)
         .map(
             spot -> {
@@ -441,7 +453,6 @@ public class SpotServiceImpl implements SpotService {
                   .contentId(spot.getSpotId())
                   .title(spot.getTitle())
                   .imageUrl(spot.getImageUrl())
-                  .type(detail.getType())
                   .build();
             })
         .toList();
@@ -509,7 +520,6 @@ public class SpotServiceImpl implements SpotService {
 
     boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
     spotResponse.setTtsExist(ttsExist);
-
     return spotResponse;
   }
 }
