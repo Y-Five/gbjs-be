@@ -271,19 +271,19 @@ public class WeatherServiceImpl implements WeatherService {
   private String mapWeatherImage(String weather) {
     return switch (weather) {
       case "맑음" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/40c97784-86d7-444a-8dec-1129d553b2e3";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/dab43c02-7e02-477f-a2b9-369489776f32";
       case "구름많음" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/9d76380e-3f1c-49e4-bb39-766eb6d22c86";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/a718d81e-b4fb-4f5c-8e5d-fb4459c2b9b0";
       case "흐림" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/8eddfcbe-3da3-4380-b007-250005c9a884";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/ca7aa863-4c61-4f6f-9eeb-94b2bd622db3";
       case "비" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/f009c9ee-5455-4e74-83ce-f04f48bcd767";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/b3efed9b-2a30-4182-a966-26dae11149a7";
       case "비/눈" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/d1ca3888-e4b6-4957-bd56-dd3990fd5d95";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/3c4425db-3209-40f7-b7c0-02b38508c5ce";
       case "눈" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/b6fe29f3-2add-4fb0-94e2-a2b82a0ad736";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/d9c6f371-23c9-4c14-8bce-2138c6beed2a";
       case "소나기" ->
-          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/profile-image/f6a699e8-fceb-4932-91e8-1cdf0cdac0b4";
+          "https://gbjs-bucket.s3.ap-northeast-2.amazonaws.com/weather/5d721d79-d394-4632-9e55-93c64ead00da";
       default -> "";
     };
   }

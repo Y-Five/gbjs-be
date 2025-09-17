@@ -191,6 +191,7 @@ public class S3ServiceImpl implements S3Service {
 
   private String getPrefix(PathName pathName) {
     return switch (pathName) {
+      case WEATHER -> s3Config.getWeatherPath();
       case PROFILE_IMAGE -> s3Config.getProfileImagePath();
       case AUDIO -> s3Config.getAudioPath();
       case SEAL -> s3Config.getSealPath();
