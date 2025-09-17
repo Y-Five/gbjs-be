@@ -7,7 +7,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -63,6 +68,24 @@ public class SpotServiceImpl implements SpotService {
   private final PageMapper pageMapper;
   private final AudioGuideRepository audioGuideRepository;
   private final TtsRepository ttsRepository;
+
+  // 카테고리 매핑
+  private static final Map<String, String> CATEGORY_CODE_TO_TYPE_MAP;
+
+  static {
+    CATEGORY_CODE_TO_TYPE_MAP = new HashMap<>();
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0205-A02050200", "기념물/관광지"); // MONUMENT_VIEWPOINT
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0202-A02020200", "관광단지"); // TOURIST_COMPLEX
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0201-A02010700", "유적지"); // HISTORIC_SITE
+    CATEGORY_CODE_TO_TYPE_MAP.put(
+        "32-B02-B0201-B02011600", "한옥"); // HANOK (Assuming contentTypeId 32 for accommodation)
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A01-A0101-A01010100", "공원"); // PARK
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0201-A02010600", "민속마을"); // FOLK_VILLAGE
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A03-A0302-A03021700", "캠핑장"); // CAMPING_SITE
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0206-A02060300", "전시관"); // EXHIBITION_HALL
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0201-A02010800", "사찰"); // TEMPLE
+    CATEGORY_CODE_TO_TYPE_MAP.put("12-A02-A0206-A02060100", "박물관"); // MUSEUM
+  }
 
   @Override
   public PageResponse<SpotResponse> getSpotsByKeywordAndCategorySortedByDistance(
@@ -279,36 +302,41 @@ public class SpotServiceImpl implements SpotService {
   }
 
   private String fetchSpotType(String typeId, String cat1, String cat2, String cat3) {
+    String key = typeId + "-" + cat1 + "-" + cat2 + "-" + cat3;
+    if (CATEGORY_CODE_TO_TYPE_MAP.containsKey(key)) {
+      return CATEGORY_CODE_TO_TYPE_MAP.get(key);
+    } else {
+      UriComponentsBuilder uriBuilder =
+          UriComponentsBuilder.fromUriString(spotApiUrl + "/categoryCode2")
+              .queryParam("serviceKey", serviceKey)
+              .queryParam("MobileOS", "WEB")
+              .queryParam("MobileApp", "gbjs")
+              .queryParam("contentTypeId", typeId)
+              .queryParam("cat1", cat1)
+              .queryParam("cat2", cat2)
+              .queryParam("cat3", cat3)
+              .queryParam("_type", "JSON");
 
-    UriComponentsBuilder uriBuilder =
-        UriComponentsBuilder.fromUriString(spotApiUrl + "/categoryCode2")
-            .queryParam("serviceKey", serviceKey)
-            .queryParam("MobileOS", "WEB")
-            .queryParam("MobileApp", "gbjs")
-            .queryParam("contentTypeId", typeId)
-            .queryParam("cat1", cat1)
-            .queryParam("cat2", cat2)
-            .queryParam("cat3", cat3)
-            .queryParam("_type", "JSON");
+      String response =
+          restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
 
-    String response =
-        restClient.get().uri(uriBuilder.build(true).toUri()).retrieve().body(String.class);
+      validateApiResponse(response);
 
-    validateApiResponse(response);
-
-    try {
-      JsonNode root = objectMapper.readTree(response);
-      JsonNode itemNode = root.path("response").path("body").path("items").path("item");
-      if (itemNode.isArray()) {
-        if (itemNode.isEmpty()) {
-          throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
+      try {
+        JsonNode root = objectMapper.readTree(response);
+        JsonNode itemNode = root.path("response").path("body").path("items").path("item");
+        if (itemNode.isArray()) {
+          if (itemNode.isEmpty()) {
+            throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
+          }
+          itemNode = itemNode.get(0);
         }
-        itemNode = itemNode.get(0);
+        String typeName = itemNode.get("name").asText();
+        return typeName;
+      } catch (Exception e) {
+        log.error("관광지 분류코드 파싱 실패", e);
+        throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
       }
-      return itemNode.get("name").asText();
-    } catch (Exception e) {
-      log.error("관광지 분류코드 파싱 실패", e);
-      throw new CustomException(SpotErrorStatus.SPOT_API_ERROR);
     }
   }
 
@@ -426,22 +454,33 @@ public class SpotServiceImpl implements SpotService {
       Double latitude, Double longitude) {
     List<SpotResponse> allSpots = fetchLocationBasedSpots(latitude, longitude, "10000");
 
+    // 모든 spotId를 추출
+    List<Long> allSpotIds =
+        allSpots.stream().map(SpotResponse::getSpotId).collect(Collectors.toList());
+
+    // 추출된 spotId 목록으로 오디오 가이드가 존재하는 contentId들을 한 번에 조회
+    Set<Long> contentIdsWithAudioGuides =
+        new HashSet<>(audioGuideRepository.findContentIdsWithAudioGuidesByContentIdIn(allSpotIds));
+
     return allSpots.stream()
         .sorted(
             Comparator.comparing(
                 SpotResponse::getDistance, Comparator.nullsLast(Double::compareTo)))
         .filter(
-            spot -> audioGuideRepository.existsByContentId(spot.getSpotId())) // Check ttsExist here
+            // Set을 사용하여 메모리에서 빠르게 필터링
+            spot -> contentIdsWithAudioGuides.contains(spot.getSpotId()))
         .limit(5)
         .map(
             spot -> {
-              SpotDetailResponse detail =
-                  getSpotByContentId(null, spot.getSpotId(), latitude, longitude, false);
+              // Directly use category info from SpotResponse and optimized fetchSpotType
+              String type =
+                  fetchSpotType(
+                      spot.getContentTypeId(), spot.getCat1(), spot.getCat2(), spot.getCat3());
               return NearbyAudioSpotResponse.builder()
                   .contentId(spot.getSpotId())
                   .title(spot.getTitle())
                   .imageUrl(spot.getImageUrl())
-                  .type(detail.getType())
+                  .type(type)
                   .build();
             })
         .toList();
@@ -509,6 +548,19 @@ public class SpotServiceImpl implements SpotService {
 
     boolean ttsExist = audioGuideRepository.existsByContentId(item.get("contentid").asLong());
     spotResponse.setTtsExist(ttsExist);
+
+    if (item.get("contenttypeid") != null) {
+      spotResponse.setContentTypeId(item.get("contenttypeid").asText());
+    }
+    if (item.get("cat1") != null) {
+      spotResponse.setCat1(item.get("cat1").asText());
+    }
+    if (item.get("cat2") != null) {
+      spotResponse.setCat2(item.get("cat2").asText());
+    }
+    if (item.get("cat3") != null) {
+      spotResponse.setCat3(item.get("cat3").asText());
+    }
 
     return spotResponse;
   }

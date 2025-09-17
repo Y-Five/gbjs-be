@@ -6,12 +6,16 @@ package com.yfive.gbjs.domain.spot.dto.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Schema(title = "SpotResponse DTO", description = "관광지 리스트 응답 반환")
 public class SpotResponse {
 
@@ -51,4 +55,21 @@ public class SpotResponse {
   @Setter
   @Schema(description = "음성 가이드 여부", example = "true")
   private Boolean ttsExist;
+
+  // Added category 관련 항목
+  @Setter
+  @Schema(description = "콘텐츠 타입 ID", example = "12")
+  private String contentTypeId;
+
+  @Setter
+  @Schema(description = "대분류 카테고리 코드", example = "A02")
+  private String cat1;
+
+  @Setter
+  @Schema(description = "중분류 카테고리 코드", example = "A0205")
+  private String cat2;
+
+  @Setter
+  @Schema(description = "소분류 카테고리 코드", example = "A02050200")
+  private String cat3;
 }
