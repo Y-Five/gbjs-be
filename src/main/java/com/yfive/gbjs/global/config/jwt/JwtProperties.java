@@ -27,7 +27,7 @@ public class JwtProperties {
   private String secret = "your-256-bit-secret-key-for-development-environment-only";
 
   /** Access Token 유효 기간 (초) */
-  private long accessTokenValidityInSeconds = 3600;
+  private long accessTokenValidityInSeconds = 7200;
 
   /** Refresh Token 유효 기간 (초) */
   private long refreshTokenValidityInSeconds = 604800;
