@@ -18,7 +18,6 @@ import com.yfive.gbjs.domain.tradition.repository.TraditionRepository;
 import com.yfive.gbjs.global.error.exception.CustomException;
 import com.yfive.gbjs.global.page.dto.response.PageResponse;
 import com.yfive.gbjs.global.page.mapper.PageMapper;
-import com.yfive.gbjs.global.s3.service.S3Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,6 @@ public class TraditionServiceImpl implements TraditionService {
   private final TraditionRepository traditionRepository;
   private final TraditionMapper traditionMapper;
   private final PageMapper pageMapper;
-  private final S3Service s3Service;
 
   @Override
   @Transactional

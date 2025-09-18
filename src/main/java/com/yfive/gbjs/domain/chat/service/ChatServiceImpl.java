@@ -3,19 +3,16 @@
  */
 package com.yfive.gbjs.domain.chat.service;
 
+import com.yfive.gbjs.domain.chat.dto.request.ChatRequest;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
-
-import com.yfive.gbjs.domain.chat.dto.request.ChatRequest;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -60,21 +57,23 @@ public class ChatServiceImpl implements ChatService {
 
       String prompt =
           """
-          <task>
-            <role>You are an exclusive answering system for the gbjs service.</role>
-            <instruction>
-              - Only use the provided reference data to answer the user's question.
-              - If the answer cannot be found in the reference data, respond exactly with: "No relevant data found."
-              - Do not use any outside knowledge.
-            </instruction>
-            <user_question>
-              %s
-            </user_question>
-            <reference_data>
-              %s
-            </reference_data>
-          </task>
-          """
+              <task>
+                <role>You are an exclusive answering system for the gbjs service.</role>
+                <instruction>
+                  - If the user's question is about gbjs reference data, answer strictly using that data.
+                  - If the user's question is casual or conversational (e.g., greetings, "Hello?", "How are you?"):
+                      - Respond naturally in a friendly way.
+                      - Do not use any outside knowledge beyond simple conversational context.
+                  - If gbjs data is required but not found, respond exactly with: "No relevant data found."
+                </instruction>
+                <user_question>
+                  %s
+                </user_question>
+                <reference_data>
+                  %s
+                </reference_data>
+              </task>
+              """
               .formatted(request.getQuestion(), context);
 
       return chatClient
