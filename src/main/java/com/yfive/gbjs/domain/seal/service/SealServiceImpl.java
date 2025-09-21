@@ -4,7 +4,6 @@
 package com.yfive.gbjs.domain.seal.service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -496,7 +495,21 @@ public class SealServiceImpl implements SealService {
   /** 인기 띠부실 관광지 조회 */
   @Override
   public List<PopularSealSpotResponse> getPopularSealSpots() {
-    List<Long> popularSealSpotIds = Arrays.asList(1L, 2L, 3L, 4L);
+    // 상위 4개 조회
+    org.springframework.data.domain.Pageable pageable =
+        org.springframework.data.domain.PageRequest.of(0, 4);
+
+    // 최근 한 달 기준
+    LocalDateTime startDate = LocalDateTime.now().minusMonths(1);
+
+    List<Long> popularSealSpotIds;
+
+    // 최근 한 달간 수집된 씰이 2개 이하이면 누적 데이터, 그렇지 않으면 최신 데이터 사용
+    if (userSealRepository.countByCollectedAtAfter(startDate) <= 2) {
+      popularSealSpotIds = userSealRepository.findPopularSealSpotIds(pageable);
+    } else {
+      popularSealSpotIds = userSealRepository.findPopularSealSpotIdsByDate(pageable, startDate);
+    }
 
     List<SealSpot> popularSealSpots = sealSpotRepository.findAllById(popularSealSpotIds);
 
