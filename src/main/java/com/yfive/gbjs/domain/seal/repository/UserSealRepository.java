@@ -78,4 +78,17 @@ public interface UserSealRepository extends JpaRepository<UserSeal, Long> {
   Map<Long, Long> countSealsByUserIds(@Param("userIds") List<Long> userIds);
 
   long countByUserAndSealIn(User user, List<Seal> seals);
+
+  /**
+   * 지정된 날짜 이후 가장 인기 있는 띠부씰 관광지 ID 목록을 조회합니다.
+   *
+   * @param pageable 페이지 정보 (상위 N개를 가져오기 위해 사용)
+   * @param startDate 시작 날짜
+   * @return 인기 띠부씰 관광지 ID 목록
+   */
+  @Query(
+      "SELECT us.seal.sealSpot.id FROM UserSeal us WHERE us.collectedAt >= :startDate AND us.seal.sealSpot.id IS NOT NULL GROUP BY us.seal.sealSpot.id ORDER BY COUNT(us.seal.sealSpot.id) DESC")
+  List<Long> findPopularSealSpotIds(
+      org.springframework.data.domain.Pageable pageable,
+      @Param("startDate") java.time.LocalDateTime startDate);
 }
