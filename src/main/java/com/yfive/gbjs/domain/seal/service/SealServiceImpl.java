@@ -495,13 +495,11 @@ public class SealServiceImpl implements SealService {
   /** 인기 띠부실 관광지 조회 */
   @Override
   public List<PopularSealSpotResponse> getPopularSealSpots() {
-    // 최근 한 달 기준으로 집계
-    LocalDateTime startDate = LocalDateTime.now().minusMonths(1);
     // 상위 4개 조회
     org.springframework.data.domain.Pageable pageable =
         org.springframework.data.domain.PageRequest.of(0, 4);
 
-    List<Long> popularSealSpotIds = userSealRepository.findPopularSealSpotIds(pageable, startDate);
+    List<Long> popularSealSpotIds = userSealRepository.findPopularSealSpotIds(pageable);
 
     List<SealSpot> popularSealSpots = sealSpotRepository.findAllById(popularSealSpotIds);
 
