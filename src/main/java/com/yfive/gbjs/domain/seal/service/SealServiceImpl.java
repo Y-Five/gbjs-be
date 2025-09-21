@@ -499,7 +499,17 @@ public class SealServiceImpl implements SealService {
     org.springframework.data.domain.Pageable pageable =
         org.springframework.data.domain.PageRequest.of(0, 4);
 
-    List<Long> popularSealSpotIds = userSealRepository.findPopularSealSpotIds(pageable);
+    // 최근 한 달 기준
+    LocalDateTime startDate = LocalDateTime.now().minusMonths(1);
+
+    List<Long> popularSealSpotIds;
+
+    // 최근 한 달간 수집된 씰이 2개 이하이면 누적 데이터, 그렇지 않으면 최신 데이터 사용
+    if (userSealRepository.countByCollectedAtAfter(startDate) <= 2) {
+      popularSealSpotIds = userSealRepository.findPopularSealSpotIds(pageable);
+    } else {
+      popularSealSpotIds = userSealRepository.findPopularSealSpotIdsByDate(pageable, startDate);
+    }
 
     List<SealSpot> popularSealSpots = sealSpotRepository.findAllById(popularSealSpotIds);
 
