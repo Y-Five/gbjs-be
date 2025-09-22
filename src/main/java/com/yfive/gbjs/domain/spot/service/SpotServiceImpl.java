@@ -446,15 +446,12 @@ public class SpotServiceImpl implements SpotService {
             spot -> contentIdsWithAudioGuides.contains(spot.getSpotId()))
         .limit(5)
         .map(
-            spot -> {
-              SpotDetailResponse detail =
-                  getSpotByContentId(null, spot.getSpotId(), latitude, longitude, false);
-              return NearbyAudioSpotResponse.builder()
-                  .contentId(spot.getSpotId())
-                  .title(spot.getTitle())
-                  .imageUrl(spot.getImageUrl())
-                  .build();
-            })
+            spot ->
+                NearbyAudioSpotResponse.builder()
+                    .contentId(spot.getSpotId())
+                    .title(spot.getTitle())
+                    .imageUrl(spot.getImageUrl())
+                    .build())
         .toList();
   }
 
