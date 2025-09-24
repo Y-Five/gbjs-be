@@ -17,8 +17,8 @@ import com.yfive.gbjs.global.qdrant.service.DataIndexingService;
 /**
  * Qdrant 데이터 색인 작업을 수동으로 실행하기 위한 테스트 클래스입니다. <br>
  * 이 클래스의 테스트들은 `manual` 태그로 분류되어 자동 빌드에서 제외됩니다. <br>
- * `local` 프로필에서만 실행해야 합니다.
  */
+@Disabled("수동 실행 전용")
 @SpringBootTest(classes = GbjsApplication.class)
 @Tag("manual")
 @TestMethodOrder(MethodOrderer.MethodName.class)
@@ -34,7 +34,6 @@ class TestQdrantIndexerRunner {
 
   /** 모든 종류의 데이터를 Qdrant에 색인합니다. 외부 API 호출이 발생할 수 있으니 사용에 주의하세요. */
   @Test
-  @Disabled("전체 재색인은 필요 시에만 수동 실행합니다.")
   void run02_indexAllData() {
     indexSeals();
     indexSealSpots();
