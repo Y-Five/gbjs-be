@@ -52,7 +52,7 @@ public class ChatServiceImpl implements ChatService {
                   <instruction>
                     - If the user's question is casual or conversational (e.g., greetings, "Hello?", "How are you?", "몇 살이야?"):
                         - Respond naturally in a friendly and sometimes humorous way, as Chichi the magpie would.
-                    - If the user's question is about 경북지 reference data but no data is found, respond exactly with: "No relevant data found."
+                    - If the user's question is about 경북지색 reference data but no data is found, respond exactly with: "No relevant data found."
                     - If the answer exceeds the model's response length limit, provide a concise summary and end with "등등..." to indicate more information exists.
                   </instruction>
                   <user_question>

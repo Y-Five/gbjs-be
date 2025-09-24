@@ -28,5 +28,7 @@ public class DataIndexingScheduler {
     dataIndexingService.indexSealSpots();
     dataIndexingService.indexSealProducts();
     dataIndexingService.indexUsers();
+    dataIndexingService.indexSpotsFromApi();
+    dataIndexingService.indexFestivalsFromApi();
   }
 }
