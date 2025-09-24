@@ -232,6 +232,30 @@ public class DataIndexingService {
     vectorStore.add(documents);
   }
 
+  @Transactional
+  public void indexSealCollectingGuide() {
+    String guideContent =
+        "경북씰은 경상북도의 아름다운 관광 명소를 방문하여 모을 수 있는 특별한 디지털 기념품입니다. "
+            + "경주 불국사, 안동 하회마을, 포항 호미곶, 울릉도 등 경북 전역의 다양한 명소에서 씰을 발견할 수 있습니다. "
+            + "전체 경북씰 관광지는 총 37개로 경북씰 상품 -> 전체 경북씰 조회에서 확인하실 수 있습니다. "
+            + "씰 획득 기준 거리는 관광지 중심으로부터 500m 이내입니다. 다만, 울릉도와 독도의 경우 특별히 2km 이내로 기준이 적용됩니다. "
+            + "이 거리 안으로 들어가면 앱에서 씰을 획득할 수 있는 버튼이 활성화됩니다. "
+            + "씰에는 일반, 희귀, 전설 등급이 있으며, 희귀한 씰일수록 특별한 가치를 지닙니다. "
+            + "모든 씰을 수집하여 경북 여행의 특별한 추억을 완성해보세요!";
+
+    UUID documentId =
+        UUID.nameUUIDFromBytes(("guide-seal-collecting").getBytes(StandardCharsets.UTF_8));
+
+    Document guideDocument =
+        new Document(
+            documentId.toString(),
+            guideContent,
+            Map.of("entity_type", "seal_guide", "seal_guide_id", "seal_collecting_guide"));
+
+    vectorStore.add(List.of(guideDocument));
+    log.info("✅ '경북씰 모으는 방법' 가이드가 Qdrant에 색인되었습니다.");
+  }
+
   // 관광지 데이터 큐드란트에 저장(지역 골라서 실행 추천)
   @Transactional
   public void indexSpotsFromApi() {

@@ -40,20 +40,19 @@ public class QdrantIndexerRunner implements CommandLineRunner {
     //      log.warn("Could not delete collection '{}' (it may not exist).", collectionName);
     //    }
 
-    // 2. 컬렉션 생성 (주석 처리됨)
-    //    dataIndexingService.createCollectionIfNotExists();
+    // 2. 컬렉션 생성
+    // dataIndexingService.createCollectionIfNotExists();
 
-    // 3. 모든 데이터 재색인
+    // 4. 모든 데이터 재색인 (주석 처리됨)
     //    dataIndexingService.indexSeals();
     //    dataIndexingService.indexSealSpots();
     //    dataIndexingService.indexSealProducts();
     //    dataIndexingService.indexUsers();
     //    dataIndexingService.indexSpotsFromApi();
     //    dataIndexingService.indexFestivalsFromApi();
+//    dataIndexingService.indexSealCollectingGuide();
 
-    // log.warn("--- TEMPORARY RUNNER: FINISHED QDRANT DATA RESET ---");
-
-    // 4. 임시 검증 코드 (주석 처리됨)
+    // 5. 임시 검증 코드 (주석 처리됨)
     // verifyData();
   }
 
