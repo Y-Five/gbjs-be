@@ -54,8 +54,8 @@ public class CourseGenerationAiService {
   private static final int LLM_PLACES_PER_DAY = 5; // 하루 최대 방문지(프롬프트 규칙과 일치)
   private static final double SAFETY_MARGIN = 1.6; // 기본 여유치(라이트 OFF)
   private static final double LIGHT_SAFETY_MARGIN = 1.3; // 라이트 모드 여유치(작게)
-  private static final int LIGHT_TOPK_MIN = 20; // 지역별 검색 최소 개수
-  private static final int LIGHT_TOPK_MAX = 30; // 지역별 검색 최대 개수
+  private static final int LIGHT_TOPK_MIN = 8; // 지역별 검색 최소 개수
+  private static final int LIGHT_TOPK_MAX = 12; // 지역별 검색 최대 개수
   private static final int LIGHT_MAX_COMPLETION_TOKENS = 2048; // 응답 길이 상한 (JSON 잘림 방지)
   private static final int REGULAR_SPOT_CAP = 25;
 
@@ -159,8 +159,21 @@ public class CourseGenerationAiService {
 
     log.info("[LIGHT_MODE={}]: topKPerLocation={}", LIGHT_MODE, topKPerLocation);
 
-    // 지역별 병렬 검색
-    List<Document> parallelDocuments = new ArrayList<>();
+    // 씰 스팟을 안정적으로 확보하기 위한 별도 검색 (전체 대상)
+    log.info("Executing dedicated search for all seal spots to ensure inclusion.");
+    SearchRequest sealSearchRequest =
+        SearchRequest.builder()
+            .query("경북 씰 관광지") // 씰 스팟과 가장 유사한 generic query
+            .topK(200) // 경북 전체 씰 스팟을 모두 가져오기 위한 충분한 값
+            .build();
+    List<Document> allSealSpots =
+        vectorStore.similaritySearch(sealSearchRequest).stream()
+            .filter(doc -> "seal_spot".equals(doc.getMetadata().get("entity_type")))
+            .toList();
+    log.info("Found {} seal spots in total from the dedicated search.", allSealSpots.size());
+
+    // 지역별 병렬 검색 (일반 스팟만)
+    List<Document> parallelDocuments = new ArrayList<>(allSealSpots); // 씰 스팟 결과를 기본으로 추가
     if (topKPerLocation > 0 && !locations.isEmpty()) {
       ExecutorService executor = EXEC; // 재사용
       List<CompletableFuture<List<Document>>> futures =
@@ -170,15 +183,15 @@ public class CourseGenerationAiService {
                       CompletableFuture.supplyAsync(
                           () -> {
                             log.info(
-                                "Executing parallel search for '{}' with topK={}",
+                                "Executing parallel search for general spots in '{}' with topK={}",
                                 location,
                                 topKPerLocation);
-                            SearchRequest searchRequest =
+                            SearchRequest generalSearch =
                                 SearchRequest.builder()
                                     .query(location)
                                     .topK(topKPerLocation)
                                     .build();
-                            return vectorStore.similaritySearch(searchRequest);
+                            return vectorStore.similaritySearch(generalSearch);
                           },
                           executor))
               .toList();
@@ -371,9 +384,6 @@ public class CourseGenerationAiService {
     return postFix(result, start, end, effectiveLocations, originalSpotMap);
   }
 
-  // ==================================================
-  // [★ 여기부터 수정됨 (v3) ★]
-  // ==================================================
   private void parseAndAddDocuments(
       List<Document> documents,
       Map<Long, CourseResponse.SimpleSpotDTO> uniq,
@@ -384,13 +394,10 @@ public class CourseGenerationAiService {
       String addr1 = s(md, "addr1");
       String locationMeta = s(md, "location"); // "GYEONGJU" 또는 "ANDONG" 같은 값
 
-      // [수정] addr1이 null이어도 locationMeta로 검사할 수 있으므로,
+      // addr1이 null이어도 locationMeta로 검사할 수 있으므로,
       //       둘 다 null일 때만 건너뛰도록 변경 (혹은 addr1만 체크해도 된다면 원복)
       if (addr1 == null && locationMeta == null) continue;
 
-      // ===================================
-      // [★ 수정된 필터링 로직 ★]
-      // ===================================
       boolean isInRequestedLocation = false;
 
       // 1. 주소(addr1) 기반 필터링
@@ -416,16 +423,10 @@ public class CourseGenerationAiService {
 
       // 3. 두 필터 중 하나도 통과 못하면 스킵
       if (!isInRequestedLocation) continue;
-      // ===================================
-      // [필터링 로직 수정 끝]
-      // ===================================
 
       String contentIdStr = s(md, "contentId");
       if (contentIdStr == null) continue;
 
-      // ===================================
-      // [기존 덮어쓰기 버그 수정 로직] (유지)
-      // ===================================
       try {
         Long id = Long.valueOf(contentIdStr);
 
@@ -465,10 +466,6 @@ public class CourseGenerationAiService {
       }
     }
   }
-
-  // ==================================================
-  // [★ 여기까지 수정됨 (v3) ★]
-  // ==================================================
 
   private String simplifyLocationName(String loc) {
     if (loc == null) return "";
