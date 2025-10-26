@@ -379,7 +379,7 @@ public class CourseGenerationAiService {
                     - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
                     - [★ 핵심 규칙 0 (가장 중요) ★]: 응답은 반드시 여행 기간에 해당하는 **총 %d일**의 일정 전체를 포함해야 합니다.
                     - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
-                    - [★ 핵심 규칙 2 (가장 중요) ★]: 최종 코스는 처음에 요청된 각 지역별로('여행 지역' 목록 참고), 해당 지역에 속한 'isSealSpot: true' 관광지가 있다면, 그 지역의 씰 관광지를 **반드시 1개 이상 포함**해야 합니다.
+                    - [★ 핵심 규칙 2 (가장 중요) ★]: 각 날짜별 일정에는, 그날 배정된 지역에 사용 가능한 'isSealSpot: true' 관광지가 **있는 경우에만, 그중 1개 또는 2개**를 코스에 포함시켜야 합니다. 만약 그 지역에 씰 관광지가 없다면, 포함시키지 않아도 됩니다.
                     - 규칙 3: 각 날짜별 일정은 **반드시 4개 또는 5개**의 관광지를 포함해야 합니다. 씰 관광지를 먼저 배치한 후, 이 개수 제한을 맞추기 위해 동선이 효율적인 다른 장소들을 추가하세요.
                     - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
                     - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
@@ -400,7 +400,7 @@ public class CourseGenerationAiService {
     // log.info("Dynamically setting max completion tokens to: {}", dynamicMaxTokens);
     OpenAiChatOptions options =
         OpenAiChatOptions.builder()
-            .temperature(0.2)
+            .temperature(0.5)
             .maxCompletionTokens(LIGHT_MODE ? dynamicMaxTokens : 4096)
             .build();
 
