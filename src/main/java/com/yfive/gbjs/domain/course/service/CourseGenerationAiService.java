@@ -50,29 +50,18 @@ public class CourseGenerationAiService {
   private final ChatClient chatClient;
   private final ObjectMapper objectMapper;
 
-  // =========================
-  // [LIGHT] 라이트/하이브리드 모드 파라미터 (속도)
-  // =========================
   private static final boolean LIGHT_MODE = true; // 빠른 응답 모드
   private static final int LLM_PLACES_PER_DAY = 5; // 하루 최대 방문지(프롬프트 규칙과 일치)
   private static final double SAFETY_MARGIN = 1.6; // 기본 여유치(라이트 OFF)
   private static final double LIGHT_SAFETY_MARGIN = 1.3; // 라이트 모드 여유치(작게)
   private static final int LIGHT_TOPK_MIN = 20; // 지역별 검색 최소 개수
   private static final int LIGHT_TOPK_MAX = 30; // 지역별 검색 최대 개수
-  // private static final int LIGHT_PER_LOCATION_CAP = 5; // [폐기] 총량제 로직으로 대체됨
   private static final int LIGHT_MAX_COMPLETION_TOKENS = 2048; // 응답 길이 상한 (JSON 잘림 방지)
-  // [신규] AI에게 보낼 '일반 스팟'의 최대 개수 (AI 혼동 방지 및 성능 확보)
   private static final int REGULAR_SPOT_CAP = 25;
 
-  // =========================
-  // [PERF] 고정 스레드풀 재사용
-  // =========================
   private static final ExecutorService EXEC =
       Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
 
-  // =========================
-  // [REROLL] 입력 키별 재생성 카운터(LRU)
-  // =========================
   private static final Map<String, AtomicInteger> REROLL_LRU =
       Collections.synchronizedMap(
           new LinkedHashMap<>(128, 0.75f, true) {
@@ -82,7 +71,6 @@ public class CourseGenerationAiService {
             }
           });
 
-  // [REROLL] 결정적 기반 시드(FNV-1a 유사)
   private long baseSeed(LocalDate start, LocalDate end, List<String> locations) {
     byte[] keyBytes =
         (start + "|" + end + "|" + String.join(",", locations)).getBytes(StandardCharsets.UTF_8);
@@ -94,7 +82,6 @@ public class CourseGenerationAiService {
     return hash;
   }
 
-  // [REROLL] 최종 시드: 같은 입력 재호출 시 reroll 증가 → 다른 시드
   private long resolveSeed(LocalDate start, LocalDate end, List<String> locations) {
     String key = start + "|" + end + "|" + String.join(", ", locations);
     AtomicInteger counter = REROLL_LRU.computeIfAbsent(key, k -> new AtomicInteger(0));
@@ -105,7 +92,6 @@ public class CourseGenerationAiService {
     return mixed;
   }
 
-  // [PERF] LLM에 보낼 경량 DTO
   private static class SpotForAi {
     public Long spotId;
     public String name;
@@ -156,9 +142,6 @@ public class CourseGenerationAiService {
 
     List<String> simplifiedLocations = locations.stream().map(this::simplifyLocationName).toList();
 
-    // =========================
-    // [LIGHT] 필요량 기반 topK (라이트 모드일 때 작게)
-    // =========================
     int neededTotalSpots =
         (int)
             Math.ceil(
@@ -207,9 +190,6 @@ public class CourseGenerationAiService {
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
     parseAndAddDocuments(parallelDocuments, uniq, simplifiedLocations);
 
-    // =========================
-    // [LIGHT] 라이트/하이브리드에서는 combined 검색 스킵 (속도)
-    // =========================
     int threshold = expectedDays * 7;
     if (!LIGHT_MODE && uniq.size() < threshold) {
       log.info("Initial results insufficient ({} < {}). Combined search.", uniq.size(), threshold);
@@ -255,17 +235,12 @@ public class CourseGenerationAiService {
       excludedLocations.clear(); // 제외 보류(유일 지역 등이면)
     }
 
-    // =================================================================
-    // ★ [수정됨 2.0] AI 후보 선정 로직: '씰 우선 + 일반 스팟 캡'
-    // =================================================================
+    // AI 후보 선정 로직: '씰 우선 + 일반 스팟'
 
-    // [REROLL] 재생성 시 결과 달라지도록 시드 (제외 반영된 지역을 기준으로)
-    // (이 호출은 카운터를 증가시키므로 반드시 실행되어야 함)
+    // 재생성 시 결과 달라지도록 시드 (제외 반영된 지역을 기준으로)
     Random rand = new Random(resolveSeed(start, end, effectiveLocations));
 
     List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
-
-    // (파라미터 REGULAR_SPOT_CAP = 25 사용)
 
     // 1. [1순위] 모든 '씰 스팟'을 우선 확보 (중복 제거)
     Map<Long, CourseResponse.SimpleSpotDTO> sealSpotsMap = new LinkedHashMap<>();
@@ -273,7 +248,7 @@ public class CourseGenerationAiService {
       List<CourseResponse.SimpleSpotDTO> spotsInLocation = spotsByLocation.get(location);
       if (spotsInLocation == null || spotsInLocation.isEmpty()) continue;
 
-      // [★핵심 버그 수정★] Boolean.TRUE.equals 사용 (Null-Safe)
+      // Boolean.TRUE.equals 사용 (Null-Safe)
       spotsInLocation.stream()
           .filter(s -> Boolean.TRUE.equals(s.getIsSealSpot()))
           .forEach(s -> sealSpotsMap.putIfAbsent(s.getSpotId(), s));
@@ -328,10 +303,6 @@ public class CourseGenerationAiService {
         sealSpotsMap.size(),
         spotsForOpenAI.size() - sealSpotsMap.size());
 
-    // =================================================================
-    // ★ [수정됨 2.0] 로직 끝
-    // =================================================================
-
     // 경량 JSON 직렬화
     List<SpotForAi> compact =
         spotsForOpenAI.stream()
@@ -352,7 +323,6 @@ public class CourseGenerationAiService {
       throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
     }
 
-    // [★수정됨★] 프롬프트: 씰 "반드시 포함" 규칙 강화
     String prompt =
         """
                     다음 제약 조건에 따라 여행 코스를 생성해 주세요.
