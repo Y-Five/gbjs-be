@@ -50,6 +50,8 @@ public class CourseGenerationAiService {
   private final ChatClient chatClient;
   private final ObjectMapper objectMapper;
 
+  private List<Document> sealSpotsCache; // 씰 스팟 캐시
+
   private static final boolean LIGHT_MODE = true; // 빠른 응답 모드
   private static final int LLM_PLACES_PER_DAY = 5; // 하루 최대 방문지(프롬프트 규칙과 일치)
   private static final double SAFETY_MARGIN = 1.6; // 기본 여유치(라이트 OFF)
@@ -57,7 +59,7 @@ public class CourseGenerationAiService {
   private static final int LIGHT_TOPK_MIN = 8; // 지역별 검색 최소 개수
   private static final int LIGHT_TOPK_MAX = 12; // 지역별 검색 최대 개수
   private static final int LIGHT_MAX_COMPLETION_TOKENS = 2048; // 응답 길이 상한 (JSON 잘림 방지)
-  private static final int REGULAR_SPOT_CAP = 18;
+  private static final int REGULAR_SPOT_CAP = 25;
 
   private static final ExecutorService EXEC =
       Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
@@ -181,18 +183,30 @@ public class CourseGenerationAiService {
 
     log.info("[LIGHT_MODE={}]: topKPerLocation={}", LIGHT_MODE, topKPerLocation);
 
-    // 씰 스팟을 안정적으로 확보하기 위한 별도 검색 (전체 대상)
-    log.info("Executing dedicated search for all seal spots to ensure inclusion.");
-    SearchRequest sealSearchRequest =
-        SearchRequest.builder()
-            .query("경북 씰 관광지") // 씰 스팟과 가장 유사한 generic query
-            .topK(200) // 경북 전체 씰 스팟을 모두 가져오기 위한 충분한 값
-            .build();
-    List<Document> allSealSpots =
-        vectorStore.similaritySearch(sealSearchRequest).stream()
-            .filter(doc -> "seal_spot".equals(doc.getMetadata().get("entity_type")))
-            .toList();
-    log.info("Found {} seal spots in total from the dedicated search.", allSealSpots.size());
+    // 씰 스팟 캐싱 로직
+    if (this.sealSpotsCache == null) {
+      synchronized (this) {
+        if (this.sealSpotsCache == null) { // Double-checked locking
+          log.info("Cache empty. Populating seal spots cache...");
+          SearchRequest sealSearchRequest =
+              SearchRequest.builder()
+                  .query("경북 씰 관광지")
+                  .topK(200) // 경북 전체 씰 스팟을 모두 가져오기 위한 충분한 값
+                  .build();
+          this.sealSpotsCache =
+              vectorStore.similaritySearch(sealSearchRequest).stream()
+                  .filter(doc -> "seal_spot".equals(doc.getMetadata().get("entity_type")))
+                  .toList();
+          log.info(
+              "Seal spots cache populated with {} items.",
+              this.sealSpotsCache == null ? 0 : this.sealSpotsCache.size());
+        }
+      }
+    }
+    List<Document> allSealSpots = this.sealSpotsCache;
+    if (allSealSpots != null) {
+      log.info("Retrieved {} seal spots from cache.", allSealSpots.size());
+    }
 
     // 지역별 병렬 검색 (일반 스팟만)
     List<Document> parallelDocuments = new ArrayList<>(allSealSpots); // 씰 스팟 결과를 기본으로 추가
@@ -225,9 +239,7 @@ public class CourseGenerationAiService {
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
     parseAndAddDocuments(parallelDocuments, uniq, simplifiedLocations);
 
-    // =========================
     // [LIGHT] 라이트/하이브리드에서는 combined 검색 스킵 (속도)
-    // =========================
     int threshold = expectedDays * 7;
     if (!LIGHT_MODE && uniq.size() < threshold) {
       log.info("Initial results insufficient ({} < {}). Combined search.", uniq.size(), threshold);
@@ -379,8 +391,8 @@ public class CourseGenerationAiService {
                     - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
                     - [★ 핵심 규칙 0 (가장 중요) ★]: 응답은 반드시 여행 기간에 해당하는 **총 %d일**의 일정 전체를 포함해야 합니다.
                     - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
-                    - [★ 핵심 규칙 2 (가장 중요) ★]: 각 날짜별 일정에는, 그날 배정된 지역에 사용 가능한 'isSealSpot: true' 관광지가 **있는 경우에만, 그중 1개 또는 2개**를 코스에 포함시켜야 합니다. 만약 그 지역에 씰 관광지가 없다면, 포함시키지 않아도 됩니다.
-                    - 규칙 3: 각 날짜별 일정은 **반드시 4개 또는 5개**의 관광지를 포함해야 합니다. 씰 관광지를 먼저 배치한 후, 이 개수 제한을 맞추기 위해 동선이 효율적인 다른 장소들을 추가하세요.
+                    - [★ 핵심 규칙 2 (가장 중요) ★]: 각 날짜별 일정에는, 그날 배정된 지역에 사용 가능한 'isSealSpot: true' 관광지가 있다면, **그 지역의 씰 관광지를 1개 또는 2개 반드시 포함**해야 합니다. 만약 그 지역에 씰 관광지가 없다면, 포함시키지 않아도 됩니다.
+                    - 규칙 3: 각 날짜별 일정은 **반드시 4개**의 관광지를 포함해야 합니다. 씰 관광지를 먼저 배치한 후, 개수 제한을 맞추기 위해 동선이 효율적인 다른 장소들을 추가하세요.
                     - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
                     - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
 
