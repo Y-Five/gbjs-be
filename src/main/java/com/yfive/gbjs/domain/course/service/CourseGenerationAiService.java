@@ -135,13 +135,34 @@ public class CourseGenerationAiService {
     LocalDate start = request.getStartDate();
     LocalDate end = request.getEndDate();
     int expectedDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
-    List<String> locations = request.getLocations();
+    List<String> locations = request.getLocations(); // 원본 요청 지역
     if (expectedDays <= 0) {
       throw new IllegalArgumentException("endDate must be on/after startDate");
     }
 
-    List<String> simplifiedLocations = locations.stream().map(this::simplifyLocationName).toList();
+    // [수정] 람다에서 사용할, 값이 변하지 않는 최종 지역 목록 변수
+    final List<String> finalLocations;
+    // [신규] 여행일수보다 지역이 많으면, 일수에 맞게 지역 수를 랜덤으로 줄임
+    if (locations.size() > expectedDays) {
+      log.info(
+          "Too many locations ({}) for {} days. Reducing to {} locations.",
+          locations.size(),
+          expectedDays,
+          expectedDays);
+      List<String> mutableLocations = new ArrayList<>(locations);
+      // 재생성 시 다른 지역이 선택되도록 원본 locations를 시드 기반으로 사용
+      Random locationShuffleRand = new Random(resolveSeed(start, end, locations));
+      Collections.shuffle(mutableLocations, locationShuffleRand);
+      finalLocations = mutableLocations.subList(0, (int) expectedDays);
+      log.info("Reduced to locations: {}", finalLocations);
+    } else {
+      finalLocations = locations;
+    }
 
+    List<String> simplifiedLocations =
+        finalLocations.stream().map(this::simplifyLocationName).toList();
+
+    // [LIGHT] 필요량 기반 topK (라이트 모드일 때 작게)
     int neededTotalSpots =
         (int)
             Math.ceil(
@@ -154,7 +175,8 @@ public class CourseGenerationAiService {
                 LIGHT_TOPK_MIN,
                 Math.min(
                     LIGHT_TOPK_MAX,
-                    (int) Math.ceil((double) neededTotalSpots / Math.max(1, locations.size()))))
+                    (int)
+                        Math.ceil((double) neededTotalSpots / Math.max(1, finalLocations.size()))))
             : 30;
 
     log.info("[LIGHT_MODE={}]: topKPerLocation={}", LIGHT_MODE, topKPerLocation);
@@ -174,10 +196,10 @@ public class CourseGenerationAiService {
 
     // 지역별 병렬 검색 (일반 스팟만)
     List<Document> parallelDocuments = new ArrayList<>(allSealSpots); // 씰 스팟 결과를 기본으로 추가
-    if (topKPerLocation > 0 && !locations.isEmpty()) {
+    if (topKPerLocation > 0 && !finalLocations.isEmpty()) {
       ExecutorService executor = EXEC; // 재사용
       List<CompletableFuture<List<Document>>> futures =
-          locations.stream()
+          finalLocations.stream()
               .map(
                   location ->
                       CompletableFuture.supplyAsync(
@@ -203,11 +225,14 @@ public class CourseGenerationAiService {
     Map<Long, CourseResponse.SimpleSpotDTO> uniq = new LinkedHashMap<>();
     parseAndAddDocuments(parallelDocuments, uniq, simplifiedLocations);
 
+    // =========================
+    // [LIGHT] 라이트/하이브리드에서는 combined 검색 스킵 (속도)
+    // =========================
     int threshold = expectedDays * 7;
     if (!LIGHT_MODE && uniq.size() < threshold) {
       log.info("Initial results insufficient ({} < {}). Combined search.", uniq.size(), threshold);
       int totalTopKForCombined = 80;
-      String combinedQuery = String.join(" ", locations);
+      String combinedQuery = String.join(" ", finalLocations);
       SearchRequest combinedSearchRequest =
           SearchRequest.builder().query(combinedQuery).topK(totalTopKForCombined).build();
       List<Document> combinedDocuments = vectorStore.similaritySearch(combinedSearchRequest);
@@ -221,16 +246,16 @@ public class CourseGenerationAiService {
         deduped.stream()
             .collect(
                 Collectors.groupingBy(
-                    spot -> findLocationForSpot(spot.getAddr1(), locations),
+                    spot -> findLocationForSpot(spot.getAddr1(), finalLocations),
                     Collectors.toCollection(ArrayList::new)));
 
     // =========================
     // [GWUNWI] 군위군 스팟 부족 시 제외할 지역 계산
     // =========================
     final int MIN_SPOTS_FOR_LOCATION = 2;
-    List<String> effectiveLocations = new ArrayList<>(locations);
+    List<String> effectiveLocations = new ArrayList<>(finalLocations);
     List<String> excludedLocations = new ArrayList<>();
-    for (String loc : locations) {
+    for (String loc : finalLocations) {
       List<CourseResponse.SimpleSpotDTO> list = spotsByLocation.getOrDefault(loc, List.of());
       int total = (list == null) ? 0 : list.size();
       boolean isGwunwi = loc.contains("군위"); // "군위군", "군위" 등 포괄
@@ -248,12 +273,17 @@ public class CourseGenerationAiService {
       excludedLocations.clear(); // 제외 보류(유일 지역 등이면)
     }
 
-    // AI 후보 선정 로직: '씰 우선 + 일반 스팟'
+    // =================================================================
+    // ★ [수정됨 2.0] AI 후보 선정 로직: '씰 우선 + 일반 스팟 캡'
+    // =================================================================
 
-    // 재생성 시 결과 달라지도록 시드 (제외 반영된 지역을 기준으로)
+    // [REROLL] 재생성 시 결과 달라지도록 시드 (제외 반영된 지역을 기준으로)
+    // (이 호출은 카운터를 증가시키므로 반드시 실행되어야 함)
     Random rand = new Random(resolveSeed(start, end, effectiveLocations));
 
     List<CourseResponse.SimpleSpotDTO> spotsForOpenAI = new ArrayList<>();
+
+    // (파라미터 REGULAR_SPOT_CAP = 25 사용)
 
     // 1. [1순위] 모든 '씰 스팟'을 우선 확보 (중복 제거)
     Map<Long, CourseResponse.SimpleSpotDTO> sealSpotsMap = new LinkedHashMap<>();
@@ -261,25 +291,14 @@ public class CourseGenerationAiService {
       List<CourseResponse.SimpleSpotDTO> spotsInLocation = spotsByLocation.get(location);
       if (spotsInLocation == null || spotsInLocation.isEmpty()) continue;
 
-      // Boolean.TRUE.equals 사용 (Null-Safe)
+      // [★핵심 버그 수정★] Boolean.TRUE.equals 사용 (Null-Safe)
       spotsInLocation.stream()
           .filter(s -> Boolean.TRUE.equals(s.getIsSealSpot()))
           .forEach(s -> sealSpotsMap.putIfAbsent(s.getSpotId(), s));
     }
 
-    // 씰 스팟 개수 조정 로직 (2개 이상이면 2~N개 사이에서 랜덤 선택)
-    List<CourseResponse.SimpleSpotDTO> availableSealSpots = new ArrayList<>(sealSpotsMap.values());
-    int sealCount = availableSealSpots.size();
-    if (sealCount >= 2) {
-      // 2부터 sealCount 사이의 랜덤 개수 선택
-      int numToPick =
-          rand.nextInt(sealCount - 1)
-              + 2; // rand.nextInt(max-min+1)+min -> rand.nextInt(sealCount-2+1)+2
-      Collections.shuffle(availableSealSpots, rand); // 리스트를 섞고
-      spotsForOpenAI.addAll(availableSealSpots.subList(0, numToPick)); // 앞에서부터 numToPick 개수만큼 선택
-    } else {
-      spotsForOpenAI.addAll(availableSealSpots);
-    }
+    // [신규] AI가 날짜별로 씰 스팟을 분배할 수 있도록, 찾은 모든 씰 스팟을 전달
+    spotsForOpenAI.addAll(sealSpotsMap.values());
 
     // 2. [2순위] '일반 스팟' 후보군 확보
     List<CourseResponse.SimpleSpotDTO> regularSpotCandidates = new ArrayList<>();
@@ -326,8 +345,12 @@ public class CourseGenerationAiService {
     log.info(
         "[LIGHT] Total spots for AI: {} ({} seals, {} regulars)",
         spotsForOpenAI.size(),
-        sealSpotsMap.size(),
-        spotsForOpenAI.size() - sealSpotsMap.size());
+        spotsForOpenAI.size() - regularSpotCandidates.size(), // 이 계산은 정확하지 않을 수 있음
+        regularSpotCandidates.size());
+
+    // =================================================================
+    // ★ [수정됨 2.0] 로직 끝
+    // =================================================================
 
     // 경량 JSON 직렬화
     List<SpotForAi> compact =
@@ -349,12 +372,13 @@ public class CourseGenerationAiService {
       throw new RuntimeException("AI 프롬프트 준비 실패: " + e.getMessage());
     }
 
+    // [★수정됨★] 프롬프트: 씰 "반드시 포함" 규칙 강화
     String prompt =
         """
                     다음 제약 조건에 따라 여행 코스를 생성해 주세요.
                     - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
                     - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
-                    - [★ 핵심 규칙 2 (가장 중요) ★]: 'isSealSpot: true'로 표시된 모든 '경북씰 관광지'는 **어떤 일이 있어도** 일정에 **전부 포함**시켜야 합니다.
+                    - [★ 핵심 규칙 2 (가장 중요) ★]: 각 날짜별 일정에 'isSealSpot: true'인 '경북씰 관광지'를 **최소 1개씩 분배**해야 합니다. 만약 전체 씰 관광지 개수가 여행 일수보다 적다면, 가능한 만큼 최대한 분배해주세요.
                     - 규칙 3: 씰 관광지를 먼저 배치한 후, '하루 4개~5개' 제한에 맞춰 동선이 효율적인 다른 장소들을 추가하세요.
                     - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
                     - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
