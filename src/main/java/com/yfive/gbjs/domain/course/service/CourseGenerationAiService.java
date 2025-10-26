@@ -266,7 +266,20 @@ public class CourseGenerationAiService {
           .filter(s -> Boolean.TRUE.equals(s.getIsSealSpot()))
           .forEach(s -> sealSpotsMap.putIfAbsent(s.getSpotId(), s));
     }
-    spotsForOpenAI.addAll(sealSpotsMap.values());
+
+    // 씰 스팟 개수 조정 로직 (2개 이상이면 2~N개 사이에서 랜덤 선택)
+    List<CourseResponse.SimpleSpotDTO> availableSealSpots = new ArrayList<>(sealSpotsMap.values());
+    int sealCount = availableSealSpots.size();
+    if (sealCount >= 2) {
+      // 2부터 sealCount 사이의 랜덤 개수 선택
+      int numToPick =
+          rand.nextInt(sealCount - 1)
+              + 2; // rand.nextInt(max-min+1)+min -> rand.nextInt(sealCount-2+1)+2
+      Collections.shuffle(availableSealSpots, rand); // 리스트를 섞고
+      spotsForOpenAI.addAll(availableSealSpots.subList(0, numToPick)); // 앞에서부터 numToPick 개수만큼 선택
+    } else {
+      spotsForOpenAI.addAll(availableSealSpots);
+    }
 
     // 2. [2순위] '일반 스팟' 후보군 확보
     List<CourseResponse.SimpleSpotDTO> regularSpotCandidates = new ArrayList<>();
