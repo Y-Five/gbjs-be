@@ -53,7 +53,7 @@ public class CourseGenerationAiService {
   private List<Document> sealSpotsCache; // 씰 스팟 캐시
 
   private static final boolean LIGHT_MODE = true; // 빠른 응답 모드
-  private static final int LLM_PLACES_PER_DAY = 5; // 하루 최대 방문지(프롬프트 규칙과 일치)
+  private static final int LLM_PLACES_PER_DAY = 4; // 하루 최대 방문지
   private static final double SAFETY_MARGIN = 1.6; // 기본 여유치(라이트 OFF)
   private static final double LIGHT_SAFETY_MARGIN = 1.3; // 라이트 모드 여유치(작게)
   private static final int LIGHT_TOPK_MIN = 8; // 지역별 검색 최소 개수
