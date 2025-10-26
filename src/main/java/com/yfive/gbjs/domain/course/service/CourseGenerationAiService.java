@@ -57,7 +57,7 @@ public class CourseGenerationAiService {
   private static final int LIGHT_TOPK_MIN = 8; // 지역별 검색 최소 개수
   private static final int LIGHT_TOPK_MAX = 12; // 지역별 검색 최대 개수
   private static final int LIGHT_MAX_COMPLETION_TOKENS = 2048; // 응답 길이 상한 (JSON 잘림 방지)
-  private static final int REGULAR_SPOT_CAP = 25;
+  private static final int REGULAR_SPOT_CAP = 18;
 
   private static final ExecutorService EXEC =
       Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
@@ -377,8 +377,9 @@ public class CourseGenerationAiService {
         """
                     다음 제약 조건에 따라 여행 코스를 생성해 주세요.
                     - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
+                    - [★ 핵심 규칙 0 (가장 중요) ★]: 응답은 반드시 여행 기간에 해당하는 **총 %d일**의 일정 전체를 포함해야 합니다.
                     - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
-                    - [★ 핵심 규칙 2 (가장 중요) ★]: 각 날짜별 일정에 'isSealSpot: true'인 '경북씰 관광지'를 **최소 1개씩 분배**해야 합니다. 만약 전체 씰 관광지 개수가 여행 일수보다 적다면, 가능한 만큼 최대한 분배해주세요.
+                    - [★ 핵심 규칙 2 (가장 중요) ★]: 최종 코스는 처음에 요청된 각 지역별로('여행 지역' 목록 참고), 해당 지역에 속한 'isSealSpot: true' 관광지가 있다면, 그 지역의 씰 관광지를 **반드시 1개 이상 포함**해야 합니다.
                     - 규칙 3: 각 날짜별 일정은 **반드시 4개 또는 5개**의 관광지를 포함해야 합니다. 씰 관광지를 먼저 배치한 후, 이 개수 제한을 맞추기 위해 동선이 효율적인 다른 장소들을 추가하세요.
                     - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
                     - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
@@ -386,13 +387,21 @@ public class CourseGenerationAiService {
                     사용 가능한 장소 목록 (JSON 배열):
                     %s
                     """
-            .formatted(start, end, expectedDays, String.join(", ", effectiveLocations), spotsJson);
+            .formatted(
+                start,
+                end,
+                expectedDays,
+                String.join(", ", effectiveLocations),
+                expectedDays,
+                spotsJson);
 
-    // [LIGHT] 응답 토큰 상한 축소(속도)
+    // [수정] 여행 일수에 비례하여 응답 토큰 상한을 동적으로 조절
+    int dynamicMaxTokens = Math.max(2048, (int) expectedDays * 500);
+    // log.info("Dynamically setting max completion tokens to: {}", dynamicMaxTokens);
     OpenAiChatOptions options =
         OpenAiChatOptions.builder()
             .temperature(0.2)
-            .maxCompletionTokens(LIGHT_MODE ? LIGHT_MAX_COMPLETION_TOKENS : 4096) // (비상용 4096)
+            .maxCompletionTokens(LIGHT_MODE ? dynamicMaxTokens : 4096)
             .build();
 
     CourseResponse.CourseDetailDTO result;
