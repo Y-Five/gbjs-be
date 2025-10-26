@@ -57,8 +57,8 @@ public class CourseGenerationAiService {
   private static final int LLM_PLACES_PER_DAY = 5; // 하루 최대 방문지(프롬프트 규칙과 일치)
   private static final double SAFETY_MARGIN = 1.6; // 기본 여유치(라이트 OFF)
   private static final double LIGHT_SAFETY_MARGIN = 1.3; // 라이트 모드 여유치(작게)
-  private static final int LIGHT_TOPK_MIN = 8; // 지역별 검색 최소 개수
-  private static final int LIGHT_TOPK_MAX = 12; // 지역별 검색 최대 개수
+  private static final int LIGHT_TOPK_MIN = 20; // 지역별 검색 최소 개수
+  private static final int LIGHT_TOPK_MAX = 30; // 지역별 검색 최대 개수
   // private static final int LIGHT_PER_LOCATION_CAP = 5; // [폐기] 총량제 로직으로 대체됨
   private static final int LIGHT_MAX_COMPLETION_TOKENS = 2048; // 응답 길이 상한 (JSON 잘림 방지)
   // [신규] AI에게 보낼 '일반 스팟'의 최대 개수 (AI 혼동 방지 및 성능 확보)
@@ -355,17 +355,17 @@ public class CourseGenerationAiService {
     // [★수정됨★] 프롬프트: 씰 "반드시 포함" 규칙 강화
     String prompt =
         """
-                다음 제약 조건에 따라 여행 코스를 생성해 주세요.
-                - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
-                - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
-                - [★ 핵심 규칙 2 (가장 중요) ★]: 'isSealSpot: true'로 표시된 모든 '경북씰 관광지'는 **어떤 일이 있어도** 일정에 **전부 포함**시켜야 합니다.
-                - 규칙 3: 씰 관광지를 먼저 배치한 후, '하루 4개~5개' 제한에 맞춰 동선이 효율적인 다른 장소들을 추가하세요.
-                - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
-                - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
+                    다음 제약 조건에 따라 여행 코스를 생성해 주세요.
+                    - 여행 기간: %s부터 %s까지 총 %d일간, 여행 지역: %s.
+                    - 핵심 규칙 1: 하루 일정에는 요청된 지역 중 단 하나의 지역에 속한 장소들만 포함해야 합니다.
+                    - [★ 핵심 규칙 2 (가장 중요) ★]: 'isSealSpot: true'로 표시된 모든 '경북씰 관광지'는 **어떤 일이 있어도** 일정에 **전부 포함**시켜야 합니다.
+                    - 규칙 3: 씰 관광지를 먼저 배치한 후, '하루 4개~5개' 제한에 맞춰 동선이 효율적인 다른 장소들을 추가하세요.
+                    - 규칙 4: 제공된 '사용 가능한 장소 목록'에 있는 정보만 사용해야 합니다.
+                    - 응답은 간결하게, 불필요한 설명 없이 결과만 출력해 주세요.
 
-                사용 가능한 장소 목록 (JSON 배열):
-                %s
-                """
+                    사용 가능한 장소 목록 (JSON 배열):
+                    %s
+                    """
             .formatted(start, end, expectedDays, String.join(", ", effectiveLocations), spotsJson);
 
     // [LIGHT] 응답 토큰 상한 축소(속도)
@@ -401,50 +401,104 @@ public class CourseGenerationAiService {
     return postFix(result, start, end, effectiveLocations, originalSpotMap);
   }
 
+  // ==================================================
+  // [★ 여기부터 수정됨 (v3) ★]
+  // ==================================================
   private void parseAndAddDocuments(
       List<Document> documents,
       Map<Long, CourseResponse.SimpleSpotDTO> uniq,
-      List<String> simplifiedLocations) {
+      List<String> simplifiedLocations) { // simplifiedLocations = ["경주", "안동"]
     for (Document doc : documents) {
       Map<String, Object> md = doc.getMetadata();
       if (md == null) continue;
       String addr1 = s(md, "addr1");
-      if (addr1 == null) continue;
+      String locationMeta = s(md, "location"); // "GYEONGJU" 또는 "ANDONG" 같은 값
 
-      boolean isInRequestedLocation = simplifiedLocations.stream().anyMatch(addr1::contains);
+      // [수정] addr1이 null이어도 locationMeta로 검사할 수 있으므로,
+      //       둘 다 null일 때만 건너뛰도록 변경 (혹은 addr1만 체크해도 된다면 원복)
+      if (addr1 == null && locationMeta == null) continue;
+
+      // ===================================
+      // [★ 수정된 필터링 로직 ★]
+      // ===================================
+      boolean isInRequestedLocation = false;
+
+      // 1. 주소(addr1) 기반 필터링
+      if (addr1 != null) {
+        isInRequestedLocation = simplifiedLocations.stream().anyMatch(addr1::contains);
+      }
+
+      // 2. 메타데이터(location) 기반 필터링 (i18n 및 대소문자 무시)
+      //    주소(addr1)에서 못 찾았을 경우, 'location' 메타데이터를 확인합니다.
+      if (!isInRequestedLocation && locationMeta != null) {
+        String locMetaLower = locationMeta.toLowerCase(); // "gyeongju"
+        isInRequestedLocation =
+            simplifiedLocations.stream() // simpleLoc = "경주"
+                .anyMatch(
+                    simpleLoc -> {
+                      String simpleLocLower = simpleLoc.toLowerCase(); // "경주"
+                      // "gyeongju"가 "경주"를 포함하거나, "경주"가 "gyeongju"를 포함하는지
+                      // (영문/한글 교차 검사)
+                      return locMetaLower.contains(simpleLocLower)
+                          || simpleLocLower.contains(locMetaLower);
+                    });
+      }
+
+      // 3. 두 필터 중 하나도 통과 못하면 스킵
       if (!isInRequestedLocation) continue;
+      // ===================================
+      // [필터링 로직 수정 끝]
+      // ===================================
 
       String contentIdStr = s(md, "contentId");
       if (contentIdStr == null) continue;
 
+      // ===================================
+      // [기존 덮어쓰기 버그 수정 로직] (유지)
+      // ===================================
       try {
         Long id = Long.valueOf(contentIdStr);
-        if (uniq.containsKey(id)) continue;
 
         String type = s(md, "type");
         String entityType = s(md, "entity_type");
+
         if (!"spot".equals(type)) continue;
 
         boolean isSealSpot = "spot".equals(type) && "seal_spot".equals(entityType);
         Long sealSpotId =
             isSealSpot && s(md, "sealSpotId") != null ? Long.valueOf(s(md, "sealSpotId")) : null;
-        uniq.put(
-            id,
+
+        // 1. DTO 생성
+        CourseResponse.SimpleSpotDTO newSpot =
             new CourseResponse.SimpleSpotDTO(
                 id,
                 null,
                 s(md, "name"),
                 s(md, "category"),
-                addr1,
+                addr1, // addr1이 null일 수 있으나 DTO 스펙상 허용
                 d(md, "latitude"),
                 d(md, "longitude"),
                 isSealSpot,
-                sealSpotId));
+                sealSpotId);
+
+        // 2. 기존 스팟 조회
+        CourseResponse.SimpleSpotDTO existingSpot = uniq.get(id);
+
+        // 3. 씰 스팟 우선 덮어쓰기
+        if (existingSpot == null
+            || (isSealSpot && !Boolean.TRUE.equals(existingSpot.getIsSealSpot()))) {
+          uniq.put(id, newSpot);
+        }
+
       } catch (NumberFormatException e) {
         // ID 파싱 실패 시 건너뛰기
       }
     }
   }
+
+  // ==================================================
+  // [★ 여기까지 수정됨 (v3) ★]
+  // ==================================================
 
   private String simplifyLocationName(String loc) {
     if (loc == null) return "";
